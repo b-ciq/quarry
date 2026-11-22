@@ -7,7 +7,8 @@ from pathlib import Path
 from quarry.indexer import IndexBuildError, build_index
 from quarry.ingest import ingest_dir
 from quarry.seed import seed_from_deck_builder
-from quarry.schema import CLASSES, validate_sidecar
+from quarry.search import search
+from quarry.schema import CLASSES, TONES, validate_sidecar
 from quarry.vocabulary import load_vocabulary
 
 IMAGE_EXTS = {".png", ".jpg", ".jpeg", ".webp"}
@@ -66,6 +67,16 @@ def main(argv=None) -> int:
     ix = sub.add_parser("index", help="build the search index (FTS5, vectors, thumbnails)")
     ix.add_argument("--repo", default=".", type=Path)
     ix.add_argument("--fake-embedder", action="store_true", help="deterministic fake embeddings (no models)")
+    se = sub.add_parser("search", help="hybrid search over the indexed library")
+    se.add_argument("query", nargs="?", default=None, help="omit for filter-only browsing")
+    se.add_argument("--class", dest="cls", choices=sorted(CLASSES))
+    se.add_argument("--product")
+    se.add_argument("--tone", choices=sorted(TONES))
+    se.add_argument("--all-statuses", action="store_true", help="include non-servable assets")
+    se.add_argument("--limit", type=int, default=10)
+    se.add_argument("-v", "--verbose", action="store_true", help="show description and file")
+    se.add_argument("--repo", default=".", type=Path)
+    se.add_argument("--fake-embedder", action="store_true", help="must match how the index was built")
     args = parser.parse_args(argv)
     if args.command == "validate":
         return cmd_validate(args.repo)
@@ -108,6 +119,26 @@ def main(argv=None) -> int:
             print("error: library is invalid; index not built", file=sys.stderr)
             return 1
         print(f"indexed {stats.indexed}, thumbnailed {stats.thumbnailed}")
+        return 0
+    if args.command == "search":
+        if args.fake_embedder:
+            from quarry.embeddings import FakeEmbedder
+            embedder = FakeEmbedder()
+        else:
+            from quarry.embeddings import HFEmbedder
+            embedder = HFEmbedder()
+        try:
+            hits = search(args.repo, embedder, args.query, cls=args.cls, product=args.product,
+                          tone=args.tone, servable_only=not args.all_statuses, limit=args.limit)
+        except FileNotFoundError as exc:
+            print(f"error: {exc}", file=sys.stderr)
+            return 1
+        for h in hits:
+            sc = h.sidecar
+            print(f"{h.score:.4f}  {h.id}  [{sc.get('class')}/{sc.get('status')}]")
+            if args.verbose:
+                print(f"        {sc.get('description', '')}")
+                print(f"        {sc.get('file')}")
         return 0
     return 2
 
