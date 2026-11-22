@@ -61,7 +61,7 @@ def search_assets(query: str, asset_class: str | None = None, product: str | Non
 
 
 @mcp.tool()
-def get_asset(asset_id: str) -> list | str:
+def get_asset(asset_id: str):
     """Get one servable asset: a <=256px thumbnail plus JSON metadata with `full_res_path`."""
     root = _repo_root()
     asset = _servable_asset(root, asset_id)

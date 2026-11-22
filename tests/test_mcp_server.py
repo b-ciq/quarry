@@ -81,3 +81,23 @@ def test_list_vocabulary_has_all_axes(srv):
     vocab = json.loads(srv.list_vocabulary())
     assert set(vocab) == {"products", "categories", "verticals", "concepts", "style"}
     assert "fuzzball" in vocab["products"]
+
+
+def _call(srv, name, args):
+    import asyncio
+    return asyncio.run(srv.mcp.call_tool(name, args))
+
+
+def test_get_asset_through_call_tool_success(srv):
+    content = _call(srv, "get_asset", {"asset_id": "ok-hero"})
+    content = content[0] if isinstance(content, tuple) else content
+    types = [c.type for c in content]
+    assert types == ["image", "text"]
+    assert content[0].mimeType == "image/webp"
+    assert json.loads(content[1].text)["id"] == "ok-hero"
+
+
+def test_get_asset_through_call_tool_non_servable(srv):
+    content = _call(srv, "get_asset", {"asset_id": "restricted-hero"})
+    content = content[0] if isinstance(content, tuple) else content
+    assert content[0].text.startswith("Error")
