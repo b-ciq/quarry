@@ -126,3 +126,14 @@ def test_cli_ingest(repo, tmp_path, capsys):
     sc = json.loads(next((repo.root / "library/lifestyle").glob("*.json")).read_text())
     assert sc["license"] == "adobe-stock:42"
     assert "created 1" in capsys.readouterr().out
+
+
+def test_dedupe_against_sidecar_without_sha256(repo, tmp_path):
+    from conftest import _png_1px
+    repo.add_asset("heroes", "seeded-one")  # sidecar has no source.sha256
+    drop = tmp_path / "drop"
+    drop.mkdir()
+    (drop / "other-name.png").write_bytes(_png_1px())
+    res = ingest_dir(drop, repo.root, "hero", "designer")
+    assert res.created == []
+    assert len(res.skipped) == 1 and "seeded-one" in res.skipped[0][1]

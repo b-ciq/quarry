@@ -35,7 +35,8 @@
   "license": "ciq-original",
   "source": {
     "origin": "deck-builder-seed",
-    "ingested_at": "2026-11-22T00:00:00Z"
+    "ingested_at": "2026-11-22T00:00:00Z",
+    "sha256": "3ee50ffa25846a2905115ad33b940300d461550fe7632593c25317892a3f3752"
   },
   "usage_restrictions": [],
   "description": "Black-and-white portrait of a sysadmin with arms crossed beside an open server rack dense with patch cables and blinking drive bays; dark, moody datacenter lighting."

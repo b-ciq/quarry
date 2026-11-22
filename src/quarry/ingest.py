@@ -55,6 +55,11 @@ def _scan_library(repo_root: Path) -> tuple[dict[str, str], set[str]]:
         if entry.get("id"):
             ids.add(entry["id"])
         digest = (entry.get("source") or {}).get("sha256")
+        if not digest:
+            # legacy/hand-written sidecar: hash the image next to it
+            img = next((f for f in sc.parent.glob(sc.stem + ".*")
+                        if f.suffix.lower() in IMAGE_EXTS), None)
+            digest = sha256_file(img) if img else None
         if digest:
             hashes[digest] = entry.get("id", sc.stem)
     return hashes, ids

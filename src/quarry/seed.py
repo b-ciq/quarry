@@ -5,6 +5,7 @@ from datetime import date
 from math import gcd
 from pathlib import Path
 
+from quarry.ingest import sha256_file
 from quarry.schema import CLASS_DIRS
 
 HERO_SUBKIND_CLASS = {"screenshot": "screenshot", "diagram": "diagram", "conceptual": "hero"}
@@ -39,6 +40,7 @@ def _write(repo_root: Path, src: Path, sidecar: dict, created: list[Path]) -> No
     sidecar_path = dest.with_suffix(".json")
     if sidecar_path.exists():
         return
+    sidecar = {**sidecar, "source": {**sidecar["source"], "sha256": sha256_file(src)}}
     dest_dir.mkdir(parents=True, exist_ok=True)
     shutil.copyfile(src, dest)
     sidecar_path.write_text(json.dumps(sidecar, indent=2) + "\n")

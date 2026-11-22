@@ -12,7 +12,8 @@
   "license": "ciq-original",
   "source": {
     "origin": "deck-builder-seed",
-    "ingested_at": "2026-11-22T00:00:00Z"
+    "ingested_at": "2026-11-22T00:00:00Z",
+    "sha256": "78d2ce3135e917df8ed3602ae99c4c31d251646604db49beeccbe3c833961e86"
   },
   "usage_restrictions": [],
   "description": ""
