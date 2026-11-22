@@ -9,7 +9,8 @@ requires-python = ">=3.11"
 dependencies = ["Pillow", "numpy", "sqlite-vec"]
 
 [project.optional-dependencies]
-dev = ["pytest"]
+dev = ["pytest", "mcp>=1.2,<2"]
+mcp = ["mcp>=1.2,<2"]
 ml = ["torch", "transformers"]
 
 [project.scripts]
