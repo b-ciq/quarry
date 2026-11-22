@@ -4,8 +4,9 @@ import os
 import sys
 from pathlib import Path
 
+from quarry.ingest import ingest_dir
 from quarry.seed import seed_from_deck_builder
-from quarry.schema import validate_sidecar
+from quarry.schema import CLASSES, validate_sidecar
 from quarry.vocabulary import load_vocabulary
 
 IMAGE_EXTS = {".png", ".jpg", ".jpeg", ".webp"}
@@ -53,6 +54,14 @@ def main(argv=None) -> int:
     sd = sub.add_parser("seed-deck-builder", help="seed library from the deck-builder bundle")
     sd.add_argument("--repo", default=".", type=Path)
     sd.add_argument("--skill-dir", type=Path, default=None)
+    ig = sub.add_parser("ingest", help="ingest a drop directory as proposed assets")
+    ig.add_argument("dir", type=Path)
+    ig.add_argument("--class", dest="cls", required=True, choices=sorted(CLASSES))
+    ig.add_argument("--source", required=True, help="origin, e.g. designer, midjourney, adobe-stock")
+    ig.add_argument("--license", default=None)
+    ig.add_argument("--license-id", default=None, help="adobe-stock asset id")
+    ig.add_argument("--product", default=None, help="nest screenshots under screenshots/<product>/")
+    ig.add_argument("--repo", default=".", type=Path)
     args = parser.parse_args(argv)
     if args.command == "validate":
         return cmd_validate(args.repo)
@@ -64,6 +73,21 @@ def main(argv=None) -> int:
         for p in created:
             print(p)
         print(f"seeded {len(created)} assets")
+        return 0
+    if args.command == "ingest":
+        lic = args.license
+        if lic is None and args.license_id:
+            lic = f"{args.source}:{args.license_id}"
+        try:
+            res = ingest_dir(args.dir, args.repo, args.cls, args.source, lic, product=args.product)
+        except ValueError as exc:
+            print(f"error: {exc}", file=sys.stderr)
+            return 2
+        for p in res.created:
+            print(p)
+        for p, why in res.skipped:
+            print(f"skipped {p}: {why}")
+        print(f"created {len(res.created)}, skipped {len(res.skipped)}")
         return 0
     return 2
 

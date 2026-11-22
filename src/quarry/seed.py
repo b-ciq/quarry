@@ -5,14 +5,8 @@ from datetime import date
 from math import gcd
 from pathlib import Path
 
-CLASS_DIRS = {
-    "hero": "heroes",
-    "spot-illustration": "spots",
-    "background": "backgrounds",
-    "screenshot": "screenshots",
-    "diagram": "diagrams",
-    "lifestyle": "lifestyle",
-}
+from quarry.schema import CLASS_DIRS
+
 HERO_SUBKIND_CLASS = {"screenshot": "screenshot", "diagram": "diagram", "conceptual": "hero"}
 IMAGE_EXTS = {".png", ".jpg", ".jpeg", ".webp"}
 MANIFEST = Path("brand/assets/images/manifest.json")

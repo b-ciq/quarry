@@ -2,6 +2,14 @@ import re
 from pathlib import Path
 
 CLASSES = {"hero", "spot-illustration", "background", "screenshot", "diagram", "lifestyle"}
+CLASS_DIRS = {
+    "hero": "heroes",
+    "spot-illustration": "spots",
+    "background": "backgrounds",
+    "screenshot": "screenshots",
+    "diagram": "diagrams",
+    "lifestyle": "lifestyle",
+}
 STATUSES = {"proposed", "confirmed", "retired"}
 TONES = {"dark", "light"}
 
