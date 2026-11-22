@@ -6,7 +6,7 @@ build-backend = "hatchling.build"
 name = "quarry"
 version = "0.1.0"
 requires-python = ">=3.11"
-dependencies = ["Pillow", "numpy"]
+dependencies = ["Pillow", "numpy", "sqlite-vec"]
 
 [project.optional-dependencies]
 dev = ["pytest"]

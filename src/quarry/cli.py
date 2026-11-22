@@ -4,6 +4,7 @@ import os
 import sys
 from pathlib import Path
 
+from quarry.indexer import IndexBuildError, build_index
 from quarry.ingest import ingest_dir
 from quarry.seed import seed_from_deck_builder
 from quarry.schema import CLASSES, validate_sidecar
@@ -62,6 +63,9 @@ def main(argv=None) -> int:
     ig.add_argument("--license-id", default=None, help="adobe-stock asset id")
     ig.add_argument("--product", default=None, help="nest screenshots under screenshots/<product>/")
     ig.add_argument("--repo", default=".", type=Path)
+    ix = sub.add_parser("index", help="build the search index (FTS5, vectors, thumbnails)")
+    ix.add_argument("--repo", default=".", type=Path)
+    ix.add_argument("--fake-embedder", action="store_true", help="deterministic fake embeddings (no models)")
     args = parser.parse_args(argv)
     if args.command == "validate":
         return cmd_validate(args.repo)
@@ -88,6 +92,22 @@ def main(argv=None) -> int:
         for p, why in res.skipped:
             print(f"skipped {p}: {why}")
         print(f"created {len(res.created)}, skipped {len(res.skipped)}")
+        return 0
+    if args.command == "index":
+        if args.fake_embedder:
+            from quarry.embeddings import FakeEmbedder
+            embedder = FakeEmbedder()
+        else:
+            from quarry.embeddings import HFEmbedder
+            embedder = HFEmbedder()
+        try:
+            stats = build_index(args.repo, embedder)
+        except IndexBuildError as exc:
+            for e in exc.errors:
+                print(e)
+            print("error: library is invalid; index not built", file=sys.stderr)
+            return 1
+        print(f"indexed {stats.indexed}, thumbnailed {stats.thumbnailed}")
         return 0
     return 2
 
