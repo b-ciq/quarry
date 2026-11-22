@@ -1,8 +1,10 @@
 import argparse
 import json
+import os
 import sys
 from pathlib import Path
 
+from quarry.seed import seed_from_deck_builder
 from quarry.schema import validate_sidecar
 from quarry.vocabulary import load_vocabulary
 
@@ -48,9 +50,21 @@ def main(argv=None) -> int:
     sub = parser.add_subparsers(dest="command", required=True)
     v = sub.add_parser("validate", help="validate all library sidecars")
     v.add_argument("--repo", default=".", type=Path)
+    sd = sub.add_parser("seed-deck-builder", help="seed library from the deck-builder bundle")
+    sd.add_argument("--repo", default=".", type=Path)
+    sd.add_argument("--skill-dir", type=Path, default=None)
     args = parser.parse_args(argv)
     if args.command == "validate":
         return cmd_validate(args.repo)
+    if args.command == "seed-deck-builder":
+        skill = args.skill_dir or Path(
+            os.environ.get("QUARRY_DECK_SKILL_DIR", "~/.claude/skills/quantic-deck-builder")
+        ).expanduser()
+        created = seed_from_deck_builder(args.repo, skill)
+        for p in created:
+            print(p)
+        print(f"seeded {len(created)} assets")
+        return 0
     return 2
 
 

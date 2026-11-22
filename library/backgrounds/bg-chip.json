@@ -1,0 +1,19 @@
+{
+  "id": "bg-chip",
+  "file": "bg-chip.png",
+  "status": "proposed",
+  "class": "background",
+  "products": [],
+  "categories": [],
+  "verticals": [],
+  "concepts": [],
+  "style": [],
+  "aspect": "16:9",
+  "license": "ciq-original",
+  "source": {
+    "origin": "deck-builder-seed",
+    "ingested_at": "2026-11-22T00:00:00Z"
+  },
+  "usage_restrictions": [],
+  "description": ""
+}
