@@ -8,6 +8,7 @@ from quarry.export_deck import write_export
 from quarry.indexer import IndexBuildError, build_index
 from quarry.ingest import ingest_dir
 from quarry.library import LibraryError
+from quarry.publish import check_stale, publish
 from quarry.seed import seed_from_deck_builder
 from quarry.search import search
 from quarry.schema import CLASSES, TONES, validate_sidecar
@@ -55,6 +56,11 @@ def main(argv=None) -> int:
     sub = parser.add_subparsers(dest="command", required=True)
     v = sub.add_parser("validate", help="validate all library sidecars")
     v.add_argument("--repo", default=".", type=Path)
+    v.add_argument("--check-stale", action="store_true", help="exit 1 if exports/STAMP.json is missing or stale")
+    pb = sub.add_parser("publish", help="validate, index, export, and bundle into the deck-builder skill")
+    pb.add_argument("--repo", default=".", type=Path)
+    pb.add_argument("--skill-dir", type=Path, default=None)
+    pb.add_argument("--fake-embedder", action="store_true", help="deterministic fake embeddings (no models)")
     sd = sub.add_parser("seed-deck-builder", help="seed library from the deck-builder bundle")
     sd.add_argument("--repo", default=".", type=Path)
     sd.add_argument("--skill-dir", type=Path, default=None)
@@ -84,7 +90,32 @@ def main(argv=None) -> int:
     ex.add_argument("--repo", default=".", type=Path)
     args = parser.parse_args(argv)
     if args.command == "validate":
+        if args.check_stale:
+            if check_stale(args.repo):
+                print("stale: exports/STAMP.json missing or out of date; run `quarry publish`")
+                return 1
+            print("fresh")
+            return 0
         return cmd_validate(args.repo)
+    if args.command == "publish":
+        skill = args.skill_dir or Path(
+            os.environ.get("QUARRY_DECK_SKILL_DIR", "~/.claude/skills/quantic-deck-builder")
+        ).expanduser()
+        if args.fake_embedder:
+            from quarry.embeddings import FakeEmbedder
+            embedder = FakeEmbedder()
+        else:
+            from quarry.embeddings import HFEmbedder
+            embedder = HFEmbedder()
+        try:
+            res = publish(args.repo, embedder, skill)
+        except (IndexBuildError, LibraryError) as exc:
+            for e in exc.errors:
+                print(e)
+            print("error: library is invalid; nothing published", file=sys.stderr)
+            return 1
+        print(f"published {res.version}: indexed {res.indexed}, exported {res.exported}, bundled {res.bundled}")
+        return 0
     if args.command == "seed-deck-builder":
         skill = args.skill_dir or Path(
             os.environ.get("QUARRY_DECK_SKILL_DIR", "~/.claude/skills/quantic-deck-builder")

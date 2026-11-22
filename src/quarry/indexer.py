@@ -53,16 +53,8 @@ def _thumbnail(src: Path, dest: Path) -> None:
         im.save(dest, "WEBP")
 
 
-def build_index(repo_root: Path, embedder: Embedder, db_path: Path | None = None) -> IndexStats:
-    repo_root = Path(repo_root)
-    index_dir = repo_root / "index"
-    db_path = Path(db_path) if db_path else index_dir / "library.db"
-    thumbs_dir = index_dir / "thumbs"
-
-    try:
-        assets = scan_library(repo_root)
-    except LibraryError as exc:
-        raise IndexBuildError(exc.errors) from exc
+def validate_assets(repo_root: Path, assets: list) -> list[str]:
+    """Schema/id/duplicate errors for scanned assets (empty when valid)."""
     vocab = load_vocabulary(repo_root)
     errors: list[str] = []
     seen: dict[str, Path] = {}
@@ -74,6 +66,20 @@ def build_index(repo_root: Path, embedder: Embedder, db_path: Path | None = None
         if a.id in seen:
             errors.append(f"{rel}: duplicate id {a.id!r} (also {seen[a.id].relative_to(repo_root)})")
         seen[a.id] = a.path
+    return errors
+
+
+def build_index(repo_root: Path, embedder: Embedder, db_path: Path | None = None) -> IndexStats:
+    repo_root = Path(repo_root)
+    index_dir = repo_root / "index"
+    db_path = Path(db_path) if db_path else index_dir / "library.db"
+    thumbs_dir = index_dir / "thumbs"
+
+    try:
+        assets = scan_library(repo_root)
+    except LibraryError as exc:
+        raise IndexBuildError(exc.errors) from exc
+    errors = validate_assets(repo_root, assets)
     if errors:
         raise IndexBuildError(errors)
 
