@@ -115,3 +115,11 @@ def test_cli_uppercase_extension_image_pairs_with_sidecar(repo, capsys):
     p.write_text(json.dumps(entry))
     assert main(["validate", "--repo", str(repo.root)]) == 0
     assert "orphan" not in capsys.readouterr().out
+
+
+def test_cli_validate_flags_duplicate_ids(repo, capsys):
+    from quarry.cli import main
+    repo.add_asset("hero", "dup")
+    repo.add_asset("lifestyle", "dup")
+    assert main(["validate", "--repo", str(repo.root)]) == 1
+    assert "duplicate id" in capsys.readouterr().out

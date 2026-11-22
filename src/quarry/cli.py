@@ -5,12 +5,12 @@ import sys
 from pathlib import Path
 
 from quarry.export_deck import write_export
-from quarry.indexer import IndexBuildError, build_index
+from quarry.indexer import IndexBuildError, build_index, validate_assets
 from quarry.ingest import ingest_dir
-from quarry.library import LibraryError
+from quarry.library import LibraryError, scan_library
 from quarry.publish import check_stale, publish
 from quarry.seed import seed_from_deck_builder
-from quarry.search import search
+from quarry.search import EmbedderMismatch, EmbedderUnavailable, search
 from quarry.schema import CLASSES, TONES, validate_sidecar
 from quarry.vocabulary import load_vocabulary
 
@@ -44,6 +44,11 @@ def cmd_validate(repo: Path) -> int:
                 errors.append(f"{rel}: file {entry.get('file')!r} does not match image on disk")
         elif path.suffix.lower() in IMAGE_EXTS and not path.with_suffix(".json").exists():
             errors.append(f"{rel}: orphan image (no sidecar)")
+    if not errors:
+        try:
+            errors.extend(e for e in validate_assets(repo, scan_library(repo)) if "duplicate id" in e)
+        except LibraryError as exc:
+            errors.extend(exc.errors)
     for e in errors:
         print(e)
     if not errors:
@@ -175,7 +180,7 @@ def main(argv=None) -> int:
         try:
             hits = search(args.repo, embedder, args.query, cls=args.cls, product=args.product,
                           tone=args.tone, servable_only=not args.all_statuses, limit=args.limit)
-        except FileNotFoundError as exc:
+        except (FileNotFoundError, EmbedderMismatch, EmbedderUnavailable) as exc:
             print(f"error: {exc}", file=sys.stderr)
             return 1
         for h in hits:
