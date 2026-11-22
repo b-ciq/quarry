@@ -6,10 +6,11 @@ build-backend = "hatchling.build"
 name = "quarry"
 version = "0.1.0"
 requires-python = ">=3.11"
-dependencies = ["Pillow"]
+dependencies = ["Pillow", "numpy"]
 
 [project.optional-dependencies]
 dev = ["pytest"]
+ml = ["torch", "transformers"]
 
 [project.scripts]
 quarry = "quarry.cli:main"
@@ -19,3 +20,5 @@ packages = ["src/quarry"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
+addopts = "-m 'not slow'"
+markers = ["slow: loads real ML models (needs the ml extra and network); skipped by default"]
