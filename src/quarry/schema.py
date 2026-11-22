@@ -1,3 +1,6 @@
+import re
+from pathlib import Path
+
 CLASSES = {"hero", "spot-illustration", "background", "screenshot", "diagram", "lifestyle"}
 STATUSES = {"proposed", "confirmed", "retired"}
 TONES = {"dark", "light"}
@@ -8,6 +11,7 @@ REQUIRED_KEYS = (
     "description",
 )
 OPTIONAL_KEYS = ("tone", "license_expiry", "product_version", "captured_at", "generation")
+KEBAB_RE = re.compile(r"^[a-z0-9]+(-[a-z0-9]+)*$")
 TAG_AXES = ("products", "categories", "verticals", "concepts", "style")
 
 
@@ -23,6 +27,10 @@ def validate_sidecar(entry: dict, vocab: dict) -> list[str]:
     if errors:
         return errors
 
+    if not isinstance(entry["id"], str) or not KEBAB_RE.match(entry["id"]):
+        errors.append(f"id: must be kebab-case, got {entry['id']!r}")
+    elif not isinstance(entry["file"], str) or Path(entry["file"]).stem != entry["id"]:
+        errors.append(f"file: must be '<id><ext>', got {entry['file']!r} for id {entry['id']!r}")
     if entry["status"] not in STATUSES:
         errors.append(f"status: invalid value {entry['status']!r}")
     if entry["class"] not in CLASSES:

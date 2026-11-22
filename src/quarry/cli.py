@@ -17,8 +17,9 @@ def cmd_validate(repo: Path) -> int:
     for path in files:
         rel = path.relative_to(repo)
         if path.suffix == ".json":
-            image = next((path.with_suffix(e) for e in IMAGE_EXTS if path.with_suffix(e).exists()), None)
-            if image is None:
+            images = [f for f in files if f.stem == path.stem and f.parent == path.parent
+                      and f.suffix.lower() in IMAGE_EXTS]
+            if not images:
                 errors.append(f"{rel}: orphan sidecar (no image)")
             try:
                 entry = json.loads(path.read_text())
@@ -29,6 +30,10 @@ def cmd_validate(repo: Path) -> int:
                 errors.append(f"{rel}: sidecar must be a JSON object")
                 continue
             errors.extend(f"{rel}: {e}" for e in validate_sidecar(entry, vocab))
+            if entry.get("id") != path.stem:
+                errors.append(f"{rel}: id {entry.get('id')!r} does not match filename stem {path.stem!r}")
+            if images and entry.get("file") not in {i.name for i in images}:
+                errors.append(f"{rel}: file {entry.get('file')!r} does not match image on disk")
         elif path.suffix.lower() in IMAGE_EXTS and not path.with_suffix(".json").exists():
             errors.append(f"{rel}: orphan image (no sidecar)")
     for e in errors:
