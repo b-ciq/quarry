@@ -93,6 +93,11 @@ def build_index(repo_root: Path, embedder: Embedder, db_path: Path | None = None
         conn = connect(tmp)
         try:
             conn.execute("CREATE TABLE assets (id TEXT PRIMARY KEY, json TEXT NOT NULL)")
+            conn.execute("CREATE TABLE meta (key TEXT PRIMARY KEY, value TEXT NOT NULL)")
+            conn.executemany("INSERT INTO meta VALUES (?, ?)", [
+                ("embedder_mode", getattr(embedder, "mode", "unknown")),
+                ("dims", f"{rdim},{sdim}"),
+            ])
             conn.execute("CREATE VIRTUAL TABLE assets_fts USING fts5(id, description, tags)")
             conn.execute(f"CREATE VIRTUAL TABLE vec_retrieval USING vec0(id TEXT PRIMARY KEY, v float[{rdim}])")
             conn.execute(f"CREATE VIRTUAL TABLE vec_style USING vec0(id TEXT PRIMARY KEY, v float[{sdim}])")

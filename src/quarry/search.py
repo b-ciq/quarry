@@ -31,6 +31,29 @@ def _open(repo_root: Path):
     return connect(db)
 
 
+class EmbedderMismatch(ValueError):
+    """The requested embedder mode differs from the one the index was built with."""
+
+
+class EmbedderUnavailable(RuntimeError):
+    """The requested embedder needs ML dependencies that are not installed."""
+
+
+def _check_mode(conn, embedder) -> None:
+    try:
+        row = conn.execute("SELECT value FROM meta WHERE key = 'embedder_mode'").fetchone()
+    except Exception:  # index predates the meta table
+        return
+    built, want = (row[0] if row else None), getattr(embedder, "mode", None)
+    if built in ("fake", "hf") and want in ("fake", "hf") and built != want:
+        if built == "fake":
+            raise EmbedderMismatch("index was built with the fake embedder; pass --fake-embedder "
+                                   "(or set QUARRY_FAKE_EMBEDDER=1)")
+        raise EmbedderMismatch("index was built with the hf embedder; drop --fake-embedder "
+                               "(or unset QUARRY_FAKE_EMBEDDER) and install the ml extra: "
+                               "pip install -e '.[ml]'")
+
+
 def _fts_match(query: str) -> str | None:
     # Quote every token so slugs like rlc-pro and FTS operators are treated literally.
     tokens = re.findall(r"\w+", query)
@@ -66,6 +89,8 @@ def search(repo_root: Path, embedder: Embedder, query: str | None, *, cls=None, 
            tone=None, servable_only=True, limit=10) -> list[Hit]:
     conn = _open(repo_root)
     try:
+        if query and query.strip():
+            _check_mode(conn, embedder)
         cands = _candidates(conn, cls, product, tone)
         if servable_only:
             cands = {i: s for i, s in cands.items() if is_servable(s)}
@@ -80,7 +105,12 @@ def search(repo_root: Path, embedder: Embedder, query: str | None, *, cls=None, 
             ranked_lists.append([i for (i,) in rows if i in cands])
         total = _count(conn)
         if total:
-            qv = embedder.embed_text(query).tobytes()
+            try:
+                qv = embedder.embed_text(query).tobytes()
+            except ImportError as exc:
+                raise EmbedderUnavailable(
+                    "the hf embedder needs torch/transformers: pip install -e '.[ml]' "
+                    "(or use --fake-embedder for a fake-built index)") from exc
             rows = conn.execute(
                 "SELECT id FROM vec_retrieval WHERE v MATCH ? AND k = ? ORDER BY distance", (qv, total))
             ranked_lists.append([i for (i,) in rows if i in cands])

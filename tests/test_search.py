@@ -110,3 +110,52 @@ def test_more_like_nearest_first(repo):
         vecs = {i: fn(repo.root / "library" / "hero" / f"{i}.png") for i in ["q", "n1", "n2", "n3"]}
         expected = sorted(["n1", "n2", "n3"], key=lambda i: float(np.linalg.norm(vecs["q"] - vecs[i])))
         assert _ids(more_like(repo.root, "q", space=space)) == expected
+
+
+import pytest
+
+from quarry.search import EmbedderMismatch
+
+
+class _HFLike(FakeEmbedder):
+    mode = "hf"
+
+
+@pytest.mark.parametrize("built,asked,fragment", [
+    (FakeEmbedder(dim=16), _HFLike(dim=16), "--fake-embedder"),
+    (_HFLike(dim=16), FakeEmbedder(dim=16), "ml"),
+])
+def test_embedder_mode_mismatch_errors_before_embedding(repo, built, asked, fragment):
+    repo.add_asset("hero", "h1")
+    build_index(repo.root, built)
+    asked.embed_text = lambda s: pytest.fail("must not embed on mismatch")
+    with pytest.raises(EmbedderMismatch, match=fragment):
+        search(repo.root, asked, "anything")
+
+
+def test_index_records_meta(repo):
+    import sqlite3
+    repo.add_asset("hero", "h1")
+    build_index(repo.root, FakeEmbedder(dim=16))
+    rows = dict(sqlite3.connect(repo.root / "index" / "library.db").execute("SELECT key, value FROM meta"))
+    assert rows == {"embedder_mode": "fake", "dims": "16,16"}
+
+
+def test_cli_search_mismatch_exit_1_no_traceback(repo, capsys):
+    from quarry.cli import main
+    repo.add_asset("hero", "h1")
+    build_index(repo.root, FakeEmbedder(dim=16))
+    assert main(["search", "x", "--repo", str(repo.root)]) == 1
+    assert "--fake-embedder" in capsys.readouterr().err
+
+
+def test_cli_search_missing_torch_is_friendly(repo, capsys, monkeypatch):
+    from quarry.cli import main
+    import quarry.embeddings as emb
+    repo.add_asset("hero", "h1")
+    build_index(repo.root, _HFLike(dim=16))
+    def boom(self, s):
+        raise ImportError("No module named 'torch'")
+    monkeypatch.setattr(emb.HFEmbedder, "embed_text", boom)
+    assert main(["search", "x", "--repo", str(repo.root)]) == 1
+    assert ".[ml]" in capsys.readouterr().err

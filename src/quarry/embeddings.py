@@ -38,6 +38,8 @@ def _normalize(v: np.ndarray) -> np.ndarray:
 class FakeEmbedder:
     """Deterministic embedder seeded from sha256 of the input; no models, no network."""
 
+    mode = "fake"
+
     def __init__(self, dim: int = 16):
         self.dim = dim
 
@@ -65,6 +67,8 @@ class HFEmbedder:
 
     Requires the `ml` extra. torch/transformers are imported only on first use.
     """
+
+    mode = "hf"
 
     def __init__(self, retrieval_model: str = DEFAULT_SIGLIP, style_model: str = DEFAULT_DINO):
         self.retrieval_model = retrieval_model

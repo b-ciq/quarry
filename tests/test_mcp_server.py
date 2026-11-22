@@ -101,3 +101,20 @@ def test_get_asset_through_call_tool_non_servable(srv):
     content = _call(srv, "get_asset", {"asset_id": "restricted-hero"})
     content = content[0] if isinstance(content, tuple) else content
     assert content[0].text.startswith("Error")
+
+
+def test_search_assets_mode_mismatch_is_error_string(srv, monkeypatch):
+    monkeypatch.delenv("QUARRY_FAKE_EMBEDDER")
+    out = srv.search_assets("fuzzball banner")
+    assert out.startswith("Error") and "QUARRY_FAKE_EMBEDDER" in out
+
+
+def test_missing_index_is_error_string(srv, repo):
+    (repo.root / "index" / "library.db").unlink()
+    assert srv.search_assets("x") == "Error: index not built — run quarry index"
+    assert srv.more_like("ok-hero") == "Error: index not built — run quarry index"
+
+
+def test_invalid_library_is_error_string(srv, repo):
+    (repo.root / "library" / "hero" / "ok-hero.json").write_text("{not json")
+    assert srv.get_asset("ok-hero") == "Error: library invalid — run quarry validate"

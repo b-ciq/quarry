@@ -11,12 +11,37 @@ from pathlib import Path
 
 from mcp.server.fastmcp import FastMCP, Image
 
-from quarry.library import scan_library
+from quarry.library import LibraryError, scan_library
 from quarry.schema import is_servable
-from quarry.search import Hit, more_like as _more_like, search as _search
+from quarry.search import EmbedderMismatch, EmbedderUnavailable, Hit, more_like as _more_like, search as _search
 from quarry.vocabulary import load_vocabulary
 
 mcp = FastMCP("quarry")
+
+NO_INDEX = "Error: index not built — run quarry index"
+
+
+class _Friendly(Exception):
+    """Carries a ready-to-return error string."""
+
+
+def _guard(fn):
+    """Turn expected failures into the 'Error: ...' string convention."""
+    import functools
+
+    @functools.wraps(fn)
+    def wrapper(*a, **kw):
+        try:
+            return fn(*a, **kw)
+        except _Friendly as exc:
+            return str(exc)
+        except FileNotFoundError:
+            return NO_INDEX
+        except (EmbedderMismatch, EmbedderUnavailable) as exc:
+            return f"Error: {exc}"
+        except LibraryError:
+            return "Error: library invalid — run quarry validate"
+    return wrapper
 
 
 def _repo_root() -> Path:
@@ -47,11 +72,16 @@ def _row(h: Hit) -> dict:
 
 
 def _servable_asset(root: Path, asset_id: str):
-    asset = next((a for a in scan_library(root) if a.id == asset_id), None)
+    try:
+        assets = scan_library(root)
+    except LibraryError as exc:
+        raise _Friendly("Error: library invalid — run quarry validate") from exc
+    asset = next((a for a in assets if a.id == asset_id), None)
     return asset if asset is not None and is_servable(asset.sidecar) else None
 
 
 @mcp.tool()
+@_guard
 def search_assets(query: str, asset_class: str | None = None, product: str | None = None,
                   tone: str | None = None, limit: int = 8) -> str:
     """Search servable brand assets. Returns a JSON list of {id, class, description, tags, aspect, score}."""
@@ -61,6 +91,7 @@ def search_assets(query: str, asset_class: str | None = None, product: str | Non
 
 
 @mcp.tool()
+@_guard
 def get_asset(asset_id: str):
     """Get one servable asset: a <=256px thumbnail plus JSON metadata with `full_res_path`."""
     root = _repo_root()
@@ -77,6 +108,7 @@ def get_asset(asset_id: str):
 
 
 @mcp.tool()
+@_guard
 def more_like(asset_id: str, limit: int = 8) -> str:
     """Visually similar servable assets (style space). Returns a JSON list like search_assets."""
     root = _repo_root()
