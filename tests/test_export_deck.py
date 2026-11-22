@@ -97,20 +97,26 @@ def test_write_export_manifest_only(repo, tmp_path):
     assert json.loads(p.read_text()) == build_manifest(repo.root)
 
 
-def _load_validator():
-    skill = Path(os.environ.get("QUARRY_DECK_SKILL_DIR",
-                                "~/.claude/skills/quantic-deck-builder")).expanduser()
-    path = skill / "src" / "image_library.py"
-    if not path.exists():
-        pytest.skip(f"deck-builder skill not found at {skill}")
+SNAPSHOT = Path(__file__).parent / "fixtures" / "image_library_snapshot.py"
+
+
+def _load_module(path):
     spec = importlib.util.spec_from_file_location("deck_image_library", path)
     mod = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(mod)
     return mod
 
 
-def test_real_deck_builder_validator_accepts_export(repo, tmp_path):
-    mod = _load_validator()
+def _load_real_validator():
+    skill = Path(os.environ.get("QUARRY_DECK_SKILL_DIR",
+                                "~/.claude/skills/quantic-deck-builder")).expanduser()
+    path = skill / "src" / "image_library.py"
+    if not path.exists():
+        pytest.skip(f"deck-builder skill not found at {skill}")
+    return _load_module(path)
+
+
+def _check_validator_accepts_export(mod, repo, tmp_path):
     _add_all(repo)
     manifest = build_manifest(repo.root)
     images = tmp_path / "bundle"
@@ -119,6 +125,15 @@ def test_real_deck_builder_validator_accepts_export(repo, tmp_path):
         shutil.copy(src, images / name)
     (images / "manifest.json").write_text(json.dumps(manifest))
     assert mod.validate_manifest(manifest, images_dir=images) == []
+
+
+def test_vendored_validator_snapshot_accepts_export(repo, tmp_path):
+    """Always runs (CI-safe): checks the export against the vendored validator snapshot."""
+    _check_validator_accepts_export(_load_module(SNAPSHOT), repo, tmp_path)
+
+
+def test_real_deck_builder_validator_accepts_export(repo, tmp_path):
+    _check_validator_accepts_export(_load_real_validator(), repo, tmp_path)
 
 
 def test_cli_export(repo, capsys):
