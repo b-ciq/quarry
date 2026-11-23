@@ -6,7 +6,9 @@
   "products": [],
   "categories": [],
   "verticals": [],
-  "concepts": [],
+  "concepts": [
+    "people"
+  ],
   "style": [],
   "aspect": "4096:2731",
   "license": "adobe-stock:1238399724",
@@ -23,5 +25,31 @@
     }
   },
   "usage_restrictions": [],
-  "description": ""
+  "description": "A group of business professionals gathered around a conference table covered with maps and architectural plans, with a laptop showing a bar chart. Warm-toned modern office setting.",
+  "rating": {
+    "bot": {
+      "verdict": "no",
+      "strength": "unsure",
+      "reason": "Generic stock office meeting with architectural plans; off-topic for CIQ's Linux/HPC world and lacks the monochrome technical feel of approved examples.",
+      "model": "claude-opus-5-5",
+      "at": "2026-11-23T19:35:12Z",
+      "examples": [
+        "life-scientist-workstation",
+        "life-sysadmin-server-rack"
+      ],
+      "suggested_slugs": {
+        "products": [],
+        "categories": [],
+        "verticals": [],
+        "concepts": [
+          "collaboration",
+          "meeting"
+        ],
+        "style": [
+          "stock-photo",
+          "color"
+        ]
+      }
+    }
+  }
 }

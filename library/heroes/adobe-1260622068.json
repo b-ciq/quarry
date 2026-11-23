@@ -4,9 +4,16 @@
   "status": "proposed",
   "class": "hero",
   "products": [],
-  "categories": [],
+  "categories": [
+    "enterprise-linux",
+    "hpc"
+  ],
   "verticals": [],
-  "concepts": [],
+  "concepts": [
+    "infrastructure",
+    "datacenter",
+    "compute"
+  ],
   "style": [],
   "aspect": "1024:643",
   "license": "adobe-stock:1260622068",
@@ -23,5 +30,30 @@
     }
   },
   "usage_restrictions": [],
-  "description": ""
+  "description": "A digital illustration of a row of glowing server racks on a neon grid floor, with luminous blue cloud icons floating above them against a dark blue background.",
+  "rating": {
+    "bot": {
+      "verdict": "maybe",
+      "strength": "unsure",
+      "reason": "Relevant cloud/datacenter subject with a polished blue look, but it's a familiar glowing-cloud stock cliche and the busy composition leaves limited room for text.",
+      "model": "claude-opus-5-5",
+      "at": "2026-11-23T19:35:12Z",
+      "examples": [
+        "life-scientist-workstation",
+        "life-sysadmin-server-rack"
+      ],
+      "suggested_slugs": {
+        "products": [],
+        "categories": [],
+        "verticals": [],
+        "concepts": [
+          "cloud"
+        ],
+        "style": [
+          "3d-illustration",
+          "neon-glow"
+        ]
+      }
+    }
+  }
 }
