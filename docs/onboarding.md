@@ -35,10 +35,11 @@ A bot (Claude) rates proposed images **Yes**, **No** or **Maybe-yes** and tags t
 
 Tabs: **To review**, **Needs details**, **Parked**.
 
-1. **Bot is sure** lane: a grid. Click an image (or press Space) to mark it "bot is wrong". Arrows move. Press **Enter** to accept all the rest.
+1. **Bot is sure** lane: a grid, split by the bot's verdict (**Strong Yes**, **Strong No**, **Strong Maybe-yes**), up to 24 images per screen. Click an image (or press Space) to mark it "bot is wrong". Arrows move. Press **Enter** to accept all the rest; the "bot is wrong" images move to the unsure lane.
 2. **Bot is unsure** lane: one card at a time. **Y** yes, **N** no, **M** maybe-yes, **T** tags, **D** description, **E** editor, **Z** undo, Left/Right arrows move. Holding a key does not repeat the action.
 3. When you overrule the bot, a **why?** line appears. Type a short reason and press Enter (empty is fine), or Esc to cancel. Reasons teach the bot the most.
-4. **Needs details**: a Yes was refused because the asset is missing something the card cannot edit (license, or Midjourney prompt/model/seed). It stays proposed and the exact errors are listed. Click **Open in editor**; license and generation are editable there.
+4. **Needs details**: your Yes is recorded, but the asset cannot be confirmed yet because it is missing something the card cannot edit: for example a license, a screenshot's version or capture date, Midjourney details, or an anti-example's reason. It stays proposed and the exact errors are listed. Click **Open in editor**, fill in the missing field, then **Confirm**.
+5. **Parked**: Maybe-yes images, one card at a time. Only **Y** (yes) and **N** (no) apply here. The editor also offers **Confirm** and **Retire** for a parked image.
 
 The bot learns from you. It sees your past verdicts on look-alike images (needs an index built with real embeddings, `quarry index` without `--fake-embedder`; otherwise it sees your most recent verdicts). An agreement score shows how often you and the bot match. The bot's rubric is `taxonomy/rating-guide.md`; it is yours, so edit it when the bot keeps getting something wrong.
 
@@ -46,9 +47,10 @@ The bot learns from you. It sees your past verdicts on look-alike images (needs 
 
 1. Set `ANTHROPIC_API_KEY` in the environment that starts the workbench, or run `ant auth login`.
 2. Click **Auto-rate**. The count shows "N waiting for the bot". Cost is about 4-5 cents per image (183 images is about $9).
-3. The run stops by itself after 5 identical failures in a row (for example a bad key). Stopping the server mid-run only finishes calls already in flight.
+3. **Re-rate unsure** asks the bot again about its unsure calls that nobody has judged yet (useful after you edit the rubric or have given it more verdicts to learn from).
+4. The run stops by itself after 5 identical failures in a row (for example a bad key). Results are saved 20 at a time: stopping the server mid-run discards results not yet saved (up to 19) plus any calls still in flight, and those images stay waiting for the bot.
 
-Every verdict is a git commit (`rate: yes <id>`, `rate: accept N strong yes`, `rate: bot rated N assets`, `rate: undo ...`). **Sync** shares them. Confirming, retiring or restoring in the old Review queue or the editor also records your rating.
+Every verdict is a git commit (`rate: yes <id>`, `rate: accept N strong yes`, `rate: bot rated N assets`, `rate: undo ...`). **Sync** shares them (during Auto-rate it waits for the save in progress; if it says busy, try again). Confirming, retiring or restoring in the Review queue or the editor also records your rating.
 
 ## 5. First review session
 
