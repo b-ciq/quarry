@@ -161,7 +161,7 @@
 - Consumes: Task 1–3 endpoints (`/api/status`, `/api/assets`, `/api/vocabulary`, `/thumbs/`).
 - Produces: `state.ts` pure functions later tasks reuse — `applyFilters(assets, filters, q)`, `facetCounts(assets, axis)`, types `Asset`, `Filters`. Layout per spec Views §1: dark theme, dense virtualized grid (virtualization may be CSS `content-visibility` or a list lib — builder picks), facet rail with counts, search box, status badges (proposed badge, retired dimmed), Library/Review-queue mode toggle (queue wired in Task 9), ops bar showing live `/api/status` (sync/jobs buttons wired in Task 10).
 
-- [ ] **Step 1: Scaffold Vite project; verify `npm run build` emits into `src/quarry/ui/static/` and `quarry ui` serves it.**
+- [ ] **Step 1: Scaffold Vite project wired onto Quantic** (user decision 2026-11-22: Quantic is required, not optional). Follow the installed `quantic-start` skill (`~/.claude/plugins/cache/ctrliq/quantic-design-system/0.1.0/skills/quantic-start/SKILL.md`), state 2 flow inside `ui/`: add the `@ctrliq/*` runtime packages + `@ctrliq/quantic-playbooks` (dev), run `npx quantic-playbooks install`, commit the result, and read its "After it's wired" section before building components. Style with Quantic tokens/components first; Tailwind only for layout glue. Verify `npm run build` emits into `src/quarry/ui/static/` and `quarry ui` serves it.
 - [ ] **Step 2: Write failing vitest tests** for `applyFilters` (multi-axis AND, within-axis OR, q substring) and `facetCounts`.
 - [ ] **Step 3: Run, verify fail; implement state.ts; verify pass.**
 - [ ] **Step 4: Build Grid/FacetRail/OpsBar against the real API; manual check: `quarry ui` shows the live library styled per the approved spike.**

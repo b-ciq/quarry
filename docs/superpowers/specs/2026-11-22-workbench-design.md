@@ -192,6 +192,14 @@ anyway — FTS text is what staleness affects). The ops bar shows staleness;
 re-index is one click and runs in the background. Ingest prompts to
 re-index since new images need embeddings.
 
+## Spike validation
+
+A throwaway single-file prototype (real library data: grid + facet rail,
+editor drawer, keyboard review queue, vocabulary modal, ops bar) was built
+and reviewed by Brett on 2026-11-22: approved as-is, no layout changes
+requested. The prototype is reference-only (`.context/prototype/`,
+gitignored); the real build starts clean but matches its layout.
+
 ## Rollout
 
 1. Workbench v1 (this doc) on Brett's machine.
@@ -207,5 +215,6 @@ re-index since new images need embeddings.
 - Thumbnail generation for assets ingested but not yet indexed (grid needs
   something to show — on-demand thumb or placeholder; builder picks).
 - Git shell-out details and ahead/behind polling cadence.
-- Visual design (Quantic-aware styling is welcome but not a requirement
-  for v1; function first).
+- Visual design details — but the frontend uses the **Quantic design
+  system** (`@ctrliq/*` packages + playbooks; Brett's decision 2026-11-22),
+  with the approved spike as the layout reference.
