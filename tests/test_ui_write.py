@@ -129,6 +129,23 @@ def test_wrong_state_transitions_409(git_repo):
     assert c.post("/api/assets/ret/retire").status_code == 409
 
 
+def test_parked_can_be_retired_or_confirmed_from_the_editor(git_repo):
+    git_repo.add_asset("hero", "p1", status="parked")
+    git_repo.add_asset("hero", "p2", status="parked")
+    _commit(git_repo)
+    c = _client(git_repo)
+    r = c.post("/api/assets/p1/retire")
+    assert r.status_code == 200, r.text
+    a = r.json()["asset"]
+    assert a["status"] == "retired" and a["rating"]["human"]["verdict"] == "no"
+    assert a["rating"]["human"]["by"] == "Test <test@example.com>"
+    r = c.post("/api/assets/p2/confirm")
+    assert r.status_code == 200, r.text
+    a = r.json()["asset"]
+    assert a["status"] == "confirmed" and a["rating"]["human"]["verdict"] == "yes"
+    assert git_repo.git("log", "-2", "--format=%s").splitlines() == ["curate: confirm p2", "curate: retire p1"]
+
+
 def test_dirty_managed_blocks_all_writes_with_409(git_repo):
     git_repo.add_asset("hero", "h1")
     git_repo.add_asset("hero", "h2", status="proposed")

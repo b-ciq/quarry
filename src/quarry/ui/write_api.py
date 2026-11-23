@@ -167,11 +167,11 @@ def mount(app: FastAPI) -> None:
 
     @router.post("/api/assets/{id}/confirm", dependencies=[Depends(require_clean_managed)])
     def confirm(id: str):
-        return transition(id, "confirm", "confirmed", {"proposed"}, verdict="yes")
+        return transition(id, "confirm", "confirmed", {"proposed", "parked"}, verdict="yes")
 
     @router.post("/api/assets/{id}/retire", dependencies=[Depends(require_clean_managed)])
     def retire(id: str):
-        return transition(id, "retire", "retired", {"proposed", "confirmed"}, verdict="no")
+        return transition(id, "retire", "retired", {"proposed", "parked", "confirmed"}, verdict="no")
 
     @router.post("/api/assets/{id}/restore", dependencies=[Depends(require_clean_managed)])
     def restore(id: str):
