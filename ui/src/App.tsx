@@ -239,6 +239,7 @@ export function App() {
             products={vocabulary.products ?? []}
             onIngested={refresh}
             rater={summary?.rater ?? null}
+            waiting={summary?.waiting_for_bot ?? 0}
             rateJob={rateJob}
             onAutoRate={startRate}
             rateError={rateError}

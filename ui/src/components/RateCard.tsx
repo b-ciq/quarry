@@ -4,7 +4,7 @@ import type {
   Combobox as ComboboxElement, InlineEdit as InlineEditElement, TextInput as TextInputElement,
 } from '@ctrliq/quantic-components'
 import { splitErrors } from '../api'
-import { TAG_AXES } from '../editing'
+import { TAG_AXES, withSlug } from '../editing'
 import { useViewKeys } from '../keys'
 import { botProposed, differsFromBot, VERDICT_KEYS, VERDICT_LABEL, type Verdict } from '../rating'
 import type { Asset } from '../state'
@@ -22,8 +22,11 @@ interface Props {
   onVerdict: (verdict: Verdict, reason?: string) => void
   onMove: (delta: 1 | -1) => void
   onUndo: () => void
-  /** Save edited fields (queued behind any verdict still being written). */
-  onPatch: (fields: Record<string, unknown>) => void
+  /**
+   * Save an edit, built from the asset as it will be once every queued edit lands (so quick edits
+   * compose instead of overwriting each other). Shown at once; written in key order.
+   */
+  onEdit: (change: (latest: Asset) => Record<string, unknown>) => void
   onOpenEditor: () => void
   /** Lane switch, shown above the card details. */
   toolbar?: ReactNode
@@ -31,6 +34,8 @@ interface Props {
 
 const VERDICT_COLOR: Record<Verdict, 'success' | 'error' | 'warning'> = { yes: 'success', no: 'error', maybe: 'warning' }
 const KEY_OF: Record<Verdict, string> = { yes: 'Y', no: 'N', maybe: 'M' }
+/** Clicks this soon after a card appears are the tail of a double-click on the previous card. */
+const CLICK_GUARD_MS = 400
 
 function FieldErrors({ errors }: { errors?: string[] }) {
   return <>{(errors ?? []).map((e) => <p key={e} className="field-error" role="alert">{e}</p>)}</>
@@ -42,14 +47,13 @@ function BotMark({ show }: { show: boolean }) {
 
 /** One unsure call: the image large, the bot's proposal beside it, one key per verdict. */
 export function RateCard({
-  asset, vocabulary, verdicts, errors, position, active, canUndo, onVerdict, onMove, onUndo, onPatch, onOpenEditor, toolbar,
+  asset, vocabulary, verdicts, errors, position, active, canUndo, onVerdict, onMove, onUndo, onEdit, onOpenEditor, toolbar,
 }: Props) {
   const bot = asset.rating?.bot
   const proposed = botProposed(asset)
   const [ask, setAsk] = useState<Verdict | null>(null)
   const [reason, setReason] = useState('')
   const [desc, setDesc] = useState(asset.description ?? '')
-  const [comboKey, setComboKey] = useState(0)
   const card = useRef<HTMLDivElement>(null)
   const why = useRef<TextInputElement>(null)
   const descEdit = useRef<InlineEditElement>(null)
@@ -65,6 +69,14 @@ export function RateCard({
     if (ask && el) void el.updateComplete.then(() => el.focus())
   }, [ask])
 
+  // A double-click must not decide the card that replaces this one under the pointer.
+  const shownAt = useRef(0)
+  useEffect(() => { shownAt.current = performance.now() }, [])
+  const clickVerdict = (e: { detail: number; timeStamp: number }, v: Verdict) => {
+    if (e.detail > 1 || e.timeStamp - shownAt.current < CLICK_GUARD_MS) return
+    decide(v)
+  }
+
   const decide = (v: Verdict) => {
     if (differsFromBot(asset, v)) { setReason(''); setAsk(v) } else onVerdict(v)
   }
@@ -74,11 +86,12 @@ export function RateCard({
     const next = desc.trim()
     if (next === descSent.current) return
     descSent.current = next
-    onPatch({ description: next })
+    onEdit(() => ({ description: next }))
   }
   const editDesc = async (on: boolean) => {
     const el = descEdit.current
     if (!el) return
+    if (on) { descCancelled.current = false; descSent.current = asset.description ?? '' }
     el.active = on
     await el.updateComplete
     if (on) { await descInput.current?.updateComplete; descInput.current?.focus() } else backToCard()
@@ -113,9 +126,10 @@ export function RateCard({
   const addTag = (value: string) => {
     const [axis, slug] = value.split('/') as [(typeof TAG_AXES)[number], string]
     if (!slug || !TAG_AXES.includes(axis)) return
-    onPatch({ [axis]: [...(asset[axis] ?? []), slug] })
-    setComboKey((k) => k + 1)
-    requestAnimationFrame(focusTags)
+    onEdit((latest) => ({ [axis]: withSlug(latest[axis], slug, true) }))
+    // Clear in place (no remount) so focus never leaves the input: a fast typist's next keys must
+    // land in the tag field, not reach the card's Y/N/M shortcuts.
+    queueMicrotask(() => { if (combo.current) combo.current.value = '' })
   }
 
   return (
@@ -197,13 +211,12 @@ export function RateCard({
                   dismissible
                   title={axis}
                   aria-label={`${axis}: ${slug}`}
-                  onTagDismiss={() => onPatch({ [axis]: (asset[axis] ?? []).filter((x) => x !== slug) })}
+                  onTagDismiss={() => onEdit((latest) => ({ [axis]: withSlug(latest[axis], slug, false) }))}
                 >
                   {slug}
                 </Tag>
               ))}
               <Combobox
-                key={comboKey}
                 ref={combo}
                 size="sm"
                 className="tag-add"
@@ -228,7 +241,7 @@ export function RateCard({
                   options={[['dark', 'dark'], ['light', 'light']]}
                   value={asset.tone ?? ''}
                   invalid={!!byField.tone}
-                  onValueChanged={(e) => { if (e.detail.value && e.detail.value !== asset.tone) onPatch({ tone: e.detail.value }) }}
+                  onValueChanged={(e) => { if (e.detail.value && e.detail.value !== asset.tone) onEdit(() => ({ tone: e.detail.value })) }}
                 />
                 <FieldErrors errors={byField.tone} />
               </dd>
@@ -237,7 +250,7 @@ export function RateCard({
 
           {asset.class === 'screenshot' && (
             <>
-              <dt className="field-label">Version <BotMark show={proposed} /></dt>
+              <dt className="field-label">Version <BotMark show={proposed && !!(asset.product_version || asset.captured_at)} /></dt>
               <dd>{asset.product_version || '—'} · captured {asset.captured_at || '—'} <span className="editor-meta">(fix in the editor)</span></dd>
             </>
           )}
@@ -269,7 +282,7 @@ export function RateCard({
             <>
               <div className="verdict-buttons">
                 {verdicts.map((v) => (
-                  <Button key={v} size="sm" variant={v === bot?.verdict ? 'primary' : 'outline'} onClick={() => decide(v)}>
+                  <Button key={v} size="sm" variant={v === bot?.verdict ? 'primary' : 'outline'} onClick={(e) => clickVerdict(e, v)}>
                     <kbd className={v === bot?.verdict ? 'kbd-on-brand' : undefined}>{KEY_OF[v]}</kbd> {VERDICT_LABEL[v]}
                   </Button>
                 ))}

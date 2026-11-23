@@ -114,12 +114,18 @@ def managed_status(repo) -> ManagedStatus:
     return ManagedStatus(sorted(managed), sorted(other), ahead, behind, up)
 
 
+# A commit may start a detached `git maintenance run --auto` / `gc --auto`. At rating speed (a commit a
+# second) on a repo full of loose image blobs those pile up and stall every write, so the workbench's
+# own commits never trigger them; the curator's normal git use still does.
+NO_AUTO_GC = ("-c", "gc.auto=0", "-c", "maintenance.auto=false")
+
+
 def commit_paths(repo, paths: list[str], message: str) -> str:
     """Commit ONLY `paths` (even if other files are dirty or staged); return the new sha."""
     if not paths:
         raise GitError("commit_paths requires at least one path")
-    _git(repo, "add", "--", *paths)
-    _git(repo, "commit", "-m", message, "--only", "--", *paths)
+    _git(repo, *NO_AUTO_GC, "add", "--", *paths)
+    _git(repo, *NO_AUTO_GC, "commit", "-m", message, "--only", "--", *paths)
     return _git(repo, "rev-parse", "HEAD").stdout.strip()
 
 

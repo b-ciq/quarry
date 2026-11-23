@@ -3,7 +3,7 @@ import {
   Alert, Badge, Button, ButtonBar, ButtonBarItem, LucideIconX, Spinner, TabButton, TabPanel, Tabs, Toast,
 } from '@ctrliq/quantic-react'
 import {
-  callErrors, fetchNeedsDetails, patchAsset, postUndo, postVerdict, postVerdicts, type Job, type RateSummary,
+  callErrors, fetchNeedsDetails, patchAsset, type NeedsDetailsError, postUndo, postVerdict, postVerdicts, type Job, type RateSummary,
 } from '../api'
 import { AssetEditor } from '../components/AssetEditor'
 import { JobLog } from '../components/JobLog'
@@ -61,7 +61,10 @@ interface Props {
 type Tab = 'review' | 'needs' | 'parked'
 const TABS: Tab[] = ['review', 'needs', 'parked']
 /** Transient feedback, shown as a toast so the grid and card never shift under the curator. */
-type Notice = { kind: 'error' | 'success' | 'info'; title: string; text?: string; undo?: boolean }
+type Notice = { kind: 'error' | 'success' | 'info'; title: string; text?: string; undoCommit?: string }
+/** Errors a card shows: from a refused verdict (cleared when a verdict lands) and from a refused edit. */
+type CardErrors = Record<string, { verdict: string[]; edit: string[] }>
+const fieldOf = (e: string) => e.split(/[:.]/)[0]
 const NOTICE_MS = 6000
 /** One undoable write. A grid accept is one commit covering many ids. */
 interface UndoEntry {
@@ -72,9 +75,6 @@ interface UndoEntry {
 }
 
 const WRONG_KEY = 'quarry.rate.wrong'
-/** Fields the asset editor can change (license, source and generation it cannot). */
-const EDITOR_FIELDS = new Set(['description', 'products', 'categories', 'verticals', 'concepts', 'style', 'tone',
-  'product_version', 'captured_at', 'usage_restrictions', 'anti_example', 'avoid_reason'])
 function loadWrong(): Set<string> {
   try { return new Set(JSON.parse(localStorage.getItem(WRONG_KEY) ?? '[]') as string[]) } catch { return new Set() }
 }
@@ -93,16 +93,25 @@ export function RateView({
   const [wrong, setWrong] = useState<Set<string>>(loadWrong)
   /** Ids with a write in flight: hidden so the next card or screen shows at once. */
   const [pending, setPending] = useState<Set<string>>(new Set())
-  const [cardErrors, setCardErrors] = useState<Record<string, string[]>>({})
+  const [cardErrors, setCardErrors] = useState<CardErrors>({})
+  const setErrors = (id: string, kind: 'verdict' | 'edit', list: string[]) =>
+    setCardErrors((m) => ({ ...m, [id]: { verdict: m[id]?.verdict ?? [], edit: m[id]?.edit ?? [], [kind]: list } }))
+  const errorsOf = (id: string) => [...new Set([...(cardErrors[id]?.verdict ?? []), ...(cardErrors[id]?.edit ?? [])])]
+  /** Each asset as it will be once its queued edits land: what the card shows and edits build on. */
+  const [expected, setExpected] = useState<Record<string, Asset>>({})
+  const expectedRef = useRef(expected) // read by handlers that run before the next render
+  const editsInFlight = useRef<Record<string, number>>({})
   const [screen, setScreen] = useState<Screen | null>(null)
   const [cursor, setCursor] = useState<Cursor>({ id: null, index: 0 })
   const [parkedCursor, setParkedCursor] = useState<Cursor>({ id: null, index: 0 })
   const [notice, setNotice] = useState<Notice | null>(null)
   const [editorId, setEditorId] = useState<string | null>(null)
   const [showLog, setShowLog] = useState(false)
-  const [needsErrors, setNeedsErrors] = useState<Record<string, string[]>>({})
+  const [needsErrors, setNeedsErrors] = useState<Record<string, NeedsDetailsError[]>>({})
   const undoStack = useRef<UndoEntry[]>([])
   const [undoDepth, setUndoDepth] = useState(0)
+  const [undoTop, setUndoTop] = useState<string | null>(null)
+  const syncUndo = () => { setUndoDepth(undoStack.current.length); setUndoTop(undoStack.current.at(-1)?.commit ?? null) }
 
   // Writes run one at a time, in key order: a verdict never overtakes the edit typed before it,
   // and Z always undoes the newest landed write.
@@ -191,7 +200,7 @@ export function RateView({
     return () => clearTimeout(t)
   }, [notice])
 
-  const pushUndo = (e: UndoEntry) => { undoStack.current.push(e); setUndoDepth(undoStack.current.length) }
+  const pushUndo = (e: UndoEntry) => { undoStack.current.push(e); syncUndo() }
 
   const decide = (id: string, verdict: Verdict, reason: string | undefined, from: 'card' | 'parked') => {
     const idx = from === 'parked' ? parkedIdx : cardIdx
@@ -202,15 +211,15 @@ export function RateView({
       const r = await postVerdict(id, verdict, reason)
       if (r.ok) {
         onAssetSaved(r.data.asset)
-        setCardErrors((m) => { const { [id]: _, ...rest } = m; return rest })
+        setErrors(id, 'verdict', [])
         setWrong((w) => remove(w, [id]))
         pushUndo({ commit: r.data.commit, ids: [id], from, verdict })
         if (r.data.needs_details) {
-          setNotice({ kind: 'info', title: 'Moved to Needs details', text: `${id}: Yes recorded. Missing: ${r.data.needs_details.join('; ')}`, undo: true })
+          setNotice({ kind: 'info', title: 'Moved to Needs details', text: `${id}: Yes recorded. Missing: ${r.data.needs_details.join('; ')}`, undoCommit: r.data.commit })
         }
       } else {
         const errors = callErrors(r)
-        setCardErrors((m) => ({ ...m, [id]: errors.length ? errors : [r.error] }))
+        setErrors(id, 'verdict', errors.length ? errors : [r.error])
         setNotice({ kind: 'error', title: `Could not record ${VERDICT_LABEL[verdict]}`, text: `${id}: ${r.error}. Fix it on the card and try again.` })
         ;(from === 'parked' ? setParkedCursor : setCursor)({ id, index: idx })
         if (from === 'parked') setTab('parked')
@@ -232,7 +241,11 @@ export function RateView({
         const failed = r.data.failed
         const needsIds = Object.keys(r.data.needs_details)
         setWrong((w) => add(w, Object.keys(failed)))
-        setCardErrors((m) => ({ ...m, ...failed }))
+        setCardErrors((m) => {
+          const n = { ...m }
+          for (const [fid, errs] of Object.entries(failed)) n[fid] = { verdict: errs, edit: m[fid]?.edit ?? [] }
+          return n
+        })
         if (r.data.commit) pushUndo({ commit: r.data.commit, ids: [...r.data.applied, ...needsIds], from: 'grid', verdict: s.verdict })
         const parts: string[] = []
         if (needsIds.length) parts.push(`${needsIds.length} moved to Needs details`)
@@ -240,9 +253,9 @@ export function RateView({
         if (flagged.length) parts.push(`${flagged.length} flagged for a closer look`)
         setNotice({
           kind: Object.keys(failed).length ? 'error' : 'success',
-          title: `Accepted ${r.data.applied.length} as ${VERDICT_LABEL[s.verdict]}`,
+          title: r.data.commit ? `Accepted ${r.data.applied.length} as ${VERDICT_LABEL[s.verdict]}` : 'Nothing accepted',
           text: parts.length ? `${parts.join(', ')}.` : undefined,
-          undo: !!r.data.commit,
+          undoCommit: r.data.commit ?? undefined,
         })
       } else {
         setNotice({ kind: 'error', title: 'Could not accept the screen', text: r.error })
@@ -259,13 +272,13 @@ export function RateView({
       const top = undoStack.current.at(-1)
       if (!top) return
       const r = await postUndo(top.commit)
-      if (r.ok || (r.status >= 400 && r.status < 500)) { undoStack.current.pop(); setUndoDepth(undoStack.current.length) }
+      if (r.ok || (r.status >= 400 && r.status < 500)) { undoStack.current.pop(); syncUndo() }
       if (!r.ok) {
         setNotice({ kind: 'error', title: 'Could not undo', text: r.error })
         return
       }
       await reloadAssets()
-      setCardErrors((m) => { const n = { ...m }; top.ids.forEach((id) => delete n[id]); return n })
+      setCardErrors((m) => { const n = { ...m }; top.ids.forEach((id) => { if (n[id]) n[id] = { ...n[id], verdict: [] } }); return n })
       const first = top.ids[0] ?? null
       if (top.from === 'grid') {
         setTab('review'); setLaneChoice('sure'); setScreen({ verdict: top.verdict, ids: top.ids })
@@ -280,19 +293,32 @@ export function RateView({
     })
   }
 
-  const patch = (id: string, fields: Record<string, unknown>) => enqueue(async () => {
-    const r = await patchAsset(id, fields)
-    if (r.ok) {
-      onAssetSaved(r.asset)
-      setCardErrors((m) => {
-        const left = (m[id] ?? []).filter((e) => !Object.keys(fields).some((f) => e.startsWith(`${f}:`) || e.startsWith(`${f}.`)))
-        const { [id]: _, ...rest } = m
-        return left.length ? { ...rest, [id]: left } : rest
-      })
-    } else {
-      setCardErrors((m) => ({ ...m, [id]: r.errors.length ? r.errors : [r.error] }))
-    }
-  })
+  const edit = (id: string, change: (latest: Asset) => Record<string, unknown>) => {
+    const base = expectedRef.current[id] ?? byId.get(id)
+    if (!base) return
+    const fields = change(base)
+    expectedRef.current = { ...expectedRef.current, [id]: { ...base, ...fields } as Asset }
+    setExpected(expectedRef.current)
+    editsInFlight.current[id] = (editsInFlight.current[id] ?? 0) + 1
+    enqueue(async () => {
+      const r = await patchAsset(id, fields)
+      editsInFlight.current[id] -= 1
+      if (r.ok) {
+        onAssetSaved(r.asset)
+        const fixed = (e: string) => Object.keys(fields).includes(fieldOf(e))
+        setCardErrors((m) => (m[id] ? { ...m, [id]: { verdict: m[id].verdict.filter((e) => !fixed(e)), edit: m[id].edit.filter((e) => !fixed(e)) } } : m))
+      } else {
+        setErrors(id, 'edit', r.errors.length ? r.errors : [r.error])
+        setNotice({ kind: 'error', title: 'Edit not saved', text: `${id}: ${r.errors.join('; ') || r.error}` })
+      }
+      // Once nothing is queued (or the server refused), the saved asset is the truth again.
+      if (!r.ok || editsInFlight.current[id] === 0) {
+        const { [id]: _, ...rest } = expectedRef.current
+        expectedRef.current = rest
+        setExpected(rest)
+      }
+    })
+  }
 
   const openEditor = (id: string) => { setEditorId(id); setNotice(null) }
   const closeEditor = () => { if (confirmDiscard()) setEditorId(null) }
@@ -359,10 +385,10 @@ export function RateView({
         ) : cardId && byId.get(cardId) ? (
           <RateCard
             key={cardId}
-            asset={byId.get(cardId)!}
+            asset={expected[cardId] ?? byId.get(cardId)!}
             vocabulary={vocabulary}
             verdicts={['yes', 'no', 'maybe']}
-            errors={cardErrors[cardId] ?? []}
+            errors={errorsOf(cardId)}
             position={{ index: cardIdx, total: unsure.length }}
             active={keysOn && tab === 'review'}
             canUndo={undoDepth > 0}
@@ -372,7 +398,7 @@ export function RateView({
               setCursor({ id: unsure[i], index: i })
             }}
             onUndo={undo}
-            onPatch={(fields) => patch(cardId, fields)}
+            onEdit={(change) => edit(cardId, change)}
             onOpenEditor={() => openEditor(cardId)}
             toolbar={laneSwitch}
           />
@@ -394,10 +420,11 @@ export function RateView({
           <div className="needs-info">
             <strong>{a.id}</strong>
             <span className="editor-meta">{a.class} / {a.source?.origin} / {a.license || 'no license'}</span>
-            {(needsErrors[a.id] ?? []).map((e) => <p key={e} className="field-error">{e}</p>)}
-            {(needsErrors[a.id] ?? []).some((e) => !EDITOR_FIELDS.has(e.split(/[:.]/)[0])) && (
-              <p className="field-hint">The workbench cannot edit this field yet: set it in {a.id}.json and commit.</p>
-            )}
+            {(needsErrors[a.id] ?? []).map((e) => (
+              <p key={e.error} className="field-error">
+                {e.error}{!e.editable && <span className="field-hint"> (not editable here: set it in {a.id}.json)</span>}
+              </p>
+            ))}
           </div>
           <Button size="sm" variant="outline" onClick={() => openEditor(a.id)}>Open in editor</Button>
         </li>
@@ -418,10 +445,10 @@ export function RateView({
     return (
       <RateCard
         key={a.id}
-        asset={a}
+        asset={expected[a.id] ?? a}
         vocabulary={vocabulary}
         verdicts={['yes', 'no']}
-        errors={cardErrors[a.id] ?? []}
+        errors={errorsOf(a.id)}
         position={{ index: parkedIdx, total: parked.length }}
         active={keysOn && tab === 'parked'}
         canUndo={undoDepth > 0}
@@ -431,7 +458,7 @@ export function RateView({
           setParkedCursor({ id: parked[i], index: i })
         }}
         onUndo={undo}
-        onPatch={(fields) => patch(a.id, fields)}
+        onEdit={(change) => edit(a.id, change)}
         onOpenEditor={() => openEditor(a.id)}
       />
     )
@@ -484,7 +511,9 @@ export function RateView({
           <Toast open type={notice.kind} onClose={() => setNotice(null)}>
             <span slot="title">{notice.title}</span>
             {notice.text}
-            {notice.undo && undoDepth > 0 && <Button slot="action" size="sm" variant="ghost" onClick={undo}>Undo</Button>}
+            {notice.undoCommit && undoTop === notice.undoCommit && (
+              <Button slot="action" size="sm" variant="ghost" onClick={undo}>Undo</Button>
+            )}
           </Toast>
         </div>
       )}

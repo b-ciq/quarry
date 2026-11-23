@@ -13,7 +13,21 @@ from quarry.ui import gitops
 from quarry.vocabulary import load_vocabulary
 
 EDITABLE = ("description", "products", "categories", "verticals", "concepts", "style", "tone",
-            "product_version", "captured_at", "usage_restrictions", "anti_example", "avoid_reason")
+            "product_version", "captured_at", "usage_restrictions", "anti_example", "avoid_reason",
+            "license", "generation")
+GENERATION_KEYS = ("prompt", "model", "seed")
+
+
+def _shape_errors(body: dict) -> list[str]:
+    """Type checks for fields validate_sidecar does not type-check itself."""
+    errors = []
+    if "license" in body and not isinstance(body["license"], str):
+        errors.append("license: must be a string")
+    if "generation" in body:
+        gen = body["generation"]
+        if not isinstance(gen, dict) or set(gen) - set(GENERATION_KEYS):
+            errors.append("generation: must be an object with prompt, model and seed")
+    return errors
 
 
 def _apply_patch(sidecar: dict, body: dict) -> dict:
@@ -146,6 +160,9 @@ def mount(app: FastAPI) -> None:
         if bad:
             return _err(422, "not editable: " + ", ".join(bad) + "; editable fields: " + ", ".join(EDITABLE),
                         errors=[f"{k}: not editable" for k in bad])
+        shape = _shape_errors(body)
+        if shape:
+            return _err(422, "invalid sidecar", errors=shape)
         return mutate(id, "retag", lambda s: _apply_patch(s, body))
 
     @router.post("/api/assets/{id}/confirm", dependencies=[Depends(require_clean_managed)])

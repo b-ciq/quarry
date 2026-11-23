@@ -272,4 +272,22 @@ def test_needs_details_lists_blocking_errors(git_repo):
     _commit(git_repo)
     c = _client(git_repo)
     assert c.post("/api/assets/h1/verdict", json={"verdict": "yes"}).json()["needs_details"]
-    assert c.get("/api/rate/needs-details").json() == {"h1": ["license: required for confirmed assets"]}
+    assert c.get("/api/rate/needs-details").json() == {
+        "h1": [{"error": "license: required for confirmed assets", "editable": True}]}
+    # now fixable from the editor: PATCH license, then confirm
+    assert c.patch("/api/assets/h1", json={"license": "owned"}).status_code == 200
+    assert c.get("/api/rate/needs-details").json() == {"h1": []}
+    assert c.post("/api/assets/h1/confirm").json()["asset"]["status"] == "confirmed"
+
+
+def test_patch_license_and_generation_shapes(git_repo):
+    git_repo.add_asset("hero", "m1", status="proposed",
+                       source={"origin": "midjourney", "ingested_at": "2026-01-01T00:00:00Z"})
+    _commit(git_repo)
+    c = _client(git_repo)
+    assert c.patch("/api/assets/m1", json={"license": 5}).status_code == 422
+    assert c.patch("/api/assets/m1", json={"generation": {"prompt": "p", "extra": 1}}).status_code == 422
+    assert c.post("/api/assets/m1/confirm").status_code == 422  # generation missing
+    gen = {"prompt": "glowing nodes", "model": "v6", "seed": 42}
+    assert c.patch("/api/assets/m1", json={"generation": gen}).json()["asset"]["generation"] == gen
+    assert c.post("/api/assets/m1/confirm").json()["asset"]["status"] == "confirmed"

@@ -1,8 +1,11 @@
-import { useRef, useState, type ReactNode } from 'react'
+import { useEffect, useRef, useState, type ReactNode } from 'react'
 import { Badge, Button } from '@ctrliq/quantic-react'
 import { useViewKeys } from '../keys'
 import { VERDICT_LABEL, type Screen } from '../rating'
 import { nextImgSrc, type Asset } from '../state'
+
+/** Clicks this soon after a screen appears are the tail of a double-click on the previous one. */
+const CLICK_GUARD_MS = 400
 
 interface Props {
   screen: Screen
@@ -48,6 +51,9 @@ export function StrongGrid({ screen, assets, total, active, canUndo, onAccept, o
   const [wrong, setWrong] = useState<Set<string>>(new Set())
   const [focus, setFocus] = useState(0)
   const list = useRef<HTMLUListElement>(null)
+  // A double-click on Accept must not also accept the next, unseen screen.
+  const shownAt = useRef(0)
+  useEffect(() => { shownAt.current = performance.now() }, [])
   const ids = screen.ids
   const at = Math.min(focus, ids.length - 1)
   const toggle = (id: string) => setWrong((w) => {
@@ -91,7 +97,7 @@ export function StrongGrid({ screen, assets, total, active, canUndo, onAccept, o
           <kbd>Click</kbd> or <kbd>Space</kbd> bot is wrong · <kbd>←↑↓→</kbd> move · <kbd>Z</kbd> undo
         </span>
         <Button size="sm" variant="outline" disabled={!canUndo} onClick={onUndo}>Undo</Button>
-        <Button size="sm" onClick={accept}>
+        <Button size="sm" onClick={(e) => { if (e.detail <= 1 && e.timeStamp - shownAt.current >= CLICK_GUARD_MS) accept() }}>
           {accepting ? `Accept ${accepting} as ${label}` : `Send ${ids.length} to cards`} <kbd className="kbd-on-brand">Enter</kbd>
         </Button>
       </div>

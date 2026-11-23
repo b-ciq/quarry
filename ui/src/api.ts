@@ -174,5 +174,10 @@ export const postUndo = (commit: string) => call<{ commit: string; ids: string[]
 export const startAutoRate = (redo?: 'unsure') =>
   call<{ job_id: string }>('POST', `/api/rate${redo ? `?redo=${redo}` : ''}`)
 export const fetchRateSummary = () => call<RateSummary>('GET', '/api/rate/summary')
-/** Needs-details assets mapped to the validator errors that block confirming them. */
-export const fetchNeedsDetails = () => call<Record<string, string[]>>('GET', '/api/rate/needs-details')
+/** A validator error blocking confirm, and whether the asset editor can fix that field. */
+export interface NeedsDetailsError {
+  error: string
+  editable: boolean
+}
+/** Needs-details assets mapped to the errors that block confirming them. */
+export const fetchNeedsDetails = () => call<Record<string, NeedsDetailsError[]>>('GET', '/api/rate/needs-details')

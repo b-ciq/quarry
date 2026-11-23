@@ -16,7 +16,7 @@ from quarry.library import scan_library
 from quarry.rater import ClaudeRater, load_guide, rater_status
 from quarry.schema import validate_sidecar
 from quarry.ui import gitops
-from quarry.ui.write_api import _err, json_body, require_clean_managed, utc_now, write_sidecars
+from quarry.ui.write_api import EDITABLE, _err, json_body, require_clean_managed, utc_now, write_sidecars
 from quarry.vocabulary import load_vocabulary
 
 VERDICT_STATUS = {"yes": "confirmed", "no": "retired", "maybe": "parked"}
@@ -349,9 +349,11 @@ def mount(app: FastAPI) -> None:
 
     @router.get("/api/rate/needs-details")
     def needs_details():
-        """Assets a human said Yes to that cannot confirm yet: {id: the validator errors blocking confirm}."""
+        """Assets a human said Yes to that cannot confirm yet: {id: [{error, editable}]} where `editable`
+        says whether the workbench editor can fix that field."""
         vocab = load_vocabulary(repo_root)
-        return {s["id"]: validate_sidecar({**s, "status": "confirmed"}, vocab)
+        return {s["id"]: [{"error": e, "editable": _field(e).split(".")[0] in EDITABLE}
+                          for e in validate_sidecar({**s, "status": "confirmed"}, vocab)]
                 for s in app.state.library_cache.assets()
                 if s.get("status") == "proposed" and (_human(s) or {}).get("verdict") == "yes"}
 

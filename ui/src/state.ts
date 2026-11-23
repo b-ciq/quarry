@@ -24,6 +24,7 @@ export interface Asset {
   description: string
   anti_example?: boolean
   avoid_reason?: string
+  generation?: { prompt?: string | null; model?: string | null; seed?: string | number | null }
   thumb_url: string
   full_url: string
   rating?: Rating

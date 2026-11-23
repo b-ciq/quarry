@@ -21,6 +21,8 @@ export function useViewKeys(handler: (e: KeyboardEvent) => boolean, enabled: boo
     if (!enabled) return
     const onKey = (e: KeyboardEvent) => {
       if (ignoreKey(e)) return
+      // Held keys auto-repeat: only arrows may (holding Y or Enter must not decide unseen cards/screens).
+      if (e.repeat && !e.key.startsWith('Arrow')) { e.preventDefault(); return }
       if (ref.current(e)) e.preventDefault()
     }
     window.addEventListener('keydown', onKey)

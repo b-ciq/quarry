@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from 'vitest'
 import { splitErrors } from './api'
-import { canDiscard, diffDraft, toDraft } from './editing'
+import { canDiscard, diffDraft, toDraft, withSlug } from './editing'
 import type { Asset } from './state'
 
 const base: Asset = {
@@ -84,5 +84,38 @@ describe('diffDraft anti-example', () => {
     const d = toDraft(anti)
     d.avoid_reason = 'cluttered'
     expect(diffDraft(anti, d)).toEqual({ avoid_reason: 'cluttered' })
+  })
+})
+
+describe('diffDraft license and generation', () => {
+  it('sends a trimmed license', () => {
+    const d = toDraft(base)
+    d.license = ' adobe-stock:1 '
+    expect(diffDraft(base, d)).toEqual({ license: 'adobe-stock:1' })
+  })
+  it('sends generation only for midjourney, with a numeric seed and nulls for blanks', () => {
+    const mj: Asset = { ...base, source: { ...base.source, origin: 'midjourney' }, generation: { prompt: 'p', model: null, seed: null } }
+    expect(diffDraft(mj, toDraft(mj))).toEqual({})
+    const d = toDraft(mj)
+    d.generation = { prompt: 'p', model: 'v6', seed: '42' }
+    expect(diffDraft(mj, d)).toEqual({ generation: { prompt: 'p', model: 'v6', seed: 42 } })
+    const other = toDraft(base)
+    other.generation = { prompt: 'x', model: '', seed: '' }
+    expect(diffDraft(base, other)).toEqual({})
+  })
+})
+
+describe('withSlug', () => {
+  it('adds once and removes, never mutating', () => {
+    const tags = ['hpc']
+    expect(withSlug(tags, 'cloud', true)).toEqual(['hpc', 'cloud'])
+    expect(withSlug(tags, 'hpc', true)).toEqual(['hpc'])
+    expect(withSlug(tags, 'hpc', false)).toEqual([])
+    expect(withSlug(undefined, 'x', true)).toEqual(['x'])
+    expect(tags).toEqual(['hpc'])
+  })
+  it('chains: two quick edits both survive when each builds on the last', () => {
+    const afterAdd = withSlug(['hpc'], 'cloud', true)
+    expect(withSlug(afterAdd, 'hpc', false)).toEqual(['cloud'])
   })
 })

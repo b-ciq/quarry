@@ -202,3 +202,15 @@ def test_fetch_if_stale_tolerates_offline_and_no_upstream(sandbox, tmp_path, rep
     # no upstream: never fetches
     subprocess.run(["git", "init", "-q", str(tmp_path / "solo")], check=True)
     assert gitops.fetch_if_stale(tmp_path / "solo", max_age=0) is False
+
+
+def test_commit_paths_never_starts_auto_gc(sandbox, monkeypatch):
+    a, _ = sandbox
+    rel = _edit(a, "a1", "no gc")
+    calls = []
+    real = gitops.subprocess.run
+    monkeypatch.setattr(gitops.subprocess, "run", lambda args, **kw: calls.append(args) or real(args, **kw))
+    gitops.commit_paths(a, [rel], "curate: retag a1")
+    commit = next(c for c in calls if "commit" in c)
+    i = commit.index("commit")
+    assert "gc.auto=0" in commit[:i] and "maintenance.auto=false" in commit[:i]

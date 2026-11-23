@@ -13,11 +13,13 @@ interface Props {
   /** Rater status (null until the rate summary loads); Auto-rate is offered only when available. */
   rater: RateSummary['rater'] | null
   rateJob: { id: string; running: boolean } | null
+  /** Images waiting for the bot (Auto-rate rates all of them, not just this ingest). */
+  waiting: number
   onAutoRate: () => void
   rateError: string | null
 }
 
-export function IngestDrop({ products, onIngested, onReviewQueue, rater, rateJob, onAutoRate, rateError }: Props) {
+export function IngestDrop({ products, onIngested, onReviewQueue, rater, rateJob, onAutoRate, rateError, waiting }: Props) {
   const [files, setFiles] = useState<File[]>([])
   const [over, setOver] = useState(false)
   const [cls, setCls] = useState('')
@@ -159,9 +161,13 @@ export function IngestDrop({ products, onIngested, onReviewQueue, rater, rateJob
               </div>
               {reindexError && <Alert type="error">{reindexError}</Alert>}
               {reindexJob && <JobLog key={reindexJob} jobId={reindexJob} name="Re-index" onFinished={() => onIngested(result)} />}
-              {rater?.available && !ourJob && (
+              {rater?.available && !ourJob && waiting > 0 && (
                 <div className="ingest-autorate">
-                  <span>Auto-rate the {result.created.length} new image{result.created.length === 1 ? '' : 's'}?</span>
+                  <span>
+                    {rateJob?.running
+                      ? 'Auto-rate is already running; these images join the next run.'
+                      : `Auto-rate ${waiting} image${waiting === 1 ? '' : 's'} waiting for the bot?`}
+                  </span>
                   <Button size="sm" disabled={!!rateJob?.running} onClick={() => { setAskedOver(rateJob?.id ?? null); onAutoRate() }}>
                     Auto-rate
                   </Button>

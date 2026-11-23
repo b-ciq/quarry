@@ -102,7 +102,9 @@ export function AssetEditor({ asset, vocabulary, onChanged, onTransition, onOpen
   useImperativeHandle(ref, () => ({ confirm: doConfirm }))
 
   const { byField, general } = splitErrors(errors)
-  const shown = new Set<string>([...TAG_AXES, 'description', 'usage_restrictions', 'anti_example', 'avoid_reason',
+  const midjourney = asset.source?.origin === 'midjourney'
+  const shown = new Set<string>([...TAG_AXES, 'description', 'usage_restrictions', 'anti_example', 'avoid_reason', 'license',
+    ...(midjourney ? ['generation'] : []),
     ...(asset.class === 'background' ? ['tone'] : []),
     ...(asset.class === 'screenshot' ? ['product_version', 'captured_at'] : [])])
   const orphan = [...general, ...Object.entries(byField).filter(([k]) => !shown.has(k)).flatMap(([, v]) => v)]
@@ -214,6 +216,48 @@ export function AssetEditor({ asset, vocabulary, onChanged, onTransition, onOpen
               <FieldErrors errors={byField.captured_at} />
             </div>
           </>
+        )}
+
+        <div className={`field${byField.license ? ' field-invalid' : ''}`}>
+          <span className="field-label">License</span>
+          <TextInput
+            aria-label="License"
+            placeholder="e.g. adobe-stock:1036498535 or ciq-original"
+            value={draft.license}
+            invalid={!!byField.license}
+            onValueChanged={(e) => setDraft((d) => ({ ...d, license: e.detail.value }))}
+          />
+          <FieldErrors errors={byField.license} />
+        </div>
+
+        {midjourney && (
+          <fieldset className={`field generation-field${byField.generation ? ' field-invalid' : ''}`}>
+            <legend className="field-label">Midjourney generation</legend>
+            <Textarea
+              aria-label="Generation prompt"
+              placeholder="Prompt"
+              value={draft.generation.prompt}
+              invalid={!!byField.generation}
+              onValueChanged={(e) => setDraft((d) => ({ ...d, generation: { ...d.generation, prompt: e.detail.value } }))}
+            />
+            <div className="generation-row">
+              <TextInput
+                aria-label="Generation model"
+                placeholder="Model, e.g. v6.1"
+                value={draft.generation.model}
+                invalid={!!byField.generation}
+                onValueChanged={(e) => setDraft((d) => ({ ...d, generation: { ...d.generation, model: e.detail.value } }))}
+              />
+              <TextInput
+                aria-label="Generation seed"
+                placeholder="Seed"
+                value={draft.generation.seed}
+                invalid={!!byField.generation}
+                onValueChanged={(e) => setDraft((d) => ({ ...d, generation: { ...d.generation, seed: e.detail.value } }))}
+              />
+            </div>
+            <FieldErrors errors={byField.generation} />
+          </fieldset>
         )}
 
         <div className={`field${byField.usage_restrictions ? ' field-invalid' : ''}`}>
