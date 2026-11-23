@@ -174,6 +174,34 @@ def test_image_block_composites_alpha_on_grey(tmp_path):
     assert all(abs(c - 128) <= 3 for c in (r, g, b))
 
 
+def test_example_blocks_are_cached_until_the_file_changes(tmp_path, monkeypatch):
+    import os
+    from quarry import rater as rater_mod
+    rater_mod._cached_block.cache_clear()
+    img, sidecar, examples = _setup(tmp_path)
+    calls = []
+    real = rater_mod.image_block
+    monkeypatch.setattr(rater_mod, "image_block", lambda p, px: calls.append((Path(p).name, px)) or real(p, px))
+    stub = StubClient()
+    for _ in range(2):
+        ClaudeRater(client=stub).rate(img, sidecar, examples, VOCAB, "", tmp_path)
+    assert sorted(calls) == [("e1.png", 256), ("e2.png", 256), ("t.png", 768), ("t.png", 768)]
+    e1 = tmp_path / "library" / "heroes" / "e1.png"
+    os.utime(e1, ns=(e1.stat().st_atime_ns, e1.stat().st_mtime_ns + 10**9))
+    ClaudeRater(client=stub).rate(img, sidecar, examples, VOCAB, "", tmp_path)
+    assert calls.count(("e1.png", 256)) == 2 and calls.count(("e2.png", 256)) == 1
+    rater_mod._cached_block.cache_clear()
+
+
+def test_image_block_palette_transparency(tmp_path):
+    import base64, io
+    p = tmp_path / "p.png"
+    im = Image.new("RGBA", (600, 300), (0, 0, 0, 0)).convert("P")
+    im.save(p, transparency=0)
+    out = Image.open(io.BytesIO(base64.b64decode(image_block(p, 64)["source"]["data"])))
+    assert out.size == (64, 32)
+
+
 def test_bad_examples_are_skipped_not_fatal(tmp_path):
     img, sidecar, examples = _setup(tmp_path)
     bad = [{"id": "gone", "class": "hero", "file": "missing.png"}, {"id": "nokeys"}, {"id": "badcls", "class": "zzz", "file": "x"}]

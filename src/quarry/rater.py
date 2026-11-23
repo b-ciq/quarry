@@ -4,6 +4,7 @@ Nothing here writes to the repo. Callers persist the returned RatingResult.
 """
 
 import base64
+import functools
 import io
 import json
 import os
@@ -97,14 +98,28 @@ def rating_schema(vocab: dict, cls: str) -> dict:
 
 def image_block(path: Path, max_px: int) -> dict:
     with Image.open(path) as im:
+        if im.mode in ("1", "P"):
+            im = im.convert("RGBA")  # palette transparency survives; resizing a palette is nearest-only
+        im.thumbnail((max_px, max_px))  # downscale first (JPEGs decode at reduced size): compositing is per pixel
         im = im.convert("RGBA")
         matte = Image.new("RGBA", im.size, (128, 128, 128, 255))
         im = Image.alpha_composite(matte, im).convert("RGB")
-        im.thumbnail((max_px, max_px))
         buf = io.BytesIO()
         im.save(buf, "JPEG", quality=85)
     data = base64.standard_b64encode(buf.getvalue()).decode()
     return {"type": "image", "source": {"type": "base64", "media_type": "image/jpeg", "data": data}}
+
+
+@functools.lru_cache(maxsize=256)
+def _cached_block(path: str, max_px: int, mtime_ns: int, size: int) -> dict:
+    return image_block(Path(path), max_px)
+
+
+def example_block(path: Path, max_px: int) -> dict:
+    """image_block for an example image, cached in-process: the same examples recur call after call.
+    Keyed on mtime and size so an edited file is re-encoded. Treat the result as read-only."""
+    st = Path(path).stat()
+    return _cached_block(str(path), max_px, st.st_mtime_ns, st.st_size)
 
 
 def rater_status() -> dict:
@@ -161,7 +176,7 @@ class ClaudeRater:
         for s in examples:
             try:
                 path = Path(repo_root) / "library" / CLASS_DIRS[s["class"]] / s["file"]
-                block = image_block(path, EXAMPLE_PX)
+                block = example_block(path, EXAMPLE_PX)
                 text = _example_text(s)
             except (KeyError, TypeError, OSError):
                 continue  # a bad example must not fail the target
