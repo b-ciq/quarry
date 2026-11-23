@@ -173,3 +173,32 @@ def test_sync_autostash_overlap_conflicts_without_push(sandbox):
     assert git(a, "ls-remote", "origin", "main").split()[0] == origin_head
     assert git(a, "diff", "--name-only", "--diff-filter=U").strip() == ""
     assert "<<<<<<<" not in (a / rel).read_text()
+
+
+def test_status_fetches_when_stale(sandbox):
+    a, b = sandbox
+    rel = _edit(b, "a1", "from B")
+    git(b, "add", rel)
+    git(b, "commit", "-m", "b1")
+    git(b, "push")
+    gitops._last_attempt.clear()
+    client = TestClient(create_app(a))
+    # Fresh FETCH_HEAD: within the threshold, no fetch happens, so behind stays stale.
+    (a / ".git" / "FETCH_HEAD").write_text("")
+    assert client.get("/api/status").json()["git"]["behind"] == 0
+    # Old FETCH_HEAD: status fetches and reports behind.
+    import os
+    os.utime(a / ".git" / "FETCH_HEAD", (0, 0))
+    assert client.get("/api/status").json()["git"]["behind"] == 1
+
+
+def test_fetch_if_stale_tolerates_offline_and_no_upstream(sandbox, tmp_path, repo):
+    a, _ = sandbox
+    gitops._last_attempt.clear()
+    git(a, "remote", "set-url", "origin", str(tmp_path / "gone.git"))
+    assert gitops.fetch_if_stale(a, max_age=0) is False  # failed fetch swallowed
+    assert gitops.managed_status(a).has_upstream
+    assert TestClient(create_app(a)).get("/api/status").status_code == 200
+    # no upstream: never fetches
+    subprocess.run(["git", "init", "-q", str(tmp_path / "solo")], check=True)
+    assert gitops.fetch_if_stale(tmp_path / "solo", max_age=0) is False

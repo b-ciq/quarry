@@ -1,5 +1,6 @@
 """Scoped git operations for the workbench. Never stages anything outside the given paths."""
 import subprocess
+import time
 from dataclasses import dataclass, field
 from pathlib import Path
 
@@ -44,6 +45,40 @@ def _ahead_behind(repo) -> tuple[int, int, bool]:
         return 0, 0, False
     behind, ahead = p.stdout.split()
     return int(ahead), int(behind), True
+
+
+FETCH_MAX_AGE = 60.0
+FETCH_TIMEOUT = 15
+_last_attempt: dict[str, float] = {}
+
+
+def fetch_if_stale(repo, max_age: float | None = None) -> bool:
+    """Best-effort `git fetch` when the last fetch is older than max_age seconds.
+
+    Never fetches without an upstream; offline/failed fetches are swallowed (and not
+    retried until max_age elapses). Returns True if a fetch succeeded.
+    """
+    max_age = FETCH_MAX_AGE if max_age is None else max_age
+    if not _ahead_behind(repo)[2]:
+        return False
+    now = time.time()
+    key = str(Path(repo).resolve())
+    if now - _last_attempt.get(key, 0.0) < max_age:
+        return False
+    try:
+        common = _git(repo, "rev-parse", "--git-common-dir", check=False).stdout.strip()
+        fh = (Path(repo) / common) / "FETCH_HEAD"
+        if fh.exists() and now - fh.stat().st_mtime < max_age:
+            return False
+    except OSError:
+        pass
+    _last_attempt[key] = now
+    try:
+        p = subprocess.run(["git", "-C", str(repo), "fetch", "--quiet"], capture_output=True,
+                           text=True, timeout=FETCH_TIMEOUT)
+    except (subprocess.TimeoutExpired, OSError):
+        return False
+    return p.returncode == 0
 
 
 def managed_status(repo) -> ManagedStatus:
