@@ -1,7 +1,7 @@
 {
   "id": "adobe-829377199",
   "file": "adobe-829377199.jpg",
-  "status": "proposed",
+  "status": "retired",
   "class": "hero",
   "products": [
     "fuzzball",
@@ -59,6 +59,11 @@
           "ai-generated"
         ]
       }
+    },
+    "human": {
+      "verdict": "no",
+      "by": "b-ciq <bkfchristensen@gmail.com>",
+      "at": "2026-11-23T20:00:49Z"
     }
   }
 }
