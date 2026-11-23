@@ -1,7 +1,7 @@
 {
   "id": "adobe-1322113939",
   "file": "adobe-1322113939.jpg",
-  "status": "proposed",
+  "status": "retired",
   "class": "hero",
   "products": [],
   "categories": [
@@ -55,6 +55,11 @@
           "blue-glow"
         ]
       }
+    },
+    "human": {
+      "verdict": "no",
+      "by": "b-ciq <bkfchristensen@gmail.com>",
+      "at": "2026-11-23T19:58:21Z"
     }
   }
 }
