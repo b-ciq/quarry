@@ -1,7 +1,7 @@
 {
   "id": "adobe-36041755",
   "file": "adobe-36041755.jpg",
-  "status": "proposed",
+  "status": "retired",
   "class": "hero",
   "products": [],
   "categories": [],
@@ -49,6 +49,11 @@
           "stock-photo"
         ]
       }
+    },
+    "human": {
+      "verdict": "no",
+      "by": "b-ciq <bkfchristensen@gmail.com>",
+      "at": "2026-11-23T20:00:05Z"
     }
   }
 }
