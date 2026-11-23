@@ -78,6 +78,13 @@ def test_non_servable_excluded(repo):
     assert [n for _, n in image_copy_plan(repo.root)] == ["ok-one.png"]
 
 
+def test_parked_not_exported(repo):
+    _add(repo, "hero", "ok-one")
+    _add(repo, "hero", "parked-one", status="parked", description="")
+    m = build_manifest(repo.root)
+    assert [e["id"] for e in m["images"]] == ["ok-one"]
+
+
 def test_screenshot_flattened_in_copy_plan(repo):
     _add_all(repo)
     plan = image_copy_plan(repo.root)

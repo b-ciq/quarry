@@ -123,3 +123,24 @@ def test_cli_validate_flags_duplicate_ids(repo, capsys):
     repo.add_asset("lifestyle", "dup")
     assert main(["validate", "--repo", str(repo.root)]) == 1
     assert "duplicate id" in capsys.readouterr().out
+
+
+def test_parked_is_valid_and_not_servable(repo):
+    s = json.loads(repo.add_asset("hero", "h1", status="parked", description="").read_text())
+    assert schema.validate_sidecar(s, load_vocabulary(repo.root)) == []
+    assert not schema.is_servable(s)
+
+
+def test_rating_block_shape_checked(repo):
+    vocab = load_vocabulary(repo.root)
+    good = {"bot": {"verdict": "yes", "strength": "strong", "reason": "r", "model": "m", "at": "t",
+                    "examples": [], "suggested_slugs": {}},
+            "human": {"verdict": "maybe", "by": "A <a@b>", "at": "t"}}
+    s = json.loads(repo.add_asset("hero", "h1", rating=good).read_text())
+    assert schema.validate_sidecar(s, vocab) == []
+    s["rating"] = {"bot": {**good["bot"], "verdict": "sure"}}
+    assert "rating.bot.verdict: invalid value 'sure'" in schema.validate_sidecar(s, vocab)
+    s["rating"] = {"bot": {**good["bot"], "strength": "very"}}
+    assert "rating.bot.strength: invalid value 'very'" in schema.validate_sidecar(s, vocab)
+    s["rating"] = "yes"
+    assert "rating: must be an object" in schema.validate_sidecar(s, vocab)
