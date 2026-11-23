@@ -19,6 +19,7 @@ class RatingResult:
     tags: dict[str, list[str]]
     tone: str | None
     suggested_slugs: dict[str, list[str]] = field(default_factory=dict)
+    model: str | None = None
 
 
 _LEGACY = {"retired": "no", "parked": "maybe"}

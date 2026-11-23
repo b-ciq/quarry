@@ -77,7 +77,9 @@ def rating_schema(vocab: dict, cls: str) -> dict:
 
 def image_block(path: Path, max_px: int) -> dict:
     with Image.open(path) as im:
-        im = im.convert("RGB")
+        im = im.convert("RGBA")
+        matte = Image.new("RGBA", im.size, (128, 128, 128, 255))
+        im = Image.alpha_composite(matte, im).convert("RGB")
         im.thumbnail((max_px, max_px))
         buf = io.BytesIO()
         im.save(buf, "JPEG", quality=85)
@@ -105,12 +107,12 @@ INSTRUCTIONS = """You rate one proposed image for CIQ's brand asset library.
 Verdicts:
 - yes: on-brand and usable as is.
 - no: not usable.
-- maybe: promising, but not ready to use.
+- maybe: the rubric's "Maybe-yes": promising, but not ready to use.
 
 strength: "strong" means you would bet the curators agree with your verdict; otherwise "unsure".
 reason: one short line explaining the verdict.
 description: one or two plain sentences describing what the image shows.
-tags: choose only from the allowed slugs listed below, per axis. Omit anything that does not clearly apply.
+tags: choose only from the allowed slugs listed below, per axis. Leave an axis empty when nothing clearly applies.
 If a concept you need is missing from the vocabulary, put it in suggested_slugs for that axis instead of inventing a tag.
 Earlier human verdicts are shown as examples; learn from their reasons."""
 
@@ -137,9 +139,14 @@ class ClaudeRater:
     def _messages(self, image, sidecar, examples, repo_root) -> list[dict]:
         content: list[dict] = []
         for s in examples:
-            path = Path(repo_root) / "library" / CLASS_DIRS[s["class"]] / s["file"]
-            content.append(image_block(path, EXAMPLE_PX))
-            content.append({"type": "text", "text": _example_text(s)})
+            try:
+                path = Path(repo_root) / "library" / CLASS_DIRS[s["class"]] / s["file"]
+                block = image_block(path, EXAMPLE_PX)
+                text = _example_text(s)
+            except (KeyError, TypeError, OSError):
+                continue  # a bad example must not fail the target
+            content.append(block)
+            content.append({"type": "text", "text": text})
         content.append(image_block(image, TARGET_PX))
         existing = "; ".join(f"{a}: {', '.join(sidecar[a])}" for a in TAG_AXES if sidecar.get(a)) or "none"
         content.append({"type": "text", "text": (
@@ -157,7 +164,7 @@ class ClaudeRater:
         try:
             msg = self.client.beta.messages.create(
                 model=self.model,
-                max_tokens=4096,
+                max_tokens=16000,
                 betas=BETAS,
                 fallbacks="default",
                 output_config={"effort": "low",
@@ -181,6 +188,7 @@ class ClaudeRater:
             return RatingResult(
                 verdict=d["verdict"], strength=d["strength"], reason=d["reason"],
                 description=d["description"], tags=d.get("tags") or {}, tone=d.get("tone"),
-                suggested_slugs=d.get("suggested_slugs") or {})
+                suggested_slugs=d.get("suggested_slugs") or {},
+                model=getattr(msg, "model", None))
         except (json.JSONDecodeError, KeyError, TypeError) as e:
             raise RaterError(f"unparseable JSON from Claude: {e}") from e

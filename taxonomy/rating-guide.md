@@ -1,7 +1,7 @@
 # What makes a Yes / No / Maybe-yes for CIQ
 
-CIQ wants a unique visual take. Imagery should look designed by CIQ, not
-pulled from a stock site or copied from someone else's brand.
+Imagery should look designed for CIQ and not copied from someone else's brand.
+Licensed stock (Adobe, iStock) is fine when it fits the brand.
 
 ## Yes
 - On-brand, polished, and usable today without edits.
@@ -12,7 +12,7 @@ pulled from a stock site or copied from someone else's brand.
 - Diagrams are readable at slide size.
 
 ## No
-- Generic stock look: handshakes, glowing padlocks, people pointing at screens.
+- Generic stock cliches: handshakes, glowing padlocks, people pointing at screens.
 - Looks like another company's brand, or contains third-party logos.
 - Cluttered, low resolution, watermarked, or visibly AI-garbled (bad hands,
   gibberish text).
