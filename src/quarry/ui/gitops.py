@@ -113,3 +113,9 @@ def sync(repo) -> SyncResult:
         if push.returncode != 0:
             raise GitError(f"git push failed: {(push.stderr or push.stdout).strip()}")
     return SyncResult(pulled=behind, pushed=ahead, message="synced")
+
+
+def push(repo) -> None:
+    p = _git(repo, "push", check=False)
+    if p.returncode != 0:
+        raise GitError(f"git push failed: {(p.stderr or p.stdout).strip()}")

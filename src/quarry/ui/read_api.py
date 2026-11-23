@@ -22,14 +22,6 @@ def _tags(s: dict) -> list[str]:
     return [t for axis in AXES for t in s.get(axis, []) or []]
 
 
-def _embedder(app: FastAPI):
-    if app.state.fake_embedder:
-        from quarry.embeddings import FakeEmbedder
-        return FakeEmbedder()
-    from quarry.embeddings import HFEmbedder
-    return HFEmbedder()
-
-
 def mount(app: FastAPI, index_stale) -> LibraryCache:
     repo_root: Path = app.state.repo_root
     cache = LibraryCache(repo_root)
@@ -94,7 +86,7 @@ def mount(app: FastAPI, index_stale) -> LibraryCache:
         if index_missing():
             return no_index()
         try:
-            hits = search(repo_root, _embedder(app), q, servable_only=False, limit=limit)
+            hits = search(repo_root, app.state.get_embedder(), q, servable_only=False, limit=limit)
         except (EmbedderMismatch, EmbedderUnavailable) as exc:
             return _err(409, str(exc))
         return {"stale": index_stale(),

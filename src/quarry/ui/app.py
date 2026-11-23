@@ -1,12 +1,14 @@
 """Quarry workbench: local FastAPI app for curating the brand asset library."""
+import os
 import sqlite3
+import threading
 from pathlib import Path
 
 from fastapi import FastAPI
 from fastapi.responses import FileResponse, JSONResponse
 
 from quarry.publish import check_stale
-from quarry.ui import gitops, ingest_api, read_api, vocab_api, write_api
+from quarry.ui import gitops, ingest_api, jobs, read_api, vocab_api, write_api
 
 STATIC_DIR = Path(__file__).parent / "static"
 
@@ -26,11 +28,28 @@ def _embedder_mode(repo_root: Path) -> str | None:
     return row[0] if row else None
 
 
-def create_app(repo_root: Path, fake_embedder: bool = False) -> FastAPI:
+def create_app(repo_root: Path, fake_embedder: bool = False, skill_dir: Path | None = None) -> FastAPI:
     repo_root = Path(repo_root)
     app = FastAPI(title="quarry workbench")
     app.state.repo_root = repo_root
     app.state.fake_embedder = fake_embedder
+    env_skill = os.environ.get("QUARRY_DECK_SKILL_DIR")
+    app.state.skill_dir = Path(skill_dir) if skill_dir else (Path(env_skill) if env_skill else None)
+    app.state.embedder = None
+    embedder_lock = threading.Lock()
+
+    def get_embedder():
+        with embedder_lock:
+            if app.state.embedder is None:
+                if fake_embedder:
+                    from quarry.embeddings import FakeEmbedder
+                    app.state.embedder = FakeEmbedder()
+                else:
+                    from quarry.embeddings import HFEmbedder
+                    app.state.embedder = HFEmbedder()
+            return app.state.embedder
+
+    app.state.get_embedder = get_embedder
 
     def index_stale() -> bool:
         # v1: the index records no sidecar digest, so approximate with export staleness.
@@ -66,6 +85,7 @@ def create_app(repo_root: Path, fake_embedder: bool = False) -> FastAPI:
     write_api.mount(app)
     vocab_api.mount(app)
     ingest_api.mount(app)
+    jobs.mount(app)
 
     @app.get("/")
     def root():
@@ -76,4 +96,5 @@ def create_app(repo_root: Path, fake_embedder: bool = False) -> FastAPI:
 
 def serve(repo_root: Path, port: int = 8787, fake_embedder: bool = False) -> None:
     import uvicorn
-    uvicorn.run(create_app(repo_root, fake_embedder), host="127.0.0.1", port=port)
+    skill = Path(os.environ.get("QUARRY_DECK_SKILL_DIR", "~/.claude/skills/quantic-deck-builder")).expanduser()
+    uvicorn.run(create_app(repo_root, fake_embedder, skill_dir=skill), host="127.0.0.1", port=port)
