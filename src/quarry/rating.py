@@ -6,7 +6,7 @@ Pure logic; no network and no writes. Callers persist the returned sidecars.
 from dataclasses import dataclass, field
 from pathlib import Path
 
-from quarry.schema import TAG_AXES
+from quarry.schema import TAG_AXES, TONES
 from quarry.search import more_like
 
 
@@ -47,7 +47,7 @@ def apply_bot_rating(sidecar: dict, result: RatingResult, *, model: str, example
             picked = list(dict.fromkeys(t for t in result.tags.get(axis, []) if t in allowed))
             if picked:
                 out[axis] = picked
-        if out.get("class") == "background" and not out.get("tone") and result.tone:
+        if out.get("class") == "background" and not out.get("tone") and result.tone in TONES:
             out["tone"] = result.tone
     out["rating"] = {**(sidecar.get("rating") or {}), "bot": {
         "verdict": result.verdict, "strength": result.strength, "reason": result.reason,
@@ -74,22 +74,23 @@ def _recent_key(s: dict):
     return (0, (s.get("source") or {}).get("ingested_at") or "")
 
 
-def _balance(top: list[dict], ranked: list[dict], k: int) -> list[dict]:
+def _balance(top: list[dict], ranked: list[dict]) -> list[dict]:
+    """Ensure top holds a yes and a no when the pool has them, never evicting a lone yes/no."""
     top = list(top)
-    protected: set[str] = set()
     for want in ("yes", "no"):
         if any(human_verdict(s) == want for s in top):
             continue
         best = next((s for s in ranked if human_verdict(s) == want), None)
         if best is None:
             continue
+        counts: dict = {}
+        for s in top:
+            counts[human_verdict(s)] = counts.get(human_verdict(s), 0) + 1
         for i in range(len(top) - 1, -1, -1):
-            if top[i]["id"] not in protected:
+            v = human_verdict(top[i])
+            if v not in ("yes", "no") or counts[v] > 1:
                 top[i] = best
                 break
-        else:
-            continue
-        protected.add(best["id"])
     return top
 
 
@@ -97,17 +98,17 @@ def select_examples(repo_root: Path, asset_id: str, sidecars: list[dict], *,
                     look_alike: bool, k: int = 6) -> list[dict]:
     pool = [s for s in sidecars if s["id"] != asset_id and human_verdict(s) is not None]
     by_id = {s["id"]: s for s in pool}
+    ranked = sorted(pool, key=_recent_key, reverse=True)
     if look_alike:
         try:
             hits = more_like(repo_root, asset_id, space="style", servable_only=False,
                              limit=len(sidecars) + 1)
         except (KeyError, FileNotFoundError):
             hits = []
-        picked = [by_id[h.id] for h in hits if h.id in by_id][:k]
-        if picked:
-            return picked
-    ranked = sorted(pool, key=_recent_key, reverse=True)
-    return _balance(ranked[:k], ranked, k)
+        near = [by_id[h.id] for h in hits if h.id in by_id]
+        seen = {s["id"] for s in near}
+        ranked = near + [s for s in ranked if s["id"] not in seen]
+    return _balance(ranked[:k], ranked)
 
 
 def agreement(sidecars: list[dict], recent: int = 50) -> dict:

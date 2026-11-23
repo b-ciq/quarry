@@ -8,7 +8,6 @@ from quarry.rating import (RatingResult, agreement, apply_bot_rating, apply_huma
 VOCAB = json.loads((Path(__file__).resolve().parent.parent / "taxonomy" / "vocabulary.json").read_text())
 EMPTY = {"description": "", "products": [], "categories": [], "verticals": [], "concepts": [], "style": []}
 RESULT = RatingResult("yes", "strong", "why", "Bot words", {"products": ["rocky"]}, "dark", {})
-RESULT_WITH_TONE = RESULT
 
 
 def _h(id, verdict, at=None, ingested="2024-01-01", bot=None):
@@ -58,7 +57,7 @@ def test_bot_fills_empty_description_and_keeps_human():
 
 
 def test_tone_only_for_backgrounds():
-    out = apply_bot_rating({"class": "hero", **EMPTY}, RESULT_WITH_TONE, model="m", examples=[], vocab=VOCAB, now="T")
+    out = apply_bot_rating({"class": "hero", **EMPTY}, RESULT, model="m", examples=[], vocab=VOCAB, now="T")
     assert "tone" not in out
 
 
@@ -132,3 +131,30 @@ def test_agreement_counts_by_strength():
                                    "strong": {"agreed": 1, "total": 2},
                                    "unsure": {"agreed": 1, "total": 1}}
     assert agreement(sidecars, recent=1)["recent"] == {"agreed": 1, "total": 1}
+
+
+def test_invalid_tone_not_written():
+    r = RatingResult("yes", "strong", "why", "d", {}, "purple", {})
+    out = apply_bot_rating({"class": "background", **EMPTY}, r, model="m", examples=[], vocab=VOCAB, now="T")
+    assert "tone" not in out
+
+
+def test_balance_keeps_lone_yes():
+    sidecars = [_h(f"m{i}", "maybe", at=f"2024-02-0{9 - i}") for i in range(5)]
+    sidecars += [_h("y", "yes", at="2024-01-01"), _h("n", "no", at="2023-01-01")]
+    ids = [e["id"] for e in select_examples(Path("."), "t", sidecars, look_alike=False)]
+    assert "y" in ids and "n" in ids and len(ids) == 6
+
+
+def test_look_alike_balances_yes_and_no(monkeypatch):
+    sidecars = [_h(f"y{i}", "yes", at="2024-01-01") for i in range(4)] + [_h("n", "no", at="2023-01-01")]
+    monkeypatch.setattr(rating_mod, "more_like", lambda root, id, **kw: [_Hit(f"y{i}") for i in range(4)])
+    ids = [e["id"] for e in select_examples(Path("."), "t", sidecars, look_alike=True, k=3)]
+    assert "n" in ids and len(ids) == 3
+
+
+def test_look_alike_tops_up_from_recent(monkeypatch):
+    sidecars = [_h(f"p{i}", "yes", at=f"2024-01-0{i + 1}") for i in range(8)]
+    monkeypatch.setattr(rating_mod, "more_like", lambda root, id, **kw: [_Hit("p0"), _Hit("p1")])
+    ids = [e["id"] for e in select_examples(Path("."), "t", sidecars, look_alike=True, k=6)]
+    assert ids[:2] == ["p0", "p1"] and len(ids) == 6 and len(set(ids)) == 6
