@@ -1,13 +1,12 @@
-import { useEffect, useImperativeHandle, useMemo, useState, type Ref } from 'react'
+import { useEffect, useImperativeHandle, useMemo, useRef, useState, type Ref } from 'react'
 import { Alert, Badge, Button, Select, Textarea, TextInput } from '@ctrliq/quantic-react'
 import {
   confirmAsset, fetchSimilar, patchAsset, restoreAsset, retireAsset, splitErrors,
   type SimilarHit, type WriteResult,
 } from '../api'
 import type { Asset } from '../state'
+import { diffDraft, TAG_AXES, toDraft, type Draft } from '../editing'
 import { TagChips } from './TagChips'
-
-export const TAG_AXES = ['products', 'categories', 'verticals', 'concepts', 'style'] as const
 
 export interface EditorHandle {
   /** Save pending edits, then confirm. Resolves true when the asset ended up confirmed. */
@@ -20,58 +19,31 @@ interface Props {
   onChanged: (asset: Asset) => void
   onTransition?: (verb: 'confirm' | 'retire' | 'restore', asset: Asset) => void
   onOpenSimilar?: (id: string) => void
+  /** Reports whether the draft has unsaved edits (false again on unmount). */
+  onDirtyChange?: (dirty: boolean) => void
   ref?: Ref<EditorHandle>
-}
-
-interface Draft {
-  description: string
-  tags: Record<(typeof TAG_AXES)[number], string[]>
-  tone: string
-  product_version: string
-  captured_at: string
-  usage_restrictions: string
-}
-
-const toDraft = (a: Asset): Draft => ({
-  description: a.description ?? '',
-  tags: { products: a.products, categories: a.categories, verticals: a.verticals, concepts: a.concepts, style: a.style },
-  tone: a.tone ?? '',
-  product_version: a.product_version ?? '',
-  captured_at: a.captured_at ?? '',
-  usage_restrictions: (a.usage_restrictions ?? []).join(', '),
-})
-
-const sameList = (a: string[], b: string[]) => a.length === b.length && a.every((v, i) => v === b[i])
-
-/** Only the fields that differ from the saved asset (the PATCH body). */
-export function diffDraft(a: Asset, d: Draft): Record<string, unknown> {
-  const out: Record<string, unknown> = {}
-  if (d.description !== (a.description ?? '')) out.description = d.description
-  for (const axis of TAG_AXES) if (!sameList(d.tags[axis], a[axis])) out[axis] = d.tags[axis]
-  if (a.class === 'background' && d.tone && d.tone !== (a.tone ?? '')) out.tone = d.tone
-  if (a.class === 'screenshot') {
-    if (d.product_version && d.product_version !== (a.product_version ?? '')) out.product_version = d.product_version
-    if (d.captured_at && d.captured_at !== (a.captured_at ?? '')) out.captured_at = d.captured_at
-  }
-  const ur = d.usage_restrictions.split(',').map((s) => s.trim()).filter(Boolean)
-  if (!sameList(ur, a.usage_restrictions ?? [])) out.usage_restrictions = ur
-  return out
 }
 
 function FieldErrors({ errors }: { errors?: string[] }) {
   return <>{(errors ?? []).map((e) => <p key={e} className="field-error" role="alert">{e}</p>)}</>
 }
 
-export function AssetEditor({ asset, vocabulary, onChanged, onTransition, onOpenSimilar, ref }: Props) {
+export function AssetEditor({ asset, vocabulary, onChanged, onTransition, onOpenSimilar, onDirtyChange, ref }: Props) {
   const [draft, setDraft] = useState<Draft>(() => toDraft(asset))
   const [errors, setErrors] = useState<string[]>([])
   const [message, setMessage] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
+  const busyRef = useRef(false)
   const [similar, setSimilar] = useState<SimilarHit[] | null>(null)
   const [similarError, setSimilarError] = useState<string | null>(null)
 
   const patch = useMemo(() => diffDraft(asset, draft), [asset, draft])
   const dirty = Object.keys(patch).length > 0
+
+  useEffect(() => {
+    onDirtyChange?.(dirty)
+    return () => onDirtyChange?.(false)
+  }, [dirty, onDirtyChange])
 
   useEffect(() => {
     let live = true
@@ -95,10 +67,11 @@ export function AssetEditor({ asset, vocabulary, onChanged, onTransition, onOpen
   }
 
   const run = async <T,>(fn: () => Promise<T>): Promise<T> => {
+    busyRef.current = true
     setBusy(true)
     setErrors([])
     setMessage(null)
-    try { return await fn() } finally { setBusy(false) }
+    try { return await fn() } finally { busyRef.current = false; setBusy(false) }
   }
 
   const doSave = () => run(async () => {
@@ -106,7 +79,7 @@ export function AssetEditor({ asset, vocabulary, onChanged, onTransition, onOpen
     if (saved && dirty) setMessage('Saved.')
   })
 
-  const doConfirm = () => run(async () => {
+  const doConfirm = () => busyRef.current ? Promise.resolve(false) : run(async () => {
     const saved = await save()
     if (!saved) return false
     const r = await confirmAsset(asset.id)
@@ -116,7 +89,7 @@ export function AssetEditor({ asset, vocabulary, onChanged, onTransition, onOpen
     return true
   })
 
-  const doTransition = (verb: 'retire' | 'restore') => run(async () => {
+  const doTransition = (verb: 'retire' | 'restore') => busyRef.current ? Promise.resolve(false) : run(async () => {
     const r = await (verb === 'retire' ? retireAsset : restoreAsset)(asset.id)
     if (!r.ok) return fail(r)
     onChanged(r.asset)

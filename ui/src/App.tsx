@@ -1,9 +1,10 @@
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { ButtonBar, ButtonBarItem, Drawer, TextInput } from '@ctrliq/quantic-react'
 import { fetchAssets, fetchStatus, fetchVocabulary, type Status } from './api'
 import { FacetRail } from './components/FacetRail'
 import { OpsBar } from './components/OpsBar'
 import { applyFilters, type Asset, type Axis, type Filters } from './state'
+import { canDiscard } from './editing'
 import { AssetEditor } from './components/AssetEditor'
 import { Grid } from './views/Grid'
 import { ReviewQueue } from './views/ReviewQueue'
@@ -32,6 +33,18 @@ export function App() {
     (a: Asset) => setAssets((xs) => xs.map((x) => (x.id === a.id ? a : x))),
     [],
   )
+  const dirtyRef = useRef(false)
+  const onDirtyChange = useCallback((d: boolean) => { dirtyRef.current = d }, [])
+  const confirmDiscard = useCallback(() => {
+    if (!canDiscard(dirtyRef.current, () => window.confirm('You have unsaved changes. Discard them?'))) return false
+    dirtyRef.current = false // accepted: a follow-up close event must not ask again
+    return true
+  }, [])
+  useEffect(() => {
+    const warn = (e: BeforeUnloadEvent) => { if (dirtyRef.current) e.preventDefault() }
+    window.addEventListener('beforeunload', warn)
+    return () => window.removeEventListener('beforeunload', warn)
+  }, [])
   const exitQueue = useCallback(() => setQueueIds(null), [])
   const proposedCount = useMemo(() => assets.filter((a) => a.status === 'proposed').length, [assets])
   const selected = assets.find((a) => a.id === selectedId)
@@ -47,11 +60,12 @@ export function App() {
       <header className="topbar">
         <h1>Quarry</h1>
         <ButtonBar size="sm" aria-label="View">
-          <ButtonBarItem active={queueIds === null} onClick={exitQueue}>Library</ButtonBarItem>
+          <ButtonBarItem active={queueIds === null} onClick={() => { if (queueIds !== null && confirmDiscard()) exitQueue() }}>Library</ButtonBarItem>
           <ButtonBarItem
             active={queueIds !== null}
             disabled={proposedCount === 0}
             onClick={() => {
+              if (queueIds !== null || !confirmDiscard()) return
               setSelectedId(null)
               setQueueIds(assets.filter((a) => a.status === 'proposed').map((a) => a.id))
             }}
@@ -79,6 +93,8 @@ export function App() {
             vocabulary={vocabulary}
             onChanged={onChanged}
             onExit={exitQueue}
+            confirmDiscard={confirmDiscard}
+            onDirtyChange={onDirtyChange}
           />
         </main>
       ) : (
@@ -86,7 +102,7 @@ export function App() {
           <FacetRail assets={assets} filters={filters} q={q} onToggle={toggle} />
           <main className="main">
             {error ? <p className="empty" role="alert">Could not load assets: {error}</p>
-              : loaded ? <Grid assets={visible} total={assets.length} onSelect={setSelectedId} /> : <p className="empty">Loading...</p>}
+              : loaded ? <Grid assets={visible} total={assets.length} onSelect={(id) => { if (id === selectedId || confirmDiscard()) setSelectedId(id) }} /> : <p className="empty">Loading...</p>}
           </main>
         </div>
       )}
@@ -96,6 +112,7 @@ export function App() {
         size="lg"
         resizable
         aria-label="Asset editor"
+        onBeforeClose={(e) => { if (!confirmDiscard()) e.preventDefault() }}
         onOpenChanged={(e) => { if (!e.detail.open) setSelectedId(null) }}
       >
         {selected && (
@@ -104,7 +121,8 @@ export function App() {
             asset={selected}
             vocabulary={vocabulary}
             onChanged={onChanged}
-            onOpenSimilar={(id) => assets.some((a) => a.id === id) && setSelectedId(id)}
+            onDirtyChange={onDirtyChange}
+            onOpenSimilar={(id) => { if (assets.some((a) => a.id === id) && confirmDiscard()) setSelectedId(id) }}
           />
         )}
       </Drawer>
