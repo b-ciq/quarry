@@ -93,6 +93,10 @@ def main(argv=None) -> int:
     ex = sub.add_parser("export", help="write the deck-builder manifest (servable assets only)")
     ex.add_argument("--out", type=Path, default=Path("exports"))
     ex.add_argument("--repo", default=".", type=Path)
+    ui = sub.add_parser("ui", help="run the local curation workbench (127.0.0.1 only)")
+    ui.add_argument("--repo", default=".", type=Path)
+    ui.add_argument("--port", type=int, default=8787)
+    ui.add_argument("--fake-embedder", action="store_true", help="deterministic fake embeddings (no models)")
     args = parser.parse_args(argv)
     if args.command == "validate":
         if args.check_stale:
@@ -189,6 +193,14 @@ def main(argv=None) -> int:
             if args.verbose:
                 print(f"        {sc.get('description', '')}")
                 print(f"        {sc.get('file')}")
+        return 0
+    if args.command == "ui":
+        try:
+            from quarry.ui.app import serve
+        except ImportError:
+            print("error: the ui extra is not installed; run `pip install -e \".[ui]\"`", file=sys.stderr)
+            return 1
+        serve(args.repo, args.port, args.fake_embedder)
         return 0
     return 2
 

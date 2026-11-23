@@ -1,9 +1,9 @@
 "$schema" = "https://conductor.build/schemas/settings.repo.schema.json"
 
 [scripts]
-# Fresh worktree: LFS binaries, venv, editable install (dev extra = pytest + mcp),
+# Fresh worktree: LFS binaries, venv, editable install (dev extra = pytest + mcp + ui deps; ui extra = workbench),
 # and the gitignored search index (fake embedder: fast, no model downloads).
-setup = "git lfs pull && python3 -m venv .venv && .venv/bin/pip install -q -e '.[dev]' && .venv/bin/quarry index --fake-embedder"
+setup = "git lfs pull && python3 -m venv .venv && .venv/bin/pip install -q -e '.[dev,ui]' && .venv/bin/quarry index --fake-embedder"
 # Workspace-local caches only; the worktree itself is removed by Conductor.
 archive = "rm -rf .venv index"
 # Each workspace has its own venv, SQLite index, and library copy — nothing shared.
@@ -25,3 +25,8 @@ icon = "database"
 [scripts.run.search-demo]
 command = ".venv/bin/quarry search 'scientist' --fake-embedder -v"
 icon = "search"
+
+[scripts.run.ui]
+command = ".venv/bin/quarry ui --port $CONDUCTOR_PORT --fake-embedder"
+available_in = ["local"]
+icon = "layout-grid"

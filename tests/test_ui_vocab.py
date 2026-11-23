@@ -1,0 +1,151 @@
+import json
+
+import pytest
+from fastapi.testclient import TestClient
+
+from quarry.ui import vocab_api
+from quarry.ui.app import create_app
+from test_ui_gitops import sandbox, git, _push_b_edit  # noqa: F401  (two-clone fixture)
+
+
+def _client(root):
+    return TestClient(create_app(root))
+
+
+def _seed(repo, *assets):
+    for cls, id, kw in assets:
+        repo.add_asset(cls, id, **kw)
+    repo.git("add", "-A")
+    repo.git("commit", "-q", "-m", "seed")
+
+
+def _n_commits(repo):
+    return int(repo.git("rev-list", "--count", "HEAD"))
+
+
+def _side(repo, cls, id):
+    return json.loads((repo.root / "library" / cls / f"{id}.json").read_text())
+
+
+def test_add_slug_then_patch_asset_with_it(git_repo):
+    _seed(git_repo, ("hero", "h1", {}))
+    c = _client(git_repo.root)
+    r = c.post("/api/vocabulary/concepts", json={"slug": "brand-new"})
+    assert r.status_code == 200, r.text
+    assert git_repo.git("log", "-1", "--format=%s") == "vocab: add brand-new\n"
+    assert git_repo.git("show", "--stat", "--format=", "HEAD").count("|") == 1
+    assert c.patch("/api/assets/h1", json={"concepts": ["brand-new"]}).status_code == 200
+    assert c.post("/api/vocabulary/concepts", json={"slug": "brand-new"}).status_code == 409
+    assert c.post("/api/vocabulary/concepts", json={"slug": "Bad Slug"}).status_code == 422
+    assert c.post("/api/vocabulary/nope", json={"slug": "x"}).status_code == 404
+
+
+def test_merge_atomic_single_commit_all_carriers(git_repo):
+    _seed(git_repo,
+          ("hero", "c1", {"concepts": ["research"], "status": "confirmed"}),
+          ("hero", "c2", {"concepts": ["science"], "status": "retired"}),
+          ("hero", "c3", {"concepts": ["research", "compute"], "status": "proposed"}),
+          ("hero", "c4", {"concepts": ["research", "science"]}),
+          ("hero", "other", {"concepts": ["compute"]}))
+    before = _n_commits(git_repo)
+    r = _client(git_repo.root).post("/api/vocabulary/concepts/research/merge", json={"into": "science"})
+    assert r.status_code == 200, r.text
+    assert sorted(r.json()["rewritten"]) == ["c1", "c3", "c4"]
+    assert _n_commits(git_repo) == before + 1
+    stat = git_repo.git("show", "--name-only", "--format=", "HEAD").split()
+    assert sorted(stat) == sorted(["taxonomy/vocabulary.json", "library/hero/c1.json",
+                                   "library/hero/c3.json", "library/hero/c4.json"])
+    assert git_repo.git("log", "-1", "--format=%s") == "vocab: merge research into science\n"
+    assert _side(git_repo, "hero", "c4")["concepts"] == ["science"]
+    assert _side(git_repo, "hero", "c3")["concepts"] == ["science", "compute"]
+    assert _side(git_repo, "hero", "c3")["status"] == "proposed"
+    vocab = json.loads((git_repo.root / "taxonomy/vocabulary.json").read_text())
+    assert "research" not in vocab["concepts"] and "science" in vocab["concepts"]
+    assert git_repo.git("status", "--porcelain") == ""
+
+
+def test_merge_retired_carrier_included(git_repo):
+    _seed(git_repo, ("hero", "r1", {"concepts": ["research"], "status": "retired"}))
+    r = _client(git_repo.root).post("/api/vocabulary/concepts/research/merge", json={"into": "science"})
+    assert r.json()["rewritten"] == ["r1"]
+
+
+def test_merge_mid_failure_leaves_tree_clean(git_repo, monkeypatch):
+    _seed(git_repo,
+          ("hero", "c1", {"concepts": ["research"]}),
+          ("hero", "c2", {"concepts": ["research"]}),
+          ("hero", "c3", {"concepts": ["research"]}))
+    before, head = _n_commits(git_repo), git_repo.git("rev-parse", "HEAD")
+    real, calls = vocab_api._write_text, []
+
+    def flaky(path, text):
+        calls.append(path)
+        if len(calls) == 2:
+            raise OSError("disk full")
+        real(path, text)
+
+    monkeypatch.setattr(vocab_api, "_write_text", flaky)
+    r = _client(git_repo.root).post("/api/vocabulary/concepts/research/merge", json={"into": "science"})
+    assert r.status_code == 500 and len(calls) == 2
+    assert git_repo.git("status", "--porcelain") == ""
+    assert _n_commits(git_repo) == before and git_repo.git("rev-parse", "HEAD") == head
+
+
+def test_rename_rewrites_carriers_one_commit(git_repo):
+    _seed(git_repo, ("hero", "c1", {"concepts": ["research", "compute"]}))
+    before = _n_commits(git_repo)
+    r = _client(git_repo.root).post("/api/vocabulary/concepts/research/rename", json={"new": "inquiry"})
+    assert r.status_code == 200 and r.json()["rewritten"] == ["c1"]
+    assert _n_commits(git_repo) == before + 1
+    assert _side(git_repo, "hero", "c1")["concepts"] == ["inquiry", "compute"]
+    assert git_repo.git("log", "-1", "--format=%s") == "vocab: rename research to inquiry\n"
+
+
+def test_rename_to_existing_409(git_repo):
+    r = _client(git_repo.root).post("/api/vocabulary/concepts/research/rename", json={"new": "science"})
+    assert r.status_code == 409 and "merge" in r.json()["error"]
+
+
+def test_delete_in_use_409_unused_ok(git_repo):
+    _seed(git_repo, ("hero", "c1", {"concepts": ["research"]}))
+    c = _client(git_repo.root)
+    head = git_repo.git("rev-parse", "HEAD")
+    assert c.delete("/api/vocabulary/concepts/research").status_code == 409
+    assert git_repo.git("rev-parse", "HEAD") == head
+    r = c.delete("/api/vocabulary/concepts/science")
+    assert r.status_code == 200
+    assert "science" not in json.loads((git_repo.root / "taxonomy/vocabulary.json").read_text())["concepts"]
+
+
+def test_dirty_managed_blocks_vocab_mutation(git_repo):
+    _seed(git_repo, ("hero", "c1", {}))
+    p = git_repo.root / "library/hero/c1.json"
+    p.write_text(p.read_text() + " ")
+    r = _client(git_repo.root).post("/api/vocabulary/concepts", json={"slug": "zzz"})
+    assert r.status_code == 409
+
+
+def test_sync_first_sees_remote_vocab_edit(sandbox):
+    a, b = sandbox
+    vb = b / "taxonomy/vocabulary.json"
+    d = json.loads(vb.read_text())
+    d["concepts"].append("from-b")
+    vb.write_text(json.dumps(d, indent=2) + "\n")
+    git(b, "add", "taxonomy"); git(b, "commit", "-m", "b vocab"); git(b, "push")
+    r = _client(a).post("/api/vocabulary/concepts", json={"slug": "from-a"})
+    assert r.status_code == 200, r.text
+    got = json.loads((a / "taxonomy/vocabulary.json").read_text())["concepts"]
+    assert "from-b" in got and "from-a" in got
+
+
+def test_sync_conflict_409(sandbox):
+    a, b = sandbox
+    for root, slug in ((b, "x-b"), (a, "x-a")):
+        v = root / "taxonomy/vocabulary.json"
+        d = json.loads(v.read_text()); d["style"].append(slug)
+        v.write_text(json.dumps(d, indent=2) + "\n")
+        git(root, "add", "taxonomy"); git(root, "commit", "-m", slug)
+    git(b, "push")
+    r = _client(a).post("/api/vocabulary/concepts", json={"slug": "other"})
+    assert r.status_code == 409 and "agent" in r.json()["error"]
+    assert git(a, "status", "--porcelain") == ""

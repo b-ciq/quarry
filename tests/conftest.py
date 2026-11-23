@@ -73,3 +73,20 @@ def repo(tmp_path):
     shutil.copy(ROOT / "taxonomy" / "vocabulary.json", tmp_path / "taxonomy" / "vocabulary.json")
     (tmp_path / "library").mkdir()
     return Repo(tmp_path)
+
+
+def _git(root, *args):
+    import subprocess
+    return subprocess.run(["git", "-C", str(root), *args], check=True, capture_output=True, text=True).stdout
+
+
+@pytest.fixture
+def git_repo(repo):
+    """`repo` plus git init, local identity and an initial commit (no remote)."""
+    _git(repo.root, "init", "-q", "-b", "main")
+    _git(repo.root, "config", "user.name", "Test")
+    _git(repo.root, "config", "user.email", "test@example.com")
+    _git(repo.root, "add", "-A")
+    _git(repo.root, "commit", "-q", "--allow-empty", "-m", "init")
+    repo.git = lambda *a: _git(repo.root, *a)
+    return repo

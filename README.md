@@ -8,7 +8,7 @@ It also exports a manifest the Quantic deck builder consumes.
 
 ```
 python -m venv .venv && . .venv/bin/activate
-pip install -e ".[dev]"     # tests; add .[mcp] for the server, .[ml] for real embeddings
+pip install -e ".[dev,ui]"  # tests + workbench; add .[mcp] for the server, .[ml] for real embeddings
 ```
 
 Library images use git LFS (`git lfs install`).
@@ -22,6 +22,11 @@ Library images use git LFS (`git lfs install`).
 - `quarry search QUERY [--class] [--product] [--tone] [--all-statuses] [--limit] [--fake-embedder]`
 - `quarry export [--out]`
 - `quarry publish [--skill-dir] [--fake-embedder]`
+- `quarry ui [--repo] [--port] [--fake-embedder]`
+
+## Workbench
+
+`quarry ui` serves the local curation workbench (127.0.0.1 only; default port 8787): library grid and facets, keyboard review queue, asset editor, vocabulary panel, ingest dropzone, re-index/publish, and git Sync. Needs the `ui` extra. Backend: `src/quarry/ui/` (FastAPI). Frontend source: `ui/` (Vite + React + Quantic); the build is committed in `src/quarry/ui/static/`, so running the UI needs no Node. After changing `ui/`, run `npm ci --prefix ui && npm run build --prefix ui` and commit `src/quarry/ui/static/` (CI fails on drift). Tests: `npm test --prefix ui`. Onboarding: `docs/onboarding.md`.
 
 MCP server: `server/quarry_mcp.py` (env `QUARRY_REPO`, `QUARRY_FAKE_EMBEDDER`).
 
@@ -34,5 +39,6 @@ MCP server: `server/quarry_mcp.py` (env `QUARRY_REPO`, `QUARRY_FAKE_EMBEDDER`).
 
 - Spec: `docs/superpowers/specs/2026-11-22-quarry-design.md`
 - Plan: `docs/superpowers/plans/2026-11-22-quarry-phase1-dam-core.md`
+- Onboarding (curators): `docs/onboarding.md`
 - Operations: `docs/operations.md`
 - Curation skill: `skills/tag-assets/SKILL.md`

@@ -1,0 +1,430 @@
+@import '@ctrliq/quantic-css/base';
+@import '@ctrliq/quantic-css/reset';
+@import '@ctrliq/quantic-css/tokens';
+@import '@ctrliq/quantic-css/type';
+
+/* Layout only; every colour, space, radius and font is a Quantic token. */
+html,
+body,
+#root {
+  height: 100%;
+  margin: 0;
+}
+
+body {
+  background: var(--quantic-bg-primary);
+  color: var(--quantic-text-primary);
+  font-family: var(--quantic-font-family-body);
+}
+
+.app {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+.topbar,
+.ops-bar {
+  display: flex;
+  align-items: center;
+  gap: var(--quantic-spacing-3);
+  padding: var(--quantic-spacing-2) var(--quantic-spacing-4);
+  border-bottom: 1px solid var(--quantic-border-secondary);
+}
+
+.topbar h1 {
+  margin: 0;
+  font-size: var(--quantic-font-size-body-md);
+}
+
+.topbar .search {
+  flex: 1;
+  max-width: var(--quantic-spacing-96);
+}
+
+.result-count {
+  color: var(--quantic-text-tertiary);
+  font-size: var(--quantic-font-size-body-sm);
+}
+
+.ops-bar {
+  background: var(--quantic-bg-secondary);
+  flex-wrap: wrap;
+}
+
+.ops-spacer {
+  flex: 1;
+}
+
+.body {
+  display: flex;
+  flex: 1;
+  min-height: 0;
+}
+
+.facet-rail {
+  flex: none;
+  width: var(--quantic-spacing-64);
+  overflow-y: auto;
+  padding: var(--quantic-spacing-3) var(--quantic-spacing-4);
+  border-right: 1px solid var(--quantic-border-secondary);
+  background: var(--quantic-bg-secondary);
+}
+
+.facet-group {
+  display: flex;
+  flex-direction: column;
+  gap: var(--quantic-spacing-1);
+  margin: 0 0 var(--quantic-spacing-4);
+  padding: 0;
+  border: 0;
+}
+
+.facet-group legend {
+  padding: 0;
+  margin-bottom: var(--quantic-spacing-1);
+  color: var(--quantic-text-tertiary);
+  font-size: var(--quantic-font-size-body-xs);
+  text-transform: uppercase;
+}
+
+.facet-row {
+  display: inline-flex;
+  justify-content: space-between;
+  gap: var(--quantic-spacing-3);
+  min-width: var(--quantic-spacing-40);
+}
+
+.facet-count {
+  color: var(--quantic-text-tertiary);
+  font-variant-numeric: tabular-nums;
+}
+
+.main {
+  flex: 1;
+  overflow-y: auto;
+  padding: var(--quantic-spacing-3) var(--quantic-spacing-4);
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(var(--quantic-spacing-48), 1fr));
+  gap: var(--quantic-spacing-3);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+/* Cheap virtualization: off-screen tiles skip layout and paint (fine at ~500 assets). */
+.tile {
+  display: flex;
+  flex-direction: column;
+  gap: var(--quantic-spacing-1);
+  padding: var(--quantic-spacing-2);
+  border: 1px solid var(--quantic-border-primary);
+  border-radius: var(--quantic-radius-md);
+  background: var(--quantic-bg-secondary);
+  content-visibility: auto;
+  contain-intrinsic-size: auto var(--quantic-spacing-56);
+}
+
+.tile-retired {
+  opacity: 0.45;
+}
+
+.tile-thumb {
+  display: block;
+  aspect-ratio: 4 / 3;
+  overflow: hidden;
+  border-radius: var(--quantic-radius-sm);
+  background: var(--quantic-bg-tertiary);
+}
+
+.tile-thumb img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.tile-meta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--quantic-spacing-2);
+}
+
+.tile-id {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: var(--quantic-font-size-body-sm);
+}
+
+.tile-sub {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--quantic-spacing-2);
+  color: var(--quantic-text-tertiary);
+  font-size: var(--quantic-font-size-body-xs);
+}
+
+.empty {
+  color: var(--quantic-text-tertiary);
+}
+
+/* Editor (drawer and review queue) */
+.editor {
+  display: flex;
+  flex-direction: column;
+  gap: var(--quantic-spacing-3);
+  padding: var(--quantic-spacing-4);
+}
+
+.editor-image {
+  display: block;
+  max-height: var(--quantic-spacing-96);
+  overflow: hidden;
+  border-radius: var(--quantic-radius-md);
+  background: var(--quantic-bg-tertiary);
+}
+
+.editor-image img {
+  display: block;
+  width: 100%;
+  max-height: var(--quantic-spacing-96);
+  object-fit: contain;
+}
+
+.editor-form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--quantic-spacing-3);
+}
+
+.editor-head {
+  display: flex;
+  align-items: center;
+  gap: var(--quantic-spacing-3);
+}
+
+.editor-head h2 {
+  margin: 0;
+  font-size: var(--quantic-font-size-body-md);
+}
+
+.editor-meta,
+.review-keys {
+  color: var(--quantic-text-tertiary);
+  font-size: var(--quantic-font-size-body-xs);
+}
+
+.editor-message {
+  margin: 0;
+  color: var(--quantic-text-tertiary);
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--quantic-spacing-1);
+}
+
+.field-label {
+  color: var(--quantic-text-tertiary);
+  font-size: var(--quantic-font-size-body-xs);
+  text-transform: uppercase;
+}
+
+.chips {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--quantic-spacing-2);
+}
+
+.field-hint,
+.field-error {
+  margin: 0;
+  font-size: var(--quantic-font-size-body-sm);
+}
+
+.field-hint {
+  color: var(--quantic-text-tertiary);
+}
+
+.field-error {
+  color: var(--quantic-text-error-primary);
+}
+
+.editor-actions {
+  display: flex;
+  gap: var(--quantic-spacing-2);
+}
+
+.similar h3 {
+  margin: 0 0 var(--quantic-spacing-2);
+  font-size: var(--quantic-font-size-body-sm);
+}
+
+.similar-strip {
+  display: flex;
+  gap: var(--quantic-spacing-2);
+  margin: 0;
+  padding: 0;
+  overflow-x: auto;
+  list-style: none;
+}
+
+.similar-strip img {
+  display: block;
+  width: var(--quantic-spacing-24);
+  aspect-ratio: 4 / 3;
+  object-fit: cover;
+  border-radius: var(--quantic-radius-sm);
+}
+
+.review-bar {
+  display: flex;
+  align-items: center;
+  gap: var(--quantic-spacing-3);
+  padding-bottom: var(--quantic-spacing-2);
+  border-bottom: 1px solid var(--quantic-border-secondary);
+}
+
+.review-position {
+  font-variant-numeric: tabular-nums;
+}
+
+.review .editor {
+  flex-direction: row;
+  align-items: flex-start;
+}
+
+.review .editor-image {
+  flex: 1;
+  max-height: none;
+}
+
+.review .editor-image img {
+  max-height: 80vh;
+}
+
+.review .editor-form {
+  flex: 1;
+}
+
+/* Ops actions */
+.ops-notice {
+  padding: var(--quantic-spacing-2) var(--quantic-spacing-4);
+  border-bottom: 1px solid var(--quantic-border-secondary);
+}
+
+.job-log {
+  display: flex;
+  flex-direction: column;
+  gap: var(--quantic-spacing-2);
+}
+
+.job-log-head {
+  display: flex;
+  align-items: center;
+  gap: var(--quantic-spacing-2);
+}
+
+/* Vocabulary panel */
+.vocab {
+  display: flex;
+  flex-direction: column;
+  gap: var(--quantic-spacing-4);
+  max-width: var(--quantic-spacing-96);
+}
+
+.vocab-axis h2 {
+  margin: 0 0 var(--quantic-spacing-2);
+  font-size: var(--quantic-font-size-body-md);
+  display: flex;
+  align-items: center;
+  gap: var(--quantic-spacing-2);
+}
+
+.vocab-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.vocab-row {
+  display: flex;
+  align-items: center;
+  gap: var(--quantic-spacing-2);
+  padding: var(--quantic-spacing-1) 0;
+  border-bottom: 1px solid var(--quantic-border-secondary);
+}
+
+.vocab-add {
+  display: flex;
+  gap: var(--quantic-spacing-2);
+  margin-top: var(--quantic-spacing-2);
+}
+
+/* Ingest */
+.ingest {
+  display: flex;
+  flex-direction: column;
+  gap: var(--quantic-spacing-4);
+  max-width: var(--quantic-spacing-96);
+}
+
+.dropzone {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--quantic-spacing-2);
+  padding: var(--quantic-spacing-8);
+  border: 2px dashed var(--quantic-border-primary);
+  border-radius: var(--quantic-radius-md);
+  color: var(--quantic-text-tertiary);
+}
+
+.dropzone-over {
+  border-color: var(--quantic-border-brand);
+  background: var(--quantic-bg-secondary);
+}
+
+.ingest-form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--quantic-spacing-3);
+}
+
+.ingest-files,
+.ingest-report ul {
+  margin: 0;
+  padding-left: var(--quantic-spacing-4);
+}
+
+.tile-placeholder {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+  min-height: 6rem;
+  background: var(--quantic-bg-secondary);
+  color: var(--quantic-text-tertiary);
+  font-size: var(--quantic-font-size-body-xs);
+}
+
+.search-banner {
+  display: flex;
+  flex-direction: column;
+  gap: var(--quantic-spacing-2);
+  margin-bottom: var(--quantic-spacing-3);
+}
+
+.search-banner-row {
+  display: flex;
+  align-items: center;
+  gap: var(--quantic-spacing-2);
+}

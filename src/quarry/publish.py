@@ -9,7 +9,7 @@ from pathlib import Path
 
 from quarry.embeddings import Embedder
 from quarry.export_deck import build_manifest, image_copy_plan
-from quarry.indexer import IndexBuildError, build_index, validate_assets
+from quarry.indexer import IndexBuildError, build_index, sidecar_digest, validate_assets
 from quarry.library import scan_library
 
 BUNDLE_REL = Path("brand/assets/images")
@@ -22,15 +22,6 @@ class PublishResult:
     indexed: int
     exported: int
     bundled: int
-
-
-def sidecar_digest(repo_root: Path) -> str:
-    repo_root = Path(repo_root)
-    h = hashlib.sha256()
-    for sc in sorted((repo_root / "library").rglob("*.json")):
-        h.update(sc.relative_to(repo_root).as_posix().encode() + b"\0")
-        h.update(sc.read_bytes() + b"\0")
-    return h.hexdigest()
 
 
 def check_stale(repo_root: Path) -> bool:

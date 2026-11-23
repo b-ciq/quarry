@@ -4,7 +4,9 @@ Single source of truth for running the library. Spec: `docs/superpowers/specs/20
 
 ## One-time setup
 
-1. `pip install -e ".[dev]"` (add `.[mcp]` for the MCP server only).
+The workbench (`quarry ui`) is the primary curation surface; see `docs/onboarding.md`. The CLI below remains the fallback and the path for automation.
+
+1. `pip install -e ".[dev,ui]"` (`.[ui]` alone is enough to run the workbench; add `.[mcp]` for the MCP server only).
 2. Verify real embedders. HFEmbedder has never run against real checkpoints. Before the first real (non-fake) index build: `pip install -e ".[ml]"` then `pytest -m slow`. Do not build a real index until it passes.
 3. Seed the deck-builder vocabulary if starting fresh: `quarry seed-deck-builder [--skill-dir DIR]`.
 
@@ -16,7 +18,7 @@ After every curation session (and after any ingest or retire). `quarry publish [
 
 `quarry ingest DIR --class CLS --source ORIGIN [--license LIC] [--license-id ID] [--product P]`
 
-Ingest creates `status=proposed` sidecars. Then curate with the `tag-assets` skill.
+Ingest creates `status=proposed` sidecars. Then curate in the workbench review queue (or with the `tag-assets` skill). The workbench Ingest tab wraps the same funnel.
 
 - Figma: export the designated frames (UI or API) to a drop directory. `--source figma` (or `designer`), `--class` per frame set.
 - Adobe Stock: download from license history into a drop directory. Pass `--source adobe-stock --license-id <stock asset id>`.
@@ -33,6 +35,12 @@ Ingest creates `status=proposed` sidecars. Then curate with the `tag-assets` ski
 ## Retiring assets
 
 Set `"status": "retired"` in the sidecar. Never delete files. Then publish.
+
+## Workbench notes
+
+- Vocabulary rename/merge rewrites all carrier sidecars and `taxonomy/vocabulary.json` in one commit. It is blocked with HTTP 422 if any carrier sidecar is already invalid (or would become invalid); fix that asset first, then retry. Delete is refused with 409 while any asset uses the slug.
+- Edits are local commits; the Sync button pulls (rebase) and pushes. On conflict nothing is pushed and edits are kept in the latest git stash.
+- Publish/Re-index buttons run the same code as `quarry publish` / `quarry index`.
 
 ## Index and exports
 

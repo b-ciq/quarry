@@ -138,7 +138,8 @@ def test_index_records_meta(repo):
     repo.add_asset("hero", "h1")
     build_index(repo.root, FakeEmbedder(dim=16))
     rows = dict(sqlite3.connect(repo.root / "index" / "library.db").execute("SELECT key, value FROM meta"))
-    assert rows == {"embedder_mode": "fake", "dims": "16,16"}
+    from quarry.indexer import sidecar_digest
+    assert rows == {"embedder_mode": "fake", "dims": "16,16", "sidecar_digest": sidecar_digest(repo.root)}
 
 
 def test_cli_search_mismatch_exit_1_no_traceback(repo, capsys):
