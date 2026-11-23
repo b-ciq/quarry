@@ -1,0 +1,27 @@
+{
+  "id": "figma-vibrant-plant-cells-stockcake",
+  "file": "figma-vibrant-plant-cells-stockcake.jpg",
+  "status": "proposed",
+  "class": "hero",
+  "products": [],
+  "categories": [],
+  "verticals": [],
+  "concepts": [],
+  "style": [],
+  "aspect": "91:51",
+  "license": "",
+  "source": {
+    "origin": "figma",
+    "ingested_at": "2026-11-22",
+    "sha256": "935e79950dcf84a949a4d0d29fb97b3345993c3c684c49f0f5c3d4924c97bb1c",
+    "figma": {
+      "file": "IkGhZ0RdDHihBymdQrJclg",
+      "layer": "vibrant-plant-cells-stockcake",
+      "nodes": [
+        "35:845"
+      ]
+    }
+  },
+  "usage_restrictions": [],
+  "description": ""
+}

@@ -1,0 +1,33 @@
+{
+  "id": "mj-glass-data-chain-2",
+  "file": "mj-glass-data-chain-2.png",
+  "status": "proposed",
+  "class": "hero",
+  "products": [],
+  "categories": [],
+  "verticals": [],
+  "concepts": [],
+  "style": [],
+  "aspect": "446:313",
+  "license": "midjourney",
+  "source": {
+    "origin": "midjourney",
+    "ingested_at": "2026-11-22",
+    "sha256": "b89c3eaa904f8660e9ee31b845f0265a6f327b4b3af98ada49231298db39c4c8",
+    "figma": {
+      "file": "IkGhZ0RdDHihBymdQrJclg",
+      "layer": "brainfrost_A_close-up_macro_shot_of_a_glowing_digital_chain_m_cdb13fcb-bf6b-4fe7-9d04-0bc0c422c945_0",
+      "nodes": [
+        "100:12"
+      ]
+    },
+    "used_for": "Blog - Linux Kernel CVEs 2025; Original, edited"
+  },
+  "usage_restrictions": [],
+  "description": "",
+  "generation": {
+    "prompt": "A close-up, macro shot of a glowing digital chain made of translucent glass. The links are filled with shimmering bioluminescent particles and data points. Extreme shallow depth of field with a soft bokeh background. Cinematic lighting, octane render, 8k, highly detailed, futuristic tech aesthetic",
+    "model": null,
+    "seed": null
+  }
+}

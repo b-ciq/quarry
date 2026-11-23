@@ -1,0 +1,37 @@
+{
+  "id": "mj-holographic-checkmark",
+  "file": "mj-holographic-checkmark.png",
+  "status": "proposed",
+  "class": "hero",
+  "products": [
+    "rlc-pro",
+    "rlc-pro-hardened"
+  ],
+  "categories": [],
+  "verticals": [],
+  "concepts": [],
+  "style": [],
+  "aspect": "1:1",
+  "license": "midjourney",
+  "source": {
+    "origin": "midjourney",
+    "ingested_at": "2026-11-22",
+    "sha256": "8911a6d205f7380799c94608ffaa20a1148c0b940cccffd6d915d27f56c768d7",
+    "figma": {
+      "file": "IkGhZ0RdDHihBymdQrJclg",
+      "layer": "brainfrost_3D_holographic_check_mark_built_from_glowing_network_7a55f492-393e-4215-942c-e432bce3ba22",
+      "nodes": [
+        "100:9"
+      ]
+    },
+    "used_for": "Blog - FIPS validated, PQC algorithms., RLC-H Proactive Security (LKRG 1.0) + FIPS PQC Display Ad",
+    "product_note": "RLC, RLC-H"
+  },
+  "usage_restrictions": [],
+  "description": "",
+  "generation": {
+    "prompt": "3D holographic check mark built from glowing network nodes, bright blue white light particles, connected geometric mesh, blurred background with digital elements, photorealistic render, professional technology marketing",
+    "model": null,
+    "seed": null
+  }
+}

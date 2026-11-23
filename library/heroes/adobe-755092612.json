@@ -1,0 +1,27 @@
+{
+  "id": "adobe-755092612",
+  "file": "adobe-755092612.jpg",
+  "status": "proposed",
+  "class": "hero",
+  "products": [],
+  "categories": [],
+  "verticals": [],
+  "concepts": [],
+  "style": [],
+  "aspect": "512:287",
+  "license": "adobe-stock:755092612",
+  "source": {
+    "origin": "adobe-stock",
+    "ingested_at": "2026-11-22",
+    "sha256": "9a1ffc82326a8dcfd53ebfd08311c5d62cc53a9c098e5f93ce9eaa79bf379df6",
+    "figma": {
+      "file": "IkGhZ0RdDHihBymdQrJclg",
+      "layer": "AdobeStock_755092612",
+      "nodes": [
+        "55:4"
+      ]
+    }
+  },
+  "usage_restrictions": [],
+  "description": ""
+}

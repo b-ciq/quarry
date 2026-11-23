@@ -1,0 +1,32 @@
+{
+  "id": "mj-wireframe-developers",
+  "file": "mj-wireframe-developers.png",
+  "status": "proposed",
+  "class": "hero",
+  "products": [],
+  "categories": [],
+  "verticals": [],
+  "concepts": [],
+  "style": [],
+  "aspect": "1:1",
+  "license": "midjourney",
+  "source": {
+    "origin": "midjourney",
+    "ingested_at": "2026-11-22",
+    "sha256": "9675cd625ec754634c1159e3fa709315358e1b5d67b061e2a66d73ea063da60e",
+    "figma": {
+      "file": "IkGhZ0RdDHihBymdQrJclg",
+      "layer": "brainfrost_Abstract_wireframe_developers_with_blue_security_str_842de049-77ca-4653-bfe4-b223f5d039cd",
+      "nodes": [
+        "102:23"
+      ]
+    }
+  },
+  "usage_restrictions": [],
+  "description": "",
+  "generation": {
+    "prompt": "Abstract wireframe developers with blue security streams flowing around and through their work, subtle protective data flows integrating with engineering process, organic tech visualization",
+    "model": null,
+    "seed": null
+  }
+}

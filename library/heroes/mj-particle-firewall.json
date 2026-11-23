@@ -1,0 +1,36 @@
+{
+  "id": "mj-particle-firewall",
+  "file": "mj-particle-firewall.png",
+  "status": "proposed",
+  "class": "hero",
+  "products": [
+    "rlc-pro-hardened"
+  ],
+  "categories": [],
+  "verticals": [],
+  "concepts": [],
+  "style": [],
+  "aspect": "1:1",
+  "license": "midjourney",
+  "source": {
+    "origin": "midjourney",
+    "ingested_at": "2026-11-22",
+    "sha256": "bff5ff08de22ad32d33675f39c5857fc8ea9d91c7977e8bdb94525fcb4e5e096",
+    "figma": {
+      "file": "IkGhZ0RdDHihBymdQrJclg",
+      "layer": "brainfrost_Dense_wall_of_floating_blue_particles_forming_securi_33062135-8b4d-4112-b3b0-91919c6c0e2b",
+      "nodes": [
+        "226:8"
+      ]
+    },
+    "used_for": "RLC-H Proactive Security (LKRG 1.0) + FIPS PQC Display Ad",
+    "product_note": "RLC-H"
+  },
+  "usage_restrictions": [],
+  "description": "",
+  "generation": {
+    "prompt": "dense wall of floating blue particles forming security barrier, digital firewall made of glowing data points, impenetrable protection layer, cyber security concept, depth of field, cinematic",
+    "model": null,
+    "seed": null
+  }
+}

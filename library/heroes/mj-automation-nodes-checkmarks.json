@@ -1,0 +1,36 @@
+{
+  "id": "mj-automation-nodes-checkmarks",
+  "file": "mj-automation-nodes-checkmarks.png",
+  "status": "proposed",
+  "class": "hero",
+  "products": [
+    "ascender-pro"
+  ],
+  "categories": [],
+  "verticals": [],
+  "concepts": [],
+  "style": [],
+  "aspect": "1:1",
+  "license": "midjourney",
+  "source": {
+    "origin": "midjourney",
+    "ingested_at": "2026-11-22",
+    "sha256": "e122af448fc73e45e9c1c38bb790547fab2ef18bfd04005470d990324fc7f4b6",
+    "figma": {
+      "file": "IkGhZ0RdDHihBymdQrJclg",
+      "layer": "brainfrost_abstract_futuristic_visualization_of_automation_glow_255eed7b-b163-4d73-a002-64036cdbdd21",
+      "nodes": [
+        "102:18"
+      ]
+    },
+    "used_for": "Blog - Ascender Pro compliance; Original, edited",
+    "product_note": "Ascender Pro"
+  },
+  "usage_restrictions": [],
+  "description": "",
+  "generation": {
+    "prompt": "abstract futuristic visualization of automation, glowing interconnected nodes, flowing lines representing data and processes, green check marks appearing at nodes, dynamic movement, vibrant neon highlights on dark background, concept of automated IT compliance, clean tech style, high detail, modern illustration",
+    "model": null,
+    "seed": null
+  }
+}

@@ -1,0 +1,27 @@
+{
+  "id": "istock-2152007272",
+  "file": "istock-2152007272.jpg",
+  "status": "proposed",
+  "class": "hero",
+  "products": [],
+  "categories": [],
+  "verticals": [],
+  "concepts": [],
+  "style": [],
+  "aspect": "3281:4096",
+  "license": "istock:2152007272",
+  "source": {
+    "origin": "istock",
+    "ingested_at": "2026-11-22",
+    "sha256": "ac072d87d1152c5da74eadd97f78f36adccab29d14b6a3b7c0c8d27d1f186b24",
+    "figma": {
+      "file": "IkGhZ0RdDHihBymdQrJclg",
+      "layer": "iStock-2152007272-astronomer",
+      "nodes": [
+        "2:5"
+      ]
+    }
+  },
+  "usage_restrictions": [],
+  "description": ""
+}

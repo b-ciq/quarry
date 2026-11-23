@@ -1,0 +1,33 @@
+{
+  "id": "mj-network-light-trails",
+  "file": "mj-network-light-trails.png",
+  "status": "proposed",
+  "class": "hero",
+  "products": [],
+  "categories": [],
+  "verticals": [],
+  "concepts": [],
+  "style": [],
+  "aspect": "91:51",
+  "license": "midjourney",
+  "source": {
+    "origin": "midjourney",
+    "ingested_at": "2026-11-22",
+    "sha256": "1afaf212cf5a51bbb771f42b4f90a7221fe118438cdbeb7d88056ea6eb06d614",
+    "figma": {
+      "file": "IkGhZ0RdDHihBymdQrJclg",
+      "layer": "brainfrost_abstract_network_data_streams_and_light_trails_isola_30ae309d-9c9e-45e4-aaa5-f660b5f6836f",
+      "nodes": [
+        "100:2"
+      ]
+    },
+    "used_for": "Industry Vertical Page: Academia"
+  },
+  "usage_restrictions": [],
+  "description": "",
+  "generation": {
+    "prompt": "abstract network data streams and light trails, isolated on pure black background, electric green and cyan color palette, transparent composition for graphic overlay, cinematic tech photography",
+    "model": null,
+    "seed": null
+  }
+}
