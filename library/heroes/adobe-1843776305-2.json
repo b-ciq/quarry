@@ -1,7 +1,7 @@
 {
   "id": "adobe-1843776305-2",
   "file": "adobe-1843776305-2.jpg",
-  "status": "proposed",
+  "status": "retired",
   "class": "hero",
   "products": [],
   "categories": [
@@ -53,6 +53,11 @@
           "glow-effect"
         ]
       }
+    },
+    "human": {
+      "verdict": "no",
+      "by": "b-ciq <bkfchristensen@gmail.com>",
+      "at": "2026-11-23T19:59:35Z"
     }
   }
 }
