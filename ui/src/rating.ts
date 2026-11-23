@@ -104,3 +104,45 @@ export function agreementText(a: Agreement): string {
   if (a.strong.total === 0) return head
   return `${head} · strong calls ${Math.round((100 * a.strong.agreed) / a.strong.total)}%`
 }
+
+export const VERDICT_LABEL: Record<Verdict, string> = { yes: 'Yes', no: 'No', maybe: 'Maybe-yes' }
+
+/** The bot's fields (description, tags, tone) are its proposal until a human verdict lands. */
+export const botProposed = (a: Asset): boolean => !!a.rating?.bot && !a.rating?.human
+
+/** Overruling the bot is what it learns most from, so only then do we ask "why?". */
+export const differsFromBot = (a: Asset, verdict: Verdict): boolean =>
+  !!a.rating?.bot && a.rating.bot.verdict !== verdict
+
+/** Yes said, but confirm is blocked by fields the card cannot edit. */
+export const needsDetails = (a: Asset): boolean => a.status === 'proposed' && a.rating?.human?.verdict === 'yes'
+
+export interface Cursor {
+  id: string | null
+  index: number
+}
+
+/** Card position: stay on the same asset while it is in the queue; once it leaves, the slot it held. */
+export function cursorIndex(queue: string[], c: Cursor): number {
+  const at = c.id === null ? -1 : queue.indexOf(c.id)
+  return at >= 0 ? at : clamp(c.index, queue.length)
+}
+
+export interface Screen {
+  verdict: Verdict
+  ids: string[]
+}
+
+/**
+ * The grid screen to show. A screen stays put (minus ids that left the lane) so background bot commits
+ * never reshuffle tiles under the curator; once it empties, the next strong screen takes over.
+ */
+export function pickScreen(prev: Screen | null, strong: Screen[]): Screen | null {
+  if (prev) {
+    const live = new Set(strong.flatMap((s) => (s.verdict === prev.verdict ? s.ids : [])))
+    const ids = prev.ids.filter((id) => live.has(id))
+    if (ids.length === prev.ids.length && ids.length > 0) return prev
+    if (ids.length > 0) return { verdict: prev.verdict, ids }
+  }
+  return strong[0] ?? null
+}

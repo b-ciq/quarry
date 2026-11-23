@@ -71,3 +71,15 @@ def test_built_bundle_assets_are_served(repo):
     r = client.get("/" + bundle)
     assert r.status_code == 200 and "javascript" in r.headers["content-type"]
     assert client.get("/assets/Inter-Regular.woff2").status_code == 200
+
+
+def test_dev_fake_rater_env(monkeypatch, repo):
+    from quarry.rater import FakeRater
+    from quarry.ui.app import dev_rater
+    monkeypatch.delenv("QUARRY_FAKE_RATER", raising=False)
+    assert dev_rater() is None
+    monkeypatch.setenv("QUARRY_FAKE_RATER", "1")
+    rater = dev_rater()
+    assert isinstance(rater, FakeRater)
+    summary = TestClient(create_app(repo.root, rater=rater)).get("/api/rate/summary").json()
+    assert summary["rater"] == {"available": True, "model": "fake", "reason": None}

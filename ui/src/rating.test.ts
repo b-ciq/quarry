@@ -1,5 +1,7 @@
 import { describe, expect, it } from 'vitest'
-import { agreementText, cardReducer, lanes, VERDICT_KEYS, type Rating } from './rating'
+import {
+  agreementText, botProposed, cardReducer, cursorIndex, differsFromBot, lanes, needsDetails, pickScreen, VERDICT_KEYS, type Rating,
+} from './rating'
 import type { Asset } from './state'
 
 const bot = (verdict: 'yes' | 'no' | 'maybe', strength: 'strong' | 'unsure'): Rating => ({
@@ -81,4 +83,46 @@ describe('agreementText', () => {
 
 it('VERDICT_KEYS maps keys', () => {
   expect(VERDICT_KEYS).toEqual({ y: 'yes', n: 'no', m: 'maybe' })
+})
+
+describe('card helpers', () => {
+  const human = (verdict: 'yes' | 'no' | 'maybe'): Rating => ({ ...bot('no', 'unsure'), human: { verdict, by: 'b', at: 't' } })
+  it('botProposed until a human verdict', () => {
+    expect(botProposed(mk('a', bot('yes', 'unsure')))).toBe(true)
+    expect(botProposed(mk('a', human('yes')))).toBe(false)
+    expect(botProposed(mk('a'))).toBe(false)
+  })
+  it('differsFromBot only when a bot verdict exists and differs', () => {
+    expect(differsFromBot(mk('a', bot('yes', 'unsure')), 'yes')).toBe(false)
+    expect(differsFromBot(mk('a', bot('yes', 'unsure')), 'no')).toBe(true)
+    expect(differsFromBot(mk('a'), 'no')).toBe(false)
+  })
+  it('needsDetails is a proposed asset with a human yes', () => {
+    expect(needsDetails(mk('a', human('yes')))).toBe(true)
+    expect(needsDetails(mk('a', human('yes'), { status: 'confirmed' }))).toBe(false)
+    expect(needsDetails(mk('a', human('maybe')))).toBe(false)
+  })
+  it('cursorIndex follows the id, else keeps the slot clamped', () => {
+    expect(cursorIndex(['a', 'b', 'c'], { id: 'c', index: 0 })).toBe(2)
+    expect(cursorIndex(['a', 'c'], { id: 'b', index: 1 })).toBe(1)
+    expect(cursorIndex(['a'], { id: 'z', index: 5 })).toBe(0)
+    expect(cursorIndex([], { id: null, index: 3 })).toBe(0)
+  })
+})
+
+describe('pickScreen', () => {
+  const s1 = { verdict: 'yes' as const, ids: ['a', 'b'] }
+  it('takes the first strong screen when there is none', () => {
+    expect(pickScreen(null, [s1])).toBe(s1)
+    expect(pickScreen(null, [])).toBeNull()
+  })
+  it('keeps the shown screen even if lanes regroup', () => {
+    const prev = { verdict: 'yes' as const, ids: ['b', 'c'] }
+    expect(pickScreen(prev, [{ verdict: 'yes', ids: ['a', 'b', 'c'] }])).toBe(prev)
+  })
+  it('drops ids that left and moves on once empty', () => {
+    expect(pickScreen({ verdict: 'yes', ids: ['a', 'x'] }, [s1])).toEqual({ verdict: 'yes', ids: ['a'] })
+    expect(pickScreen({ verdict: 'no', ids: ['x'] }, [s1])).toBe(s1)
+    expect(pickScreen({ verdict: 'no', ids: ['a'] }, [s1])).toBe(s1)
+  })
 })

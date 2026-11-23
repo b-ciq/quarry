@@ -264,3 +264,12 @@ def test_write_sidecars_rolls_back_on_non_git_errors(git_repo, monkeypatch):
     c = TestClient(create_app(git_repo.root), raise_server_exceptions=False)
     assert c.post("/api/assets/h1/verdict", json={"verdict": "yes"}).status_code == 500
     assert p1.read_bytes() == before and git_repo.git("status", "--porcelain") == ""
+
+
+def test_needs_details_lists_blocking_errors(git_repo):
+    git_repo.add_asset("hero", "h1", status="proposed", license="")
+    git_repo.add_asset("hero", "h2", status="proposed")
+    _commit(git_repo)
+    c = _client(git_repo)
+    assert c.post("/api/assets/h1/verdict", json={"verdict": "yes"}).json()["needs_details"]
+    assert c.get("/api/rate/needs-details").json() == {"h1": ["license: required for confirmed assets"]}

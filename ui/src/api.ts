@@ -37,10 +37,7 @@ async function send(method: string, url: string, body?: unknown): Promise<WriteR
       body: body === undefined ? undefined : JSON.stringify(body),
     })
     const data = (await res.json().catch(() => ({}))) as { asset?: Asset; error?: string; errors?: string[] }
-    if (res.ok && data.asset) {
-      const id = data.asset.id
-      return { ok: true, asset: { ...data.asset, thumb_url: `/thumbs/${id}.webp`, full_url: `/files/${id}` } }
-    }
+    if (res.ok && data.asset) return { ok: true, asset: withUrls(data.asset) }
     return { ok: false, status: res.status, error: data.error ?? `HTTP ${res.status}`, errors: data.errors ?? [] }
   } catch (e) {
     return { ok: false, status: 0, error: (e as Error).message, errors: [] }
@@ -156,11 +153,26 @@ export interface RateSummary {
   learning: 'look-alike' | 'recent'
 }
 
-export const postVerdict = (id: string, verdict: Verdict, reason?: string) =>
-  call<VerdictResult>('POST', `/api/assets/${seg(id)}/verdict`, { json: reason === undefined ? { verdict } : { verdict, reason } })
+/** Sidecars from write endpoints lack the URLs the list endpoint adds. */
+export const withUrls = (a: Asset): Asset => ({ ...a, thumb_url: `/thumbs/${a.id}.webp`, full_url: `/files/${a.id}` })
+
+/** Validator errors from a failed call (422 bodies carry them as `errors`). */
+export const callErrors = (r: CallResult<unknown>): string[] => {
+  const errors = (r.data as { errors?: unknown } | null)?.errors
+  return Array.isArray(errors) ? (errors as string[]) : []
+}
+
+export async function postVerdict(id: string, verdict: Verdict, reason?: string) {
+  const r = await call<VerdictResult>('POST', `/api/assets/${seg(id)}/verdict`,
+    { json: reason === undefined ? { verdict } : { verdict, reason } })
+  if (r.ok && r.data.asset) r.data = { ...r.data, asset: withUrls(r.data.asset) }
+  return r
+}
 export const postVerdicts = (verdict: Verdict, ids: string[]) =>
   call<BatchVerdictResult>('POST', '/api/verdicts', { json: { verdict, ids } })
 export const postUndo = (commit: string) => call<{ commit: string; ids: string[] }>('POST', '/api/undo', { json: { commit } })
 export const startAutoRate = (redo?: 'unsure') =>
   call<{ job_id: string }>('POST', `/api/rate${redo ? `?redo=${redo}` : ''}`)
 export const fetchRateSummary = () => call<RateSummary>('GET', '/api/rate/summary')
+/** Needs-details assets mapped to the validator errors that block confirming them. */
+export const fetchNeedsDetails = () => call<Record<string, string[]>>('GET', '/api/rate/needs-details')

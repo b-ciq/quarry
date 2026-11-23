@@ -347,6 +347,14 @@ def mount(app: FastAPI) -> None:
             return _err(409, "another job is already running")
         return {"job_id": job_id}
 
+    @router.get("/api/rate/needs-details")
+    def needs_details():
+        """Assets a human said Yes to that cannot confirm yet: {id: the validator errors blocking confirm}."""
+        vocab = load_vocabulary(repo_root)
+        return {s["id"]: validate_sidecar({**s, "status": "confirmed"}, vocab)
+                for s in app.state.library_cache.assets()
+                if s.get("status") == "proposed" and (_human(s) or {}).get("verdict") == "yes"}
+
     @router.get("/api/rate/summary")
     def rate_summary():
         sidecars = app.state.library_cache.assets()

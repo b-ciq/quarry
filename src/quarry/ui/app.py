@@ -109,7 +109,18 @@ def create_app(repo_root: Path, fake_embedder: bool = False, skill_dir: Path | N
     return app
 
 
+def dev_rater() -> Rater | None:
+    """Dev-only: QUARRY_FAKE_RATER=1 swaps in FakeRater (every asset rated maybe/unsure, no API key,
+    no cost) so the Rate view can be exercised locally. It still commits bot ratings: never point it
+    at a real library."""
+    if os.environ.get("QUARRY_FAKE_RATER") == "1":
+        from quarry.rater import FakeRater
+        return FakeRater()
+    return None
+
+
 def serve(repo_root: Path, port: int = 8787, fake_embedder: bool = False) -> None:
     import uvicorn
     skill = Path(os.environ.get("QUARRY_DECK_SKILL_DIR", "~/.claude/skills/quantic-deck-builder")).expanduser()
-    uvicorn.run(create_app(repo_root, fake_embedder, skill_dir=skill), host="127.0.0.1", port=port)
+    app = create_app(repo_root, fake_embedder, skill_dir=skill, rater=dev_rater())
+    uvicorn.run(app, host="127.0.0.1", port=port)

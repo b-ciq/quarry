@@ -3,7 +3,10 @@ import {
   Alert, Button, ButtonBar, ButtonBarItem, LucideIconPanelLeftClose, LucideIconPanelLeftOpen, LucideIconX,
   SplitterGroup, SplitterPane, TextInput,
 } from '@ctrliq/quantic-react'
-import { fetchAssets, fetchStatus, fetchVocabulary, searchIndex, type Status } from './api'
+import {
+  fetchAssets, fetchRateSummary, fetchStatus, fetchVocabulary, searchIndex, startAutoRate,
+  type Job, type RateSummary, type Status,
+} from './api'
 import { IngestDrop } from './components/IngestDrop'
 import { VocabPanel } from './views/VocabPanel'
 import { FacetRail } from './components/FacetRail'
@@ -13,8 +16,10 @@ import { canDiscard } from './editing'
 import { AssetEditor } from './components/AssetEditor'
 import { Grid } from './views/Grid'
 import { ReviewQueue } from './views/ReviewQueue'
+import { RateView, type RateJob } from './views/RateView'
 
 const RAIL_KEY = 'quarry.filters'
+type Page = 'library' | 'rate' | 'vocab' | 'ingest'
 
 export function App() {
   const [assets, setAssets] = useState<Asset[]>([])
@@ -28,7 +33,11 @@ export function App() {
   const [selectedId, setSelectedId] = useState<string | null>(null)
   const [queueIds, setQueueIds] = useState<string[] | null>(null)
 
-  const [page, setPage] = useState<'library' | 'vocab' | 'ingest'>('library')
+  const [page, setPage] = useState<Page>('library')
+  const [summary, setSummary] = useState<RateSummary | null>(null)
+  const [summaryError, setSummaryError] = useState<string | null>(null)
+  const [rateJob, setRateJob] = useState<RateJob | null>(null)
+  const [rateError, setRateError] = useState<string | null>(null)
   const [railOpen, setRailOpen] = useState(() => localStorage.getItem(RAIL_KEY) !== 'closed')
   const toggleRail = () => setRailOpen((o) => { localStorage.setItem(RAIL_KEY, o ? 'closed' : 'open'); return !o })
 
@@ -40,17 +49,47 @@ export function App() {
     fetchStatus().then((s) => { setStatus(s); setStatusError(null) }).catch((e: Error) => setStatusError(e.message))
   }, [])
 
+  const refreshSummary = useCallback(() => {
+    fetchRateSummary().then((r) => {
+      if (r.ok) { setSummary(r.data); setSummaryError(null) } else setSummaryError(r.error)
+    })
+  }, [])
+
+  const reloadAssets = useCallback(
+    () => fetchAssets().then((a) => { setAssets(a); setError(null) }).catch((e: Error) => setError(e.message)).finally(() => setLoaded(true)),
+    [],
+  )
+
   const refresh = useCallback(() => {
-    fetchAssets().then((a) => { setAssets(a); setError(null) }).catch((e: Error) => setError(e.message)).finally(() => setLoaded(true))
+    void reloadAssets()
     fetchVocabulary().then(setVocabulary).catch(() => setVocabulary({}))
     refreshStatus()
-  }, [refreshStatus])
+    refreshSummary()
+  }, [refreshStatus, refreshSummary, reloadAssets])
   useEffect(refresh, [refresh])
   // The server fetches upstream lazily; poll so ahead/behind and staleness stay current.
   useEffect(() => {
     const t = setInterval(refreshStatus, 30000)
     return () => clearInterval(t)
   }, [refreshStatus])
+
+  // Auto-rate commits in chunks: pull them in while it runs so the lanes fill up.
+  useEffect(() => {
+    if (!rateJob?.running) return
+    const t = setInterval(() => { void reloadAssets(); refreshSummary() }, 5000)
+    return () => clearInterval(t)
+  }, [rateJob?.running, reloadAssets, refreshSummary])
+
+  const startRate = useCallback(async () => {
+    setRateError(null)
+    const r = await startAutoRate()
+    if (r.ok) setRateJob({ id: r.data.job_id, running: true })
+    else setRateError(`Auto-rate did not start: ${r.error}`)
+  }, [])
+  const rateFinished = useCallback((job: Job) => {
+    setRateJob((cur) => (cur ? { ...cur, running: false, job } : cur))
+    refresh()
+  }, [refresh])
 
   const visible = useMemo(
     () => (indexSearch ? applyFilters(resolveHits(indexSearch.ids, assets), filters, '') : applyFilters(assets, filters, q)),
@@ -61,6 +100,8 @@ export function App() {
     (a: Asset) => { setAssets((xs) => xs.map((x) => (x.id === a.id ? a : x))); refreshStatus() },
     [refreshStatus],
   )
+
+  const onAssetSaved = useCallback((a: Asset) => setAssets((xs) => xs.map((x) => (x.id === a.id ? a : x))), [])
 
   const runSearch = async () => {
     const term = q.trim()
@@ -87,11 +128,12 @@ export function App() {
   }, [])
   const exitQueue = useCallback(() => setQueueIds(null), [])
   const proposedCount = useMemo(() => assets.filter((a) => a.status === 'proposed').length, [assets])
+  const [toRate, setToRate] = useState(0)
   const selected = assets.find((a) => a.id === selectedId)
   const closeDetail = () => { if (confirmDiscard()) setSelectedId(null) }
   const libraryView = queueIds === null && page === 'library'
 
-  const goPage = (p: 'library' | 'vocab' | 'ingest') => {
+  const goPage = (p: Page) => {
     if (queueIds === null && page === p) return
     if (!confirmDiscard()) return
     setSelectedId(null)
@@ -117,6 +159,7 @@ export function App() {
         <h1>Quarry</h1>
         <ButtonBar size="sm" aria-label="View">
           <ButtonBarItem active={queueIds === null && page === 'library'} onClick={() => goPage('library')}>Library</ButtonBarItem>
+          <ButtonBarItem active={queueIds === null && page === 'rate'} onClick={() => goPage('rate')}>Rate ({toRate})</ButtonBarItem>
           <ButtonBarItem
             active={queueIds !== null}
             disabled={proposedCount === 0}
@@ -146,6 +189,29 @@ export function App() {
         <span className="result-count">{loaded ? `${visible.length} / ${assets.length}` : ''}</span>
       </header>
       <OpsBar status={status} error={statusError} onRefresh={refresh} />
+      {/* Always mounted so undo history and queued writes survive a trip to another page. */}
+      <main className="main rate-main" hidden={queueIds !== null || page !== 'rate'}>
+        <RateView
+          active={queueIds === null && page === 'rate'}
+          assets={assets}
+          vocabulary={vocabulary}
+          summary={summary}
+          summaryError={summaryError}
+          rateJob={rateJob}
+          rateError={rateError}
+          onStartRate={startRate}
+          onRateJobFinished={rateFinished}
+          onDismissRateJob={() => setRateJob(null)}
+          onChanged={onChanged}
+          onAssetSaved={onAssetSaved}
+          refreshStatus={refreshStatus}
+          reloadAssets={reloadAssets}
+          refreshSummary={refreshSummary}
+          confirmDiscard={confirmDiscard}
+          onDirtyChange={onDirtyChange}
+          onToReviewCount={setToRate}
+        />
+      </main>
       {queueIds !== null ? (
         <main className="main">
           <ReviewQueue
@@ -158,7 +224,7 @@ export function App() {
             onDirtyChange={onDirtyChange}
           />
         </main>
-      ) : page === 'vocab' ? (
+      ) : page === 'rate' ? null : page === 'vocab' ? (
         <main className="main">
           <VocabPanel
             assets={assets}
@@ -172,6 +238,10 @@ export function App() {
           <IngestDrop
             products={vocabulary.products ?? []}
             onIngested={refresh}
+            rater={summary?.rater ?? null}
+            rateJob={rateJob}
+            onAutoRate={startRate}
+            rateError={rateError}
             onReviewQueue={() => {
               const ids = assets.filter((a) => a.status === 'proposed').map((a) => a.id)
               if (ids.length) setQueueIds(ids)
