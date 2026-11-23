@@ -45,8 +45,8 @@ def identity(repo) -> str:
 
 
 def show_bytes(repo, rev: str, path: str) -> bytes | None:
-    """Exact bytes of `path` at `rev`, or None if it doesn't exist there."""
-    p = subprocess.run(["git", "-C", str(repo), "show", f"{rev}:{path}"], capture_output=True)
+    """Exact bytes of `path` (relative to `repo`) at `rev`, or None if it doesn't exist there."""
+    p = subprocess.run(["git", "-C", str(repo), "show", f"{rev}:./{path}"], capture_output=True)
     return p.stdout if p.returncode == 0 else None
 
 

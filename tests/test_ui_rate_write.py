@@ -164,3 +164,104 @@ def test_gitops_identity_fallbacks(git_repo):
     git_repo.git("config", "--unset", "user.email")
     # a global email may exist on the machine; only assert the name survives
     assert gitops.identity(git_repo.root).startswith("Test")
+
+
+def test_confirm_anti_example_records_no_with_avoid_reason(git_repo):
+    git_repo.add_asset("hero", "a1", status="proposed", anti_example=True, avoid_reason="cliché handshake")
+    git_repo.add_asset("hero", "a2", status="proposed", anti_example=True, avoid_reason="stocky")
+    _commit(git_repo)
+    c = _client(git_repo)
+    h = c.post("/api/assets/a1/confirm").json()["asset"]["rating"]["human"]
+    assert h["verdict"] == "no" and h["reason"] == "cliché handshake"
+    h = c.post("/api/assets/a2/verdict", json={"verdict": "yes"}).json()["asset"]["rating"]["human"]
+    assert h["verdict"] == "no" and h["reason"] == "stocky"
+
+
+def test_human_verdict_confirmed_anti_example_is_no_regardless():
+    from quarry.rating import human_verdict
+    sc = {"status": "confirmed", "anti_example": True, "rating": {"human": {"verdict": "yes"}}}
+    assert human_verdict(sc) == "no"
+
+
+def test_restore_records_yes_or_no_for_anti_example(git_repo):
+    git_repo.add_asset("hero", "h1", status="retired", rating={"human": {"verdict": "no", "by": "x", "at": "2026-01-01T00:00:00Z"}})
+    git_repo.add_asset("hero", "a1", status="retired", anti_example=True, avoid_reason="why")
+    _commit(git_repo)
+    c = _client(git_repo)
+    assert c.post("/api/assets/h1/restore").json()["asset"]["rating"]["human"]["verdict"] == "yes"
+    h = c.post("/api/assets/a1/restore").json()["asset"]["rating"]["human"]
+    assert h["verdict"] == "no" and h["reason"] == "why"
+
+
+def test_parked_yes_needing_details_becomes_proposed(git_repo):
+    git_repo.add_asset("hero", "h1", status="parked", license="")
+    _commit(git_repo)
+    body = _client(git_repo).post("/api/assets/h1/verdict", json={"verdict": "yes"}).json()
+    assert body["asset"]["status"] == "proposed" and body["needs_details"]
+
+
+def test_bad_bodies_still_422(git_repo):
+    git_repo.add_asset("hero", "h1", status="proposed")
+    _commit(git_repo)
+    c = _client(git_repo)
+    for url in ("/api/assets/h1/verdict", "/api/verdicts", "/api/undo"):
+        assert c.post(url, json=[1]).status_code == 422
+        assert c.post(url, content=b"not json", headers={"content-type": "application/json"}).status_code == 422
+        assert c.post(url).status_code == 422
+
+
+def test_undo_refuses_commit_touching_non_sidecar_files(git_repo):
+    git_repo.add_asset("hero", "h1", status="proposed")
+    _commit(git_repo)
+    (git_repo.root / "taxonomy" / "note.txt").write_text("x")
+    git_repo.git("add", "-A")
+    git_repo.git("commit", "-q", "-m", "rate: sneaky")
+    sha = git_repo.git("rev-parse", "HEAD").strip()
+    assert _client(git_repo).post("/api/undo", json={"commit": sha}).status_code == 409
+
+
+def test_undo_refuses_invalid_previous_content(git_repo):
+    path = git_repo.add_asset("hero", "h1", status="proposed")
+    _commit(git_repo)
+    bad = json.loads(path.read_text())
+    bad["status"] = "bogus"
+    path.write_text(json.dumps(bad, indent=2))
+    git_repo.git("add", "-A")
+    git_repo.git("commit", "-q", "-m", "seed bad")
+    c = _client(git_repo)
+    sha = None
+    good = {**bad, "status": "proposed"}
+    path.write_text(json.dumps(good, indent=2))
+    git_repo.git("add", "-A")
+    git_repo.git("commit", "-q", "-m", "rate: fix h1")
+    sha = git_repo.git("rev-parse", "HEAD").strip()
+    after = path.read_bytes()
+    r = c.post("/api/undo", json={"commit": sha})
+    assert r.status_code == 422 and path.read_bytes() == after
+
+
+def test_batch_commit_failure_rolls_back_everything(git_repo, monkeypatch):
+    from quarry.ui import gitops
+    p1 = git_repo.add_asset("hero", "h1", status="proposed")
+    p2 = git_repo.add_asset("hero", "h2", status="proposed")
+    _commit(git_repo)
+    before = (p1.read_bytes(), p2.read_bytes())
+
+    def boom(*a, **k):
+        raise gitops.GitError("boom")
+    monkeypatch.setattr(gitops, "commit_paths", boom)
+    r = _client(git_repo).post("/api/verdicts", json={"verdict": "yes", "ids": ["h1", "h2"]})
+    assert r.status_code == 500
+    assert (p1.read_bytes(), p2.read_bytes()) == before
+    assert git_repo.git("status", "--porcelain") == ""
+
+
+def test_write_sidecars_rolls_back_on_non_git_errors(git_repo, monkeypatch):
+    from quarry.ui import gitops
+    p1 = git_repo.add_asset("hero", "h1", status="proposed")
+    _commit(git_repo)
+    before = p1.read_bytes()
+    monkeypatch.setattr(gitops, "commit_paths", lambda *a, **k: (_ for _ in ()).throw(OSError("disk")))
+    c = TestClient(create_app(git_repo.root), raise_server_exceptions=False)
+    assert c.post("/api/assets/h1/verdict", json={"verdict": "yes"}).status_code == 500
+    assert p1.read_bytes() == before and git_repo.git("status", "--porcelain") == ""

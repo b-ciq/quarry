@@ -65,7 +65,7 @@ def utc_now() -> str:
 def write_sidecars(app: FastAPI, changes: dict[Path, "dict | bytes"], message: str) -> str:
     """Write every sidecar (dict -> indented JSON, bytes -> verbatim), make ONE commit of exactly
     those files, return its sha. Caller holds app.state.write_lock and has already validated.
-    On GitError every file is restored, unstaged, the cache invalidated, and GitError re-raised.
+    On GitError every file is restored, unstaged, the cache invalidated, and the error re-raised.
     """
     repo_root: Path = app.state.repo_root
     originals = {p: p.read_bytes() for p in changes}
@@ -74,7 +74,7 @@ def write_sidecars(app: FastAPI, changes: dict[Path, "dict | bytes"], message: s
         for p, new in changes.items():
             p.write_bytes(new if isinstance(new, bytes) else (json.dumps(new, indent=2) + "\n").encode())
         return gitops.commit_paths(repo_root, rels, message)
-    except gitops.GitError:
+    except Exception:
         for p, old in originals.items():
             p.write_bytes(old)
         gitops._git(repo_root, "reset", "-q", "--", *rels, check=False)
@@ -122,7 +122,11 @@ def mount(app: FastAPI) -> None:
 
         def change(s):
             if verdict:
-                s = rating.apply_human_verdict(s, verdict, by=gitops.identity(repo_root), now=utc_now())
+                v, reason = verdict, None
+                if new_status == "confirmed" and s.get("anti_example"):
+                    v, reason = "no", s.get("avoid_reason")  # confirmed anti-example = No
+                s = rating.apply_human_verdict(s, v, by=gitops.identity(repo_root), now=utc_now(),
+                                               reason=reason)
             return {**s, "status": new_status}
         return mutate(id, verb, change, pre)
 
@@ -150,6 +154,6 @@ def mount(app: FastAPI) -> None:
 
     @router.post("/api/assets/{id}/restore", dependencies=[Depends(require_clean_managed)])
     def restore(id: str):
-        return transition(id, "restore", "confirmed", {"retired"})
+        return transition(id, "restore", "confirmed", {"retired"}, verdict="yes")
 
     app.include_router(router)

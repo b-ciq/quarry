@@ -26,6 +26,8 @@ _LEGACY = {"retired": "no", "parked": "maybe"}
 
 
 def human_verdict(sidecar: dict) -> str | None:
+    if sidecar.get("status") == "confirmed" and sidecar.get("anti_example"):
+        return "no"
     human = (sidecar.get("rating") or {}).get("human")
     if human and human.get("verdict"):
         return human["verdict"]
