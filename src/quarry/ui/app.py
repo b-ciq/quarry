@@ -6,7 +6,7 @@ from fastapi import FastAPI
 from fastapi.responses import FileResponse, JSONResponse
 
 from quarry.publish import check_stale
-from quarry.ui import gitops, read_api, write_api
+from quarry.ui import gitops, read_api, vocab_api, write_api
 
 STATIC_DIR = Path(__file__).parent / "static"
 
@@ -64,6 +64,7 @@ def create_app(repo_root: Path, fake_embedder: bool = False) -> FastAPI:
 
     read_api.mount(app, index_stale)
     write_api.mount(app)
+    vocab_api.mount(app)
 
     @app.get("/")
     def root():

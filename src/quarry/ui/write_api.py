@@ -42,7 +42,7 @@ def _err(status: int, msg: str, **extra) -> JSONResponse:
 def mount(app: FastAPI) -> None:
     repo_root: Path = app.state.repo_root
     router = APIRouter()
-    lock = threading.Lock()
+    lock = app.state.write_lock = threading.Lock()  # shared with vocab_api
 
     @app.exception_handler(Conflict)
     def _conflict(_req, exc: Conflict):
