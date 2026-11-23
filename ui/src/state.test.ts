@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { applyFilters, facetCounts, type Asset } from './state'
+import { applyFilters, facetCounts, vocabCounts, type Asset } from './state'
 
 const mk = (o: Partial<Asset> & { id: string }): Asset => ({
   file: `${o.id}.png`,
@@ -91,5 +91,19 @@ describe('facetCounts', () => {
   })
   it('returns [] for empty input', () => {
     expect(facetCounts([], 'class')).toEqual([])
+  })
+})
+
+describe('vocabCounts', () => {
+  it('counts every status, keeps vocabulary order, zero for unused slugs', () => {
+    const vocab = { products: ['rocky', 'fuzzball', 'unused'], concepts: ['hpc', 'security'], other: ['x'] }
+    const r = vocabCounts(all, vocab)
+    expect(r.products).toEqual([{ slug: 'rocky', count: 2 }, { slug: 'fuzzball', count: 1 }, { slug: 'unused', count: 0 }])
+    expect(r.concepts).toEqual([{ slug: 'hpc', count: 1 }, { slug: 'security', count: 1 }])
+    expect(r.other).toEqual([{ slug: 'x', count: 0 }])
+  })
+  it('filters on categories/verticals/style axes', () => {
+    const d = mk({ id: 'd', style: ['flat'] })
+    expect(ids(applyFilters([d, A], { style: ['flat'] }, ''))).toEqual(['d'])
   })
 })

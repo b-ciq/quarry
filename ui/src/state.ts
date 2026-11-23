@@ -24,7 +24,7 @@ export interface Asset {
   full_url: string
 }
 
-export const AXES = ['class', 'status', 'product', 'tone', 'concepts', 'license'] as const
+export const AXES = ['class', 'status', 'product', 'tone', 'categories', 'verticals', 'concepts', 'style', 'license'] as const
 export type Axis = (typeof AXES)[number]
 
 export type Filters = Partial<Record<Axis, string[]>>
@@ -45,8 +45,14 @@ export function axisValues(a: Asset, axis: Axis): string[] {
       return a.products ?? []
     case 'tone':
       return a.tone ? [a.tone] : []
+    case 'categories':
+      return a.categories ?? []
+    case 'verticals':
+      return a.verticals ?? []
     case 'concepts':
       return a.concepts ?? []
+    case 'style':
+      return a.style ?? []
     case 'license':
       return a.license ? [a.license] : []
   }
@@ -84,4 +90,31 @@ export function facetCounts(assets: Asset[], axis: Axis): FacetCount[] {
   return [...counts]
     .map(([value, count]) => ({ value, count }))
     .sort((x, y) => y.count - x.count || x.value.localeCompare(y.value))
+}
+
+/** Vocabulary axis (plural, as in vocabulary.json) to the grid filter axis that selects it. */
+export const VOCAB_FILTER_AXIS: Record<string, Axis> = {
+  products: 'product',
+  categories: 'categories',
+  verticals: 'verticals',
+  concepts: 'concepts',
+  style: 'style',
+}
+
+export interface VocabRow {
+  slug: string
+  count: number
+}
+
+/** Per-slug usage over ALL assets (every status); unused slugs get 0, vocabulary order kept. */
+export function vocabCounts(assets: Asset[], vocabulary: Record<string, string[]>): Record<string, VocabRow[]> {
+  const out: Record<string, VocabRow[]> = {}
+  for (const [axis, slugs] of Object.entries(vocabulary)) {
+    const field = VOCAB_FILTER_AXIS[axis]
+    out[axis] = slugs.map((slug) => ({
+      slug,
+      count: field ? assets.filter((a) => axisValues(a, field).includes(slug)).length : 0,
+    }))
+  }
+  return out
 }

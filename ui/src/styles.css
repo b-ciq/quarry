@@ -313,3 +313,93 @@ body {
 .review .editor-form {
   flex: 1;
 }
+
+/* Ops actions */
+.ops-notice {
+  padding: var(--quantic-spacing-2) var(--quantic-spacing-4);
+  border-bottom: 1px solid var(--quantic-border-secondary);
+}
+
+.job-log {
+  display: flex;
+  flex-direction: column;
+  gap: var(--quantic-spacing-2);
+}
+
+.job-log-head {
+  display: flex;
+  align-items: center;
+  gap: var(--quantic-spacing-2);
+}
+
+/* Vocabulary panel */
+.vocab {
+  display: flex;
+  flex-direction: column;
+  gap: var(--quantic-spacing-4);
+  max-width: var(--quantic-spacing-96);
+}
+
+.vocab-axis h2 {
+  margin: 0 0 var(--quantic-spacing-2);
+  font-size: var(--quantic-font-size-body-md);
+  display: flex;
+  align-items: center;
+  gap: var(--quantic-spacing-2);
+}
+
+.vocab-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.vocab-row {
+  display: flex;
+  align-items: center;
+  gap: var(--quantic-spacing-2);
+  padding: var(--quantic-spacing-1) 0;
+  border-bottom: 1px solid var(--quantic-border-secondary);
+}
+
+.vocab-add {
+  display: flex;
+  gap: var(--quantic-spacing-2);
+  margin-top: var(--quantic-spacing-2);
+}
+
+/* Ingest */
+.ingest {
+  display: flex;
+  flex-direction: column;
+  gap: var(--quantic-spacing-4);
+  max-width: var(--quantic-spacing-96);
+}
+
+.dropzone {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--quantic-spacing-2);
+  padding: var(--quantic-spacing-8);
+  border: 2px dashed var(--quantic-border-primary);
+  border-radius: var(--quantic-radius-md);
+  color: var(--quantic-text-tertiary);
+}
+
+.dropzone-over {
+  border-color: var(--quantic-border-brand);
+  background: var(--quantic-bg-secondary);
+}
+
+.ingest-form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--quantic-spacing-3);
+}
+
+.ingest-files,
+.ingest-report ul {
+  margin: 0;
+  padding-left: var(--quantic-spacing-4);
+}

@@ -69,3 +69,53 @@ export function splitErrors(errors: string[]): { byField: Record<string, string[
   }
   return { byField, general }
 }
+
+export interface CallResult<T = Record<string, unknown>> {
+  ok: boolean
+  status: number
+  data: T
+  /** Human message for a failed call: server `error`/`message`, validator errors, or the HTTP status. */
+  error: string
+}
+
+async function call<T = Record<string, unknown>>(method: string, url: string, init?: { json?: unknown; form?: FormData }): Promise<CallResult<T>> {
+  try {
+    const res = await fetch(url, {
+      method,
+      headers: init?.json === undefined ? undefined : { 'Content-Type': 'application/json' },
+      body: init?.form ?? (init?.json === undefined ? undefined : JSON.stringify(init.json)),
+    })
+    const data = (await res.json().catch(() => ({}))) as Record<string, unknown>
+    const errors = Array.isArray(data.errors) ? ` (${(data.errors as string[]).join('; ')})` : ''
+    const error = res.ok ? '' : `${(data.error as string) ?? (data.message as string) ?? `HTTP ${res.status}`}${errors}`
+    return { ok: res.ok, status: res.status, data: data as T, error }
+  } catch (e) {
+    return { ok: false, status: 0, data: {} as T, error: (e as Error).message }
+  }
+}
+
+const seg = encodeURIComponent
+export const addSlug = (axis: string, slug: string) => call('POST', `/api/vocabulary/${seg(axis)}`, { json: { slug } })
+export const renameSlug = (axis: string, slug: string, next: string) =>
+  call('POST', `/api/vocabulary/${seg(axis)}/${seg(slug)}/rename`, { json: { new: next } })
+export const mergeSlug = (axis: string, slug: string, into: string) =>
+  call('POST', `/api/vocabulary/${seg(axis)}/${seg(slug)}/merge`, { json: { into } })
+export const deleteSlug = (axis: string, slug: string) =>
+  call<{ usage?: string[] }>('DELETE', `/api/vocabulary/${seg(axis)}/${seg(slug)}`)
+
+export interface IngestResult {
+  created: string[]
+  skipped: { file: string; reason: string }[]
+}
+export const ingestFiles = (form: FormData) => call<IngestResult>('POST', '/api/ingest', { form })
+
+export const syncNow = () => call<{ pulled: boolean; pushed: boolean; conflict: boolean; message: string }>('POST', '/api/sync')
+export const startJob = (kind: 'reindex' | 'publish') => call<{ job_id: string }>('POST', `/api/${kind}`)
+
+export interface Job {
+  state: 'running' | 'done' | 'failed'
+  log: string[]
+  result: Record<string, unknown> | null
+  error: string | null
+}
+export const fetchJob = (id: string) => call<Job>('GET', `/api/jobs/${seg(id)}`)

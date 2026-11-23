@@ -6,7 +6,10 @@ const LABELS: Record<Axis, string> = {
   status: 'Status',
   product: 'Product',
   tone: 'Tone',
+  categories: 'Categories',
+  verticals: 'Verticals',
   concepts: 'Concepts',
+  style: 'Style',
   license: 'License',
 }
 

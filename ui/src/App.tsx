@@ -1,6 +1,8 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { ButtonBar, ButtonBarItem, Drawer, TextInput } from '@ctrliq/quantic-react'
 import { fetchAssets, fetchStatus, fetchVocabulary, type Status } from './api'
+import { IngestDrop } from './components/IngestDrop'
+import { VocabPanel } from './views/VocabPanel'
 import { FacetRail } from './components/FacetRail'
 import { OpsBar } from './components/OpsBar'
 import { applyFilters, type Asset, type Axis, type Filters } from './state'
@@ -21,11 +23,14 @@ export function App() {
   const [selectedId, setSelectedId] = useState<string | null>(null)
   const [queueIds, setQueueIds] = useState<string[] | null>(null)
 
-  useEffect(() => {
-    fetchAssets().then(setAssets).catch((e: Error) => setError(e.message)).finally(() => setLoaded(true))
+  const [page, setPage] = useState<'library' | 'vocab' | 'ingest'>('library')
+
+  const refresh = useCallback(() => {
+    fetchAssets().then((a) => { setAssets(a); setError(null) }).catch((e: Error) => setError(e.message)).finally(() => setLoaded(true))
     fetchVocabulary().then(setVocabulary).catch(() => setVocabulary({}))
-    fetchStatus().then(setStatus).catch((e: Error) => setStatusError(e.message))
+    fetchStatus().then((s) => { setStatus(s); setStatusError(null) }).catch((e: Error) => setStatusError(e.message))
   }, [])
+  useEffect(refresh, [refresh])
 
   const visible = useMemo(() => applyFilters(assets, filters, q), [assets, filters, q])
 
@@ -49,6 +54,14 @@ export function App() {
   const proposedCount = useMemo(() => assets.filter((a) => a.status === 'proposed').length, [assets])
   const selected = assets.find((a) => a.id === selectedId)
 
+  const goPage = (p: 'library' | 'vocab' | 'ingest') => {
+    if (queueIds === null && page === p) return
+    if (!confirmDiscard()) return
+    setSelectedId(null)
+    setQueueIds(null)
+    setPage(p)
+  }
+
   const toggle = (axis: Axis, value: string, on: boolean) =>
     setFilters((f) => {
       const cur = f[axis] ?? []
@@ -60,18 +73,21 @@ export function App() {
       <header className="topbar">
         <h1>Quarry</h1>
         <ButtonBar size="sm" aria-label="View">
-          <ButtonBarItem active={queueIds === null} onClick={() => { if (queueIds !== null && confirmDiscard()) exitQueue() }}>Library</ButtonBarItem>
+          <ButtonBarItem active={queueIds === null && page === 'library'} onClick={() => goPage('library')}>Library</ButtonBarItem>
           <ButtonBarItem
             active={queueIds !== null}
             disabled={proposedCount === 0}
             onClick={() => {
               if (queueIds !== null || !confirmDiscard()) return
               setSelectedId(null)
+              setPage('library')
               setQueueIds(assets.filter((a) => a.status === 'proposed').map((a) => a.id))
             }}
           >
             Review queue ({proposedCount})
           </ButtonBarItem>
+          <ButtonBarItem active={queueIds === null && page === 'vocab'} onClick={() => goPage('vocab')}>Vocabulary</ButtonBarItem>
+          <ButtonBarItem active={queueIds === null && page === 'ingest'} onClick={() => goPage('ingest')}>Ingest</ButtonBarItem>
         </ButtonBar>
         <div className="search">
           <TextInput
@@ -84,7 +100,7 @@ export function App() {
         </div>
         <span className="result-count">{loaded ? `${visible.length} / ${assets.length}` : ''}</span>
       </header>
-      <OpsBar status={status} error={statusError} />
+      <OpsBar status={status} error={statusError} onRefresh={refresh} />
       {queueIds !== null ? (
         <main className="main">
           <ReviewQueue
@@ -95,6 +111,26 @@ export function App() {
             onExit={exitQueue}
             confirmDiscard={confirmDiscard}
             onDirtyChange={onDirtyChange}
+          />
+        </main>
+      ) : page === 'vocab' ? (
+        <main className="main">
+          <VocabPanel
+            assets={assets}
+            vocabulary={vocabulary}
+            onChanged={refresh}
+            onOpenInGrid={(axis, value) => { setFilters({ [axis]: [value] }); setQ(''); setPage('library') }}
+          />
+        </main>
+      ) : page === 'ingest' ? (
+        <main className="main">
+          <IngestDrop
+            products={vocabulary.products ?? []}
+            onIngested={refresh}
+            onReviewQueue={() => {
+              const ids = assets.filter((a) => a.status === 'proposed').map((a) => a.id)
+              if (ids.length) setQueueIds(ids)
+            }}
           />
         </main>
       ) : (
