@@ -54,6 +54,14 @@ def require_clean_managed(request: Request) -> None:
                        dirty_managed=dirty)
 
 
+async def json_body(request: Request):
+    """Parsed JSON body, or None when missing/invalid (handlers turn that into their own 422)."""
+    try:
+        return await request.json()
+    except ValueError:
+        return None
+
+
 def _err(status: int, msg: str, **extra) -> JSONResponse:
     return JSONResponse({"error": msg, **extra}, status_code=status)
 
@@ -131,11 +139,7 @@ def mount(app: FastAPI) -> None:
         return mutate(id, verb, change, pre)
 
     @router.patch("/api/assets/{id}", dependencies=[Depends(require_clean_managed)])
-    async def patch_asset(id: str, request: Request):
-        try:
-            body = await request.json()
-        except ValueError:
-            body = None
+    def patch_asset(id: str, body=Depends(json_body)):  # sync: lock + git run in the threadpool
         if not isinstance(body, dict):
             return _err(422, "body must be a JSON object")
         bad = sorted(k for k in body if k not in EDITABLE)

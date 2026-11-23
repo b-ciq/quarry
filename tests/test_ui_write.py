@@ -154,3 +154,12 @@ def test_unrelated_dirt_does_not_block_or_get_committed(git_repo):
     assert r.status_code == 200
     assert git_repo.git("show", "--name-only", "--format=", "HEAD").split() == ["library/hero/h1.json"]
     assert "notes.txt" in git_repo.git("status", "--porcelain")
+
+
+def test_patch_bad_bodies_are_422_with_message(git_repo):
+    git_repo.add_asset("hero", "h1")
+    _commit(git_repo)
+    c = _client(git_repo)
+    for kw in ({"json": [1]}, {"content": b"not json", "headers": {"content-type": "application/json"}}, {}):
+        r = c.patch("/api/assets/h1", **kw)
+        assert r.status_code == 422 and r.json()["error"] == "body must be a JSON object"
