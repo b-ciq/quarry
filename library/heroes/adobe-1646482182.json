@@ -1,7 +1,7 @@
 {
   "id": "adobe-1646482182",
   "file": "adobe-1646482182.jpg",
-  "status": "proposed",
+  "status": "retired",
   "class": "hero",
   "products": [],
   "categories": [],
@@ -49,6 +49,11 @@
           "spotlight"
         ]
       }
+    },
+    "human": {
+      "verdict": "no",
+      "by": "b-ciq <bkfchristensen@gmail.com>",
+      "at": "2026-11-23T19:58:40Z"
     }
   }
 }
