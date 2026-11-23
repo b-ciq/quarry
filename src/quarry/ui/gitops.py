@@ -84,14 +84,28 @@ def sync(repo) -> SyncResult:
     _git(repo, "fetch")
     _, behind, _ = _ahead_behind(repo)
     pull = _git(repo, "pull", "--rebase", "--autostash", check=False)
+    detail = (pull.stderr or pull.stdout).strip()
     if pull.returncode != 0:
-        if _rebase_in_progress(repo):
-            _git(repo, "rebase", "--abort")
+        if not _rebase_in_progress(repo):
+            raise GitError(f"git pull failed: {detail}")
+        _git(repo, "rebase", "--abort")
         return SyncResult(
             conflict=True,
             message="Sync conflict: your changes and the remote edit the same files. "
                     "Nothing was lost; resolve this with your agent, then sync again. "
-                    f"({(pull.stderr or pull.stdout).strip().splitlines()[-1] if (pull.stderr or pull.stdout).strip() else 'rebase failed'})",
+                    f"({detail.splitlines()[-1] if detail else 'rebase failed'})",
+        )
+    # Autostash reapply can conflict while git still exits 0.
+    unmerged = [x for x in _git(repo, "diff", "--name-only", "--diff-filter=U", "-z").stdout.split("\0") if x]
+    if unmerged:
+        # Drop conflict markers; the user's edit stays safe in the kept stash entry.
+        _git(repo, "reset", "-q", "--", *unmerged)
+        _git(repo, "checkout", "--", *unmerged)
+        return SyncResult(
+            pulled=behind, conflict=True,
+            message="Sync conflict: your uncommitted edits to " + ", ".join(unmerged) +
+                    " clash with changes pulled from the remote. Nothing was pushed and your edits are "
+                    "saved in the latest git stash entry; resolve this with your agent, then sync again.",
         )
     ahead, _, _ = _ahead_behind(repo)
     if ahead:

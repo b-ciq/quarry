@@ -143,3 +143,33 @@ def test_api_sync_conflict_is_409(sandbox):
     gitops.commit_paths(a, [rel], "curate: retag a1")
     r = TestClient(create_app(a)).post("/api/sync")
     assert r.status_code == 409 and r.json()["conflict"] is True
+
+
+def _push_b_edit(b, id, desc):
+    rel = _edit(b, id, desc)
+    git(b, "add", rel); git(b, "commit", "-m", "b"); git(b, "push")
+    return rel
+
+
+def test_sync_preserves_non_overlapping_dirt(sandbox):
+    a, b = sandbox
+    _push_b_edit(b, "a1", "from B")
+    rel = _edit(a, "a2", "dirty local")
+    r = gitops.sync(a)
+    assert r.conflict is False
+    assert json.loads((a / rel).read_text())["description"] == "dirty local"
+    assert gitops.managed_status(a).dirty_managed == [rel]
+
+
+def test_sync_autostash_overlap_conflicts_without_push(sandbox):
+    a, b = sandbox
+    rel = _push_b_edit(b, "a1", "from B")
+    origin_head = git(b, "rev-parse", "origin/main").strip()
+    _edit(a, "a1", "dirty local")
+    local_commit = _edit(a, "a2", "ahead")
+    gitops.commit_paths(a, [local_commit], "curate: retag a2")
+    r = gitops.sync(a)
+    assert r.conflict is True and "agent" in r.message.lower()
+    assert git(a, "ls-remote", "origin", "main").split()[0] == origin_head
+    assert git(a, "diff", "--name-only", "--diff-filter=U").strip() == ""
+    assert "<<<<<<<" not in (a / rel).read_text()
