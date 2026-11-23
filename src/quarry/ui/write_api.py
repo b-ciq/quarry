@@ -11,7 +11,16 @@ from quarry.ui import gitops
 from quarry.vocabulary import load_vocabulary
 
 EDITABLE = ("description", "products", "categories", "verticals", "concepts", "style", "tone",
-            "product_version", "captured_at", "usage_restrictions")
+            "product_version", "captured_at", "usage_restrictions", "anti_example", "avoid_reason")
+
+
+def _apply_patch(sidecar: dict, body: dict) -> dict:
+    """Merge a PATCH body; turning anti_example off drops both anti-example keys."""
+    out = {**sidecar, **body}
+    if out.get("anti_example") is False:
+        out.pop("anti_example")
+        out.pop("avoid_reason", None)
+    return out
 
 
 class Conflict(Exception):
@@ -97,7 +106,7 @@ def mount(app: FastAPI) -> None:
         if bad:
             return _err(422, "not editable: " + ", ".join(bad) + "; editable fields: " + ", ".join(EDITABLE),
                         errors=[f"{k}: not editable" for k in bad])
-        return mutate(id, "retag", lambda s: {**s, **body})
+        return mutate(id, "retag", lambda s: _apply_patch(s, body))
 
     @router.post("/api/assets/{id}/confirm", dependencies=[Depends(require_clean_managed)])
     def confirm(id: str):

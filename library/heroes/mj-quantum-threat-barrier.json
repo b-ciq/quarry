@@ -1,0 +1,33 @@
+{
+  "id": "mj-quantum-threat-barrier",
+  "file": "mj-quantum-threat-barrier.png",
+  "status": "proposed",
+  "class": "hero",
+  "products": [],
+  "categories": [],
+  "verticals": [],
+  "concepts": [],
+  "style": [],
+  "aspect": "1:1",
+  "license": "midjourney",
+  "source": {
+    "origin": "midjourney",
+    "ingested_at": "2026-11-22",
+    "sha256": "20f3092aa2b68bc7b6200a90507dbba73226212c3e89424f23a0950788f99c83",
+    "figma": {
+      "file": "IkGhZ0RdDHihBymdQrJclg",
+      "layer": "brainfrost_Abstract_quantum_computing_threats_represented_as_pu_b92aa2f3-dfed-4f8b-8ef9-181bc12b0cb0",
+      "nodes": [
+        "102:22"
+      ]
+    },
+    "used_for": "Blog - Linux Kernel CVEs 2025"
+  },
+  "usage_restrictions": [],
+  "description": "",
+  "generation": {
+    "prompt": "Abstract quantum computing threats represented as purple energy waves being deflected by advanced blue cryptographic barrier, post-quantum security visualization, enterprise data protection, high-tech corporate aesthetic",
+    "model": null,
+    "seed": null
+  }
+}

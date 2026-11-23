@@ -66,7 +66,8 @@ def _scan_library(repo_root: Path) -> tuple[dict[str, str], set[str]]:
 
 
 def ingest_dir(src_dir: Path, repo_root: Path, cls: str, origin: str,
-               license: str | None = None, product: str | None = None) -> IngestResult:
+               license: str | None = None, product: str | None = None,
+               anti_example: bool = False) -> IngestResult:
     src_dir, repo_root = Path(src_dir), Path(repo_root)
     if cls not in CLASSES:
         raise ValueError(f"unknown class {cls!r}")
@@ -117,6 +118,8 @@ def ingest_dir(src_dir: Path, repo_root: Path, cls: str, origin: str,
             "usage_restrictions": [],
             "description": "",
         }
+        if anti_example:
+            sidecar["anti_example"] = True  # curator adds avoid_reason before confirming
         dest_dir.mkdir(parents=True, exist_ok=True)
         shutil.copyfile(src, dest_dir / sidecar["file"])
         sc_path = dest_dir / (id_ + ".json")

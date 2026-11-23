@@ -14,7 +14,7 @@ function Tile({ a, selected, onSelect }: { a: Asset; selected: boolean; onSelect
   const [trackedThumb, setTrackedThumb] = useState(a.thumb_url)
   if (trackedThumb !== a.thumb_url) { setTrackedThumb(a.thumb_url); setSrc(a.thumb_url) }
   return (
-    <li className={`tile${a.status === 'retired' ? ' tile-retired' : ''}${selected ? ' tile-selected' : ''}`} data-status={a.status}>
+    <li className={`tile${a.status === 'retired' ? ' tile-retired' : ''}${a.anti_example ? ' tile-anti' : ''}${selected ? ' tile-selected' : ''}`} data-status={a.status}>
       <a
         href={a.full_url}
         className="tile-thumb"
@@ -31,7 +31,10 @@ function Tile({ a, selected, onSelect }: { a: Asset; selected: boolean; onSelect
       </a>
       <div className="tile-meta">
         <span className="tile-id" title={a.id}>{a.id}</span>
-        <StatusBadge status={a.status} />
+        <span className="tile-badges">
+          {a.anti_example && <Badge size="sm" color="error">avoid</Badge>}
+          <StatusBadge status={a.status} />
+        </span>
       </div>
       <div className="tile-sub">
         <span>{a.class}</span>

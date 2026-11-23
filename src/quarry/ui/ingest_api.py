@@ -25,7 +25,7 @@ def mount(app: FastAPI) -> None:
     def ingest(files: list[UploadFile] = File(default=[]),
                asset_class: str = Form(...), origin: str = Form(...),
                license: str | None = Form(None), license_id: str | None = Form(None),
-               product: str | None = Form(None)):
+               product: str | None = Form(None), anti_example: bool = Form(False)):
         asset_class, origin = asset_class.strip(), origin.strip()
         license = (license or "").strip() or None
         license_id = (license_id or "").strip() or None
@@ -66,7 +66,8 @@ def mount(app: FastAPI) -> None:
 
             with app.state.write_lock:
                 try:
-                    res = ingest_dir(tmp, repo_root, asset_class, origin, license, product)
+                    res = ingest_dir(tmp, repo_root, asset_class, origin, license, product,
+                                     anti_example=anti_example)
                 except ValueError as exc:
                     return _err(422, str(exc))
                 skipped += [{"file": p.name, "reason": r} for p, r in res.skipped]
@@ -78,7 +79,8 @@ def mount(app: FastAPI) -> None:
                         img = next(f for f in sc.parent.glob(sc.stem + ".*") if f.suffix.lower() in IMAGE_EXTS)
                         rels.append(img.relative_to(repo_root).as_posix())
                     try:
-                        gitops.commit_paths(repo_root, rels, f"ingest: {len(created)} assets from {origin}")
+                        kind = "anti-examples" if anti_example else "assets"
+                        gitops.commit_paths(repo_root, rels, f"ingest: {len(created)} {kind} from {origin}")
                     except gitops.GitError as exc:
                         gitops._git(repo_root, "reset", "-q", "--", *rels, check=False)
                         for r in rels:

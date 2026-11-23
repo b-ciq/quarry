@@ -11,7 +11,6 @@ run_mode = "concurrent"
 
 [scripts.run.test]
 command = ".venv/bin/pytest -q"
-default = true
 icon = "test-tube"
 
 [scripts.run.validate]
@@ -29,4 +28,5 @@ icon = "search"
 [scripts.run.ui]
 command = ".venv/bin/quarry ui --port $CONDUCTOR_PORT --fake-embedder"
 available_in = ["local"]
-icon = "layout-grid"
+default = true
+icon = "play"

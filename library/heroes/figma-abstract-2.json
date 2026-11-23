@@ -1,0 +1,27 @@
+{
+  "id": "figma-abstract-2",
+  "file": "figma-abstract-2.png",
+  "status": "proposed",
+  "class": "hero",
+  "products": [],
+  "categories": [],
+  "verticals": [],
+  "concepts": [],
+  "style": [],
+  "aspect": "16:9",
+  "license": "",
+  "source": {
+    "origin": "figma",
+    "ingested_at": "2026-11-22",
+    "sha256": "8e4aa5ebdbb7835fd4e0c116beed3b2434b941b9e489953f5c20ecfdf373e52e",
+    "figma": {
+      "file": "IkGhZ0RdDHihBymdQrJclg",
+      "layer": "abstract-2",
+      "nodes": [
+        "252:3"
+      ]
+    }
+  },
+  "usage_restrictions": [],
+  "description": ""
+}

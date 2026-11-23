@@ -1,5 +1,5 @@
 import { useRef, useState } from 'react'
-import { Alert, Button, Select, TextInput } from '@ctrliq/quantic-react'
+import { Alert, Button, Checkbox, Select, TextInput } from '@ctrliq/quantic-react'
 import { ingestFiles, startJob, type IngestResult } from '../api'
 import { JobLog } from './JobLog'
 
@@ -20,6 +20,7 @@ export function IngestDrop({ products, onIngested, onReviewQueue }: Props) {
   const [license, setLicense] = useState('')
   const [licenseId, setLicenseId] = useState('')
   const [product, setProduct] = useState('')
+  const [anti, setAnti] = useState(false)
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [result, setResult] = useState<IngestResult | null>(null)
@@ -53,6 +54,7 @@ export function IngestDrop({ products, onIngested, onReviewQueue }: Props) {
     if (license.trim()) form.append('license', license.trim())
     if (licenseId.trim()) form.append('license_id', licenseId.trim())
     if (needProduct) form.append('product', product)
+    if (anti) form.append('anti_example', 'true')
     const r = await ingestFiles(form)
     setBusy(false)
     if (!r.ok) {
@@ -120,6 +122,11 @@ export function IngestDrop({ products, onIngested, onReviewQueue }: Props) {
         <div className="field">
           <span className="field-label">License id (optional)</span>
           <TextInput aria-label="License id" value={licenseId} onValueChanged={(e) => setLicenseId(e.detail.value)} />
+        </div>
+        <div className="field">
+          <Checkbox size="sm" checked={anti} onValueChanged={(e) => setAnti(e.detail.checked)}>
+            These are anti-examples (what not to do)
+          </Checkbox>
         </div>
         <div>
           <Button disabled={!ready || busy} onClick={submit}>{busy ? 'Ingesting...' : `Ingest ${files.length || ''} file${files.length === 1 ? '' : 's'}`}</Button>

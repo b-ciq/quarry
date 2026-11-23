@@ -12,8 +12,9 @@ from pathlib import Path
 from mcp.server.fastmcp import FastMCP, Image
 
 from quarry.library import LibraryError, scan_library
-from quarry.schema import is_servable
-from quarry.search import EmbedderMismatch, EmbedderUnavailable, Hit, more_like as _more_like, search as _search
+from quarry.schema import is_anti_example, is_servable
+from quarry.search import (EmbedderMismatch, EmbedderUnavailable, Hit, more_like as _more_like,
+                           nearest_anti_examples as _nearest_anti, search as _search)
 from quarry.vocabulary import load_vocabulary
 
 mcp = FastMCP("quarry")
@@ -71,13 +72,31 @@ def _row(h: Hit) -> dict:
             "tags": tags, "aspect": s.get("aspect"), "score": round(h.score, 4)}
 
 
-def _servable_asset(root: Path, asset_id: str):
+def _anti_row(h: Hit) -> dict:
+    return {**_row(h), "avoid_reason": h.sidecar.get("avoid_reason", "")}
+
+
+def _find_asset(root: Path, asset_id: str, allowed):
     try:
         assets = scan_library(root)
     except LibraryError as exc:
         raise _Friendly("Error: library invalid — run quarry validate") from exc
     asset = next((a for a in assets if a.id == asset_id), None)
-    return asset if asset is not None and is_servable(asset.sidecar) else None
+    return asset if asset is not None and allowed(asset.sidecar) else None
+
+
+def _servable_asset(root: Path, asset_id: str):
+    return _find_asset(root, asset_id, is_servable)
+
+
+def _with_thumb(root: Path, asset) -> list:
+    meta = dict(asset.sidecar, full_res_path=str(asset.path.resolve()))
+    out: list = []
+    thumb = root / "index" / "thumbs" / f"{asset.id}.webp"
+    if thumb.exists():
+        out.append(Image(data=thumb.read_bytes(), format="webp"))
+    out.append(json.dumps(meta))
+    return out
 
 
 @mcp.tool()
@@ -98,13 +117,7 @@ def get_asset(asset_id: str):
     asset = _servable_asset(root, asset_id)
     if asset is None:
         return f"Error: asset {asset_id!r} not found or not servable"
-    meta = dict(asset.sidecar, full_res_path=str(asset.path.resolve()))
-    out: list = []
-    thumb = root / "index" / "thumbs" / f"{asset_id}.webp"
-    if thumb.exists():
-        out.append(Image(data=thumb.read_bytes(), format="webp"))
-    out.append(json.dumps(meta))
-    return out
+    return _with_thumb(root, asset)
 
 
 @mcp.tool()
@@ -116,6 +129,45 @@ def more_like(asset_id: str, limit: int = 8) -> str:
         return f"Error: asset {asset_id!r} not found or not servable"
     hits = _more_like(root, asset_id, limit=limit)
     return json.dumps([_row(h) for h in hits])
+
+
+@mcp.tool()
+@_guard
+def search_anti_examples(query: str = "", asset_class: str | None = None, limit: int = 8) -> str:
+    """Anti-examples: images showing styles and treatments CIQ avoids. Never use them in a deliverable.
+
+    Check these before choosing or generating imagery. Empty query lists them all. Returns a JSON
+    list of {id, class, description, tags, aspect, score, avoid_reason}.
+    """
+    hits = _search(_repo_root(), _embedder(), query or None, cls=asset_class, anti=True, limit=limit)
+    return json.dumps([_anti_row(h) for h in hits])
+
+
+@mcp.tool()
+@_guard
+def get_anti_example(asset_id: str):
+    """One anti-example: a <=256px thumbnail plus JSON metadata including `avoid_reason`."""
+    root = _repo_root()
+    asset = _find_asset(root, asset_id, is_anti_example)
+    if asset is None:
+        return f"Error: anti-example {asset_id!r} not found"
+    return _with_thumb(root, asset)
+
+
+@mcp.tool()
+@_guard
+def check_against_anti_examples(image_path: str, limit: int = 3) -> str:
+    """Compare a local image (a stock pick, a generation) to the anti-examples by visual style.
+
+    Returns the closest anti-examples as JSON {id, class, description, tags, aspect, score,
+    avoid_reason}; score is cosine similarity (1.0 = identical style). Treat a high score as a
+    prompt to read `avoid_reason` and look, not as an automatic rejection.
+    """
+    p = Path(image_path).expanduser()
+    if not p.is_file():
+        return f"Error: no such image {image_path!r}"
+    hits = _nearest_anti(_repo_root(), _embedder(), p, limit=limit)
+    return json.dumps([_anti_row(h) for h in hits])
 
 
 @mcp.tool()

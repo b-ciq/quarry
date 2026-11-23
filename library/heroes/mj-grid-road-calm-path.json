@@ -1,0 +1,36 @@
+{
+  "id": "mj-grid-road-calm-path",
+  "file": "mj-grid-road-calm-path.png",
+  "status": "proposed",
+  "class": "hero",
+  "products": [
+    "ascender-pro"
+  ],
+  "categories": [],
+  "verticals": [],
+  "concepts": [],
+  "style": [],
+  "aspect": "1:1",
+  "license": "midjourney",
+  "source": {
+    "origin": "midjourney",
+    "ingested_at": "2026-11-22",
+    "sha256": "e6e193b70ce9e74a430bb44997ebbc032922bad92096c9f98689601c60559fd7",
+    "figma": {
+      "file": "IkGhZ0RdDHihBymdQrJclg",
+      "layer": "brainfrost_infinite_grid_road_central_path_perfectly_straight_a_a6632c77-5e72-4a6a-8357-b50780e5bbf8",
+      "nodes": [
+        "102:24"
+      ]
+    },
+    "used_for": "Ascender Pro Q425 Campaign",
+    "product_note": "Ascender Pro"
+  },
+  "usage_restrictions": [],
+  "description": "",
+  "generation": {
+    "prompt": "infinite grid road, central path perfectly straight and calm, chaotic waveforms on both sides rising and dipping",
+    "model": null,
+    "seed": null
+  }
+}

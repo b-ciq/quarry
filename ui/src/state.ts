@@ -20,11 +20,13 @@ export interface Asset {
   source: { origin: string; ingested_at: string; sha256: string }
   usage_restrictions: string[]
   description: string
+  anti_example?: boolean
+  avoid_reason?: string
   thumb_url: string
   full_url: string
 }
 
-export const AXES = ['class', 'status', 'product', 'tone', 'categories', 'verticals', 'concepts', 'style', 'license'] as const
+export const AXES = ['use', 'class', 'status', 'product', 'tone', 'categories', 'verticals', 'concepts', 'style', 'license'] as const
 export type Axis = (typeof AXES)[number]
 
 export type Filters = Partial<Record<Axis, string[]>>
@@ -37,6 +39,8 @@ export interface FacetCount {
 /** All values an asset has on an axis (scalars become one-element lists). */
 export function axisValues(a: Asset, axis: Axis): string[] {
   switch (axis) {
+    case 'use':
+      return [a.anti_example ? 'anti-example' : 'example']
     case 'class':
       return a.class ? [a.class] : []
     case 'status':
@@ -59,7 +63,7 @@ export function axisValues(a: Asset, axis: Axis): string[] {
 }
 
 function haystack(a: Asset): string {
-  return [a.id, a.file, a.description, a.class, a.status, a.license, a.tone ?? '',
+  return [a.id, a.file, a.description, a.avoid_reason ?? '', a.class, a.status, a.license, a.tone ?? '',
     ...a.products, ...a.categories, ...a.verticals, ...a.concepts, ...a.style]
     .join('\n')
     .toLowerCase()

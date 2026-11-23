@@ -1,0 +1,32 @@
+{
+  "id": "mj-particle-shield",
+  "file": "mj-particle-shield.png",
+  "status": "proposed",
+  "class": "hero",
+  "products": [],
+  "categories": [],
+  "verticals": [],
+  "concepts": [],
+  "style": [],
+  "aspect": "91:51",
+  "license": "midjourney",
+  "source": {
+    "origin": "midjourney",
+    "ingested_at": "2026-11-22",
+    "sha256": "ef3a603136377177b27e730e13b441bedc859df778f5d42f3e0ab5857f4eec0a",
+    "figma": {
+      "file": "IkGhZ0RdDHihBymdQrJclg",
+      "layer": "brainfrost_glowing_digital_shield_made_of_connected_nodes_and_p_b28532f1-99fe-437a-91f6-21e93ac66882",
+      "nodes": [
+        "102:21"
+      ]
+    }
+  },
+  "usage_restrictions": [],
+  "description": "",
+  "generation": {
+    "prompt": "glowing digital shield made of connected nodes and particles, cybersecurity network visualization, bright cyan and electric blue light points, interconnected mesh structure, floating in digital space, depth of field bokeh background with code and data streams, volumetric lighting, professional tech photography aesthetic, ultra detailed",
+    "model": null,
+    "seed": null
+  }
+}

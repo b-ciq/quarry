@@ -18,13 +18,21 @@ REQUIRED_KEYS = (
     "concepts", "style", "aspect", "license", "source", "usage_restrictions",
     "description",
 )
-OPTIONAL_KEYS = ("tone", "license_expiry", "product_version", "captured_at", "generation")
+OPTIONAL_KEYS = ("tone", "license_expiry", "product_version", "captured_at", "generation",
+                 "anti_example", "avoid_reason")
 KEBAB_RE = re.compile(r"^[a-z0-9]+(-[a-z0-9]+)*$")
 TAG_AXES = ("products", "categories", "verticals", "concepts", "style")
 
 
 def is_servable(entry: dict) -> bool:
-    return entry.get("status") == "confirmed" and not entry.get("usage_restrictions")
+    """Usable in deliverables. Anti-examples are never servable."""
+    return (entry.get("status") == "confirmed" and not entry.get("usage_restrictions")
+            and not entry.get("anti_example"))
+
+
+def is_anti_example(entry: dict) -> bool:
+    """A confirmed "don't do this" reference, served only through the anti-example paths."""
+    return entry.get("status") == "confirmed" and entry.get("anti_example") is True
 
 
 def validate_sidecar(entry: dict, vocab: dict) -> list[str]:
@@ -50,10 +58,22 @@ def validate_sidecar(entry: dict, vocab: dict) -> list[str]:
         errors.append("usage_restrictions: must be a list")
     if not isinstance(entry["source"], dict):
         errors.append("source: must be an object")
+    anti = entry.get("anti_example", False)
+    if not isinstance(anti, bool):
+        errors.append("anti_example: must be true or false")
+    if "avoid_reason" in entry:
+        if not anti:
+            errors.append("avoid_reason: only allowed when anti_example is true")
+        elif not isinstance(entry["avoid_reason"], str):
+            errors.append("avoid_reason: must be a string")
     if errors or entry["status"] != "confirmed":
         return errors
 
-    if not entry["license"]:
+    if anti:
+        # Reference-only (never served for use), so a license is optional; the reason is not.
+        if not str(entry.get("avoid_reason", "")).strip():
+            errors.append("avoid_reason: required for confirmed anti-examples (what to avoid and why)")
+    elif not entry["license"]:
         errors.append("license: required for confirmed assets")
     if not str(entry["description"]).strip():
         errors.append("description: required for confirmed assets")

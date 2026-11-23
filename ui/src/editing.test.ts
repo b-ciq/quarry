@@ -64,3 +64,25 @@ describe('splitErrors', () => {
     expect(r.general).toEqual(['missing required key: id'])
   })
 })
+
+describe('diffDraft anti-example', () => {
+  it('sends the flag and reason together when turning it on', () => {
+    const d = toDraft(base)
+    d.anti_example = true
+    d.avoid_reason = 'too busy'
+    expect(diffDraft(base, d)).toEqual({ anti_example: true, avoid_reason: 'too busy' })
+  })
+  it('sends only the flag when turning it off', () => {
+    const anti = { ...base, anti_example: true, avoid_reason: 'too busy' }
+    const d = toDraft(anti)
+    expect(diffDraft(anti, d)).toEqual({})
+    d.anti_example = false
+    expect(diffDraft(anti, d)).toEqual({ anti_example: false })
+  })
+  it('sends a changed reason alone', () => {
+    const anti = { ...base, anti_example: true, avoid_reason: 'too busy' }
+    const d = toDraft(anti)
+    d.avoid_reason = 'cluttered'
+    expect(diffDraft(anti, d)).toEqual({ avoid_reason: 'cluttered' })
+  })
+})

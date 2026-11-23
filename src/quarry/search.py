@@ -1,7 +1,8 @@
 """Hybrid search: BM25 (FTS5) + retrieval-vector kNN merged by reciprocal rank fusion.
 
 Structured filters run as SQL over the assets table; servability is applied to each
-candidate's sidecar through the one shared `schema.is_servable`.
+candidate's sidecar through the one shared `schema.is_servable`. `anti=True` swaps the pool
+for confirmed anti-examples (`schema.is_anti_example`), which are never servable.
 """
 
 import json
@@ -11,7 +12,7 @@ from pathlib import Path
 
 from quarry.embeddings import Embedder
 from quarry.indexer import connect
-from quarry.schema import is_servable
+from quarry.schema import is_anti_example, is_servable
 
 RRF_K = 60
 
@@ -81,19 +82,24 @@ def _candidates(conn, cls, product, tone) -> dict[str, dict]:
     return {i: json.loads(j) for i, j in conn.execute(sql, params)}
 
 
+def _pool(sidecar: dict, servable_only: bool, anti: bool) -> bool:
+    if anti:
+        return is_anti_example(sidecar)
+    return is_servable(sidecar) if servable_only else True
+
+
 def _count(conn) -> int:
     return conn.execute("SELECT count(*) FROM assets").fetchone()[0]
 
 
 def search(repo_root: Path, embedder: Embedder, query: str | None, *, cls=None, product=None,
-           tone=None, servable_only=True, limit=10) -> list[Hit]:
+           tone=None, servable_only=True, anti=False, limit=10) -> list[Hit]:
     conn = _open(repo_root)
     try:
         if query and query.strip():
             _check_mode(conn, embedder)
         cands = _candidates(conn, cls, product, tone)
-        if servable_only:
-            cands = {i: s for i, s in cands.items() if is_servable(s)}
+        cands = {i: s for i, s in cands.items() if _pool(s, servable_only, anti)}
         if not query or not query.strip():
             # filter-only browsing: no ranking signal, so order by id, score 0.
             return [_hit(repo_root, i, 0.0, s) for i, s in list(cands.items())[:limit]]
@@ -126,7 +132,7 @@ def search(repo_root: Path, embedder: Embedder, query: str | None, *, cls=None, 
 
 
 def more_like(repo_root: Path, asset_id: str, *, space="style", servable_only=True,
-              limit=10) -> list[Hit]:
+              anti=False, limit=10) -> list[Hit]:
     """Nearest neighbours of `asset_id` in a vector space; score is cosine similarity."""
     if space not in ("style", "retrieval"):
         raise ValueError(f"unknown space {space!r}; expected 'style' or 'retrieval'")
@@ -144,10 +150,39 @@ def more_like(repo_root: Path, asset_id: str, *, space="style", servable_only=Tr
         conn.close()
     hits: list[Hit] = []
     for i, dist in rows:
-        if i == asset_id or (servable_only and not is_servable(sidecars[i])):
+        if i == asset_id or not _pool(sidecars[i], servable_only, anti):
             continue
         # vectors are L2-normalized, so cosine = 1 - d^2/2
         hits.append(_hit(repo_root, i, 1.0 - dist * dist / 2.0, sidecars[i]))
         if len(hits) >= limit:
             break
     return hits
+
+
+def nearest_anti_examples(repo_root: Path, embedder: Embedder, image: Path, *,
+                          limit=5) -> list[Hit]:
+    """Confirmed anti-examples closest in style to an arbitrary image file (cosine score).
+
+    The image need not be in the library: agents use this to check a candidate (a stock pick,
+    a generation) against the "don't" set before using it.
+    """
+    conn = _open(repo_root)
+    try:
+        _check_mode(conn, embedder)
+        sidecars = {i: json.loads(j) for i, j in conn.execute("SELECT id, json FROM assets")}
+        anti = {i for i, s in sidecars.items() if is_anti_example(s)}
+        if not anti:
+            return []
+        try:
+            qv = embedder.embed_image_style(Path(image)).tobytes()
+        except ImportError as exc:
+            raise EmbedderUnavailable(
+                "the hf embedder needs torch/transformers: pip install -e '.[ml]' "
+                "(or use --fake-embedder for a fake-built index)") from exc
+        rows = conn.execute(
+            "SELECT id, distance FROM vec_style WHERE v MATCH ? AND k = ? ORDER BY distance",
+            (qv, _count(conn))).fetchall()
+    finally:
+        conn.close()
+    hits = [_hit(repo_root, i, 1.0 - d * d / 2.0, sidecars[i]) for i, d in rows if i in anti]
+    return hits[:limit]

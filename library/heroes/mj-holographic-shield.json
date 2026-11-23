@@ -1,0 +1,36 @@
+{
+  "id": "mj-holographic-shield",
+  "file": "mj-holographic-shield.png",
+  "status": "proposed",
+  "class": "hero",
+  "products": [
+    "rlc-pro"
+  ],
+  "categories": [],
+  "verticals": [],
+  "concepts": [],
+  "style": [],
+  "aspect": "91:51",
+  "license": "midjourney",
+  "source": {
+    "origin": "midjourney",
+    "ingested_at": "2026-11-22",
+    "sha256": "ce4179b3e2ce5ae8ac95953f349358e88dad7946df4e2b29924d2b733ba3cc09",
+    "figma": {
+      "file": "IkGhZ0RdDHihBymdQrJclg",
+      "layer": "brainfrost_3D_holographic_shield_built_from_glowing_network_nod_4d86d86c-3835-4434-9849-22a6d7075910",
+      "nodes": [
+        "100:8"
+      ]
+    },
+    "used_for": "Blog - FIPS validated, PQC algorithms.",
+    "product_note": "RLC"
+  },
+  "usage_restrictions": [],
+  "description": "",
+  "generation": {
+    "prompt": "3D holographic shield built from glowing network nodes, cybersecurity defense system visualization, bright blue white light particles, connected geometric mesh, blurred background with digital elements, photorealistic render, professional technology marketing",
+    "model": null,
+    "seed": null
+  }
+}

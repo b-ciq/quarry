@@ -1,5 +1,5 @@
 import { useEffect, useImperativeHandle, useMemo, useRef, useState, type Ref } from 'react'
-import { Alert, Badge, Button, Select, Textarea, TextInput } from '@ctrliq/quantic-react'
+import { Alert, Badge, Button, Checkbox, Select, Textarea, TextInput } from '@ctrliq/quantic-react'
 import {
   confirmAsset, fetchSimilar, patchAsset, restoreAsset, retireAsset, splitErrors,
   type SimilarHit, type WriteResult,
@@ -102,7 +102,7 @@ export function AssetEditor({ asset, vocabulary, onChanged, onTransition, onOpen
   useImperativeHandle(ref, () => ({ confirm: doConfirm }))
 
   const { byField, general } = splitErrors(errors)
-  const shown = new Set<string>([...TAG_AXES, 'description', 'usage_restrictions',
+  const shown = new Set<string>([...TAG_AXES, 'description', 'usage_restrictions', 'anti_example', 'avoid_reason',
     ...(asset.class === 'background' ? ['tone'] : []),
     ...(asset.class === 'screenshot' ? ['product_version', 'captured_at'] : [])])
   const orphan = [...general, ...Object.entries(byField).filter(([k]) => !shown.has(k)).flatMap(([, v]) => v)]
@@ -118,6 +118,7 @@ export function AssetEditor({ asset, vocabulary, onChanged, onTransition, onOpen
           <Badge size="sm" color={asset.status === 'confirmed' ? 'success' : asset.status === 'proposed' ? 'warning' : 'gray'}>
             {asset.status}
           </Badge>
+          {asset.anti_example && <Badge size="sm" color="error">anti-example</Badge>}
           <span className="editor-meta">{asset.class} / {asset.aspect} / {asset.license}</span>
         </div>
 
@@ -128,6 +129,29 @@ export function AssetEditor({ asset, vocabulary, onChanged, onTransition, onOpen
             {orphan.map((e) => <div key={e}>{e}</div>)}
           </Alert>
         )}
+
+        <div className={`field anti-field${byField.avoid_reason ? ' field-invalid' : ''}`}>
+          <Checkbox
+            size="sm"
+            checked={draft.anti_example}
+            onValueChanged={(e) => setDraft((d) => ({ ...d, anti_example: e.detail.checked }))}
+          >
+            Anti-example: shows what not to do (never served for use)
+          </Checkbox>
+          {draft.anti_example && (
+            <>
+              <span className="field-label">Why to avoid it</span>
+              <Textarea
+                aria-label="Why to avoid it"
+                placeholder="e.g. Glossy 3D clip-art with lens flare; reads as generic stock."
+                value={draft.avoid_reason}
+                invalid={!!byField.avoid_reason}
+                onValueChanged={(e) => setDraft((d) => ({ ...d, avoid_reason: e.detail.value }))}
+              />
+            </>
+          )}
+          <FieldErrors errors={[...(byField.anti_example ?? []), ...(byField.avoid_reason ?? [])]} />
+        </div>
 
         <div className={`field${byField.description ? ' field-invalid' : ''}`}>
           <span className="field-label">Description</span>

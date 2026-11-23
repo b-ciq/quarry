@@ -1,0 +1,27 @@
+{
+  "id": "istock-2200128716",
+  "file": "istock-2200128716.jpg",
+  "status": "proposed",
+  "class": "hero",
+  "products": [],
+  "categories": [],
+  "verticals": [],
+  "concepts": [],
+  "style": [],
+  "aspect": "16:9",
+  "license": "istock:2200128716",
+  "source": {
+    "origin": "istock",
+    "ingested_at": "2026-11-22",
+    "sha256": "95bd9bfe557227ebda687797a22ad32da64751d2ec74d26ffb06964899cddc2c",
+    "figma": {
+      "file": "IkGhZ0RdDHihBymdQrJclg",
+      "layer": "iStock-2200128716",
+      "nodes": [
+        "35:847"
+      ]
+    }
+  },
+  "usage_restrictions": [],
+  "description": ""
+}

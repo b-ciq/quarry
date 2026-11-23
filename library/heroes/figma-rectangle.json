@@ -1,0 +1,27 @@
+{
+  "id": "figma-rectangle",
+  "file": "figma-rectangle.png",
+  "status": "proposed",
+  "class": "hero",
+  "products": [],
+  "categories": [],
+  "verticals": [],
+  "concepts": [],
+  "style": [],
+  "aspect": "1:1",
+  "license": "",
+  "source": {
+    "origin": "figma",
+    "ingested_at": "2026-11-22",
+    "sha256": "1903b63c0b0216c5e1957744a271b7af415eb9ce5b0cc0039409aebf35ad3950",
+    "figma": {
+      "file": "IkGhZ0RdDHihBymdQrJclg",
+      "layer": "Rectangle",
+      "nodes": [
+        "226:6"
+      ]
+    }
+  },
+  "usage_restrictions": [],
+  "description": ""
+}

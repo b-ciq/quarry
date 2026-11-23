@@ -1,0 +1,27 @@
+{
+  "id": "figma-image-2",
+  "file": "figma-image-2.png",
+  "status": "proposed",
+  "class": "hero",
+  "products": [],
+  "categories": [],
+  "verticals": [],
+  "concepts": [],
+  "style": [],
+  "aspect": "813:473",
+  "license": "",
+  "source": {
+    "origin": "figma",
+    "ingested_at": "2026-11-22",
+    "sha256": "df050a6f2f8f986888fd9703fe6290b545667b22bf92fcbadfe191dd44ba03b0",
+    "figma": {
+      "file": "IkGhZ0RdDHihBymdQrJclg",
+      "layer": "image",
+      "nodes": [
+        "35:848"
+      ]
+    }
+  },
+  "usage_restrictions": [],
+  "description": ""
+}

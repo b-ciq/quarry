@@ -10,7 +10,7 @@ from quarry.ingest import ingest_dir
 from quarry.library import LibraryError, scan_library
 from quarry.publish import check_stale, publish
 from quarry.seed import seed_from_deck_builder
-from quarry.search import EmbedderMismatch, EmbedderUnavailable, search
+from quarry.search import EmbedderMismatch, EmbedderUnavailable, nearest_anti_examples, search
 from quarry.schema import CLASSES, TONES, validate_sidecar
 from quarry.vocabulary import load_vocabulary
 
@@ -76,6 +76,8 @@ def main(argv=None) -> int:
     ig.add_argument("--license", default=None)
     ig.add_argument("--license-id", default=None, help="adobe-stock asset id")
     ig.add_argument("--product", default=None, help="nest screenshots under screenshots/<product>/")
+    ig.add_argument("--anti-example", action="store_true",
+                    help="mark every file as an anti-example (what not to do)")
     ig.add_argument("--repo", default=".", type=Path)
     ix = sub.add_parser("index", help="build the search index (FTS5, vectors, thumbnails)")
     ix.add_argument("--repo", default=".", type=Path)
@@ -86,10 +88,16 @@ def main(argv=None) -> int:
     se.add_argument("--product")
     se.add_argument("--tone", choices=sorted(TONES))
     se.add_argument("--all-statuses", action="store_true", help="include non-servable assets")
+    se.add_argument("--anti", action="store_true", help="search confirmed anti-examples only")
     se.add_argument("--limit", type=int, default=10)
     se.add_argument("-v", "--verbose", action="store_true", help="show description and file")
     se.add_argument("--repo", default=".", type=Path)
     se.add_argument("--fake-embedder", action="store_true", help="must match how the index was built")
+    ck = sub.add_parser("check-image", help="list the anti-examples an image most resembles in style")
+    ck.add_argument("image", type=Path)
+    ck.add_argument("--limit", type=int, default=5)
+    ck.add_argument("--repo", default=".", type=Path)
+    ck.add_argument("--fake-embedder", action="store_true", help="must match how the index was built")
     ex = sub.add_parser("export", help="write the deck-builder manifest (servable assets only)")
     ex.add_argument("--out", type=Path, default=Path("exports"))
     ex.add_argument("--repo", default=".", type=Path)
@@ -139,7 +147,8 @@ def main(argv=None) -> int:
         if lic is None and args.license_id:
             lic = f"{args.source}:{args.license_id}"
         try:
-            res = ingest_dir(args.dir, args.repo, args.cls, args.source, lic, product=args.product)
+            res = ingest_dir(args.dir, args.repo, args.cls, args.source, lic, product=args.product,
+                             anti_example=args.anti_example)
         except ValueError as exc:
             print(f"error: {exc}", file=sys.stderr)
             return 2
@@ -183,7 +192,8 @@ def main(argv=None) -> int:
             embedder = HFEmbedder()
         try:
             hits = search(args.repo, embedder, args.query, cls=args.cls, product=args.product,
-                          tone=args.tone, servable_only=not args.all_statuses, limit=args.limit)
+                          tone=args.tone, servable_only=not args.all_statuses, anti=args.anti,
+                          limit=args.limit)
         except (FileNotFoundError, EmbedderMismatch, EmbedderUnavailable) as exc:
             print(f"error: {exc}", file=sys.stderr)
             return 1
@@ -193,6 +203,27 @@ def main(argv=None) -> int:
             if args.verbose:
                 print(f"        {sc.get('description', '')}")
                 print(f"        {sc.get('file')}")
+        return 0
+    if args.command == "check-image":
+        if not args.image.is_file():
+            print(f"error: no such file {args.image}", file=sys.stderr)
+            return 1
+        if args.fake_embedder:
+            from quarry.embeddings import FakeEmbedder
+            embedder = FakeEmbedder()
+        else:
+            from quarry.embeddings import HFEmbedder
+            embedder = HFEmbedder()
+        try:
+            hits = nearest_anti_examples(args.repo, embedder, args.image, limit=args.limit)
+        except (FileNotFoundError, EmbedderMismatch, EmbedderUnavailable) as exc:
+            print(f"error: {exc}", file=sys.stderr)
+            return 1
+        if not hits:
+            print("no confirmed anti-examples in the index")
+        for h in hits:
+            print(f"{h.score:.4f}  {h.id}  [{h.sidecar.get('class')}]")
+            print(f"        avoid: {h.sidecar.get('avoid_reason', '')}")
         return 0
     if args.command == "ui":
         try:
