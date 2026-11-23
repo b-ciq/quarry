@@ -17,7 +17,11 @@ export default defineConfig({
     // Quantic fonts must be served at /assets (see quantic-setup playbook).
     viteStaticCopy({
       targets: [
-        { src: `${fontAssetsDir}/*`, dest: FONT_ASSETS_URL_PATH.replace(/^\//, '') },
+        {
+          src: `${fontAssetsDir}/*.woff2`,
+          dest: FONT_ASSETS_URL_PATH.replace(/^\//, ''),
+          rename: { stripBase: true },
+        },
       ],
     }),
   ],

@@ -6,6 +6,7 @@ from pathlib import Path
 
 from fastapi import FastAPI
 from fastapi.responses import FileResponse, JSONResponse
+from fastapi.staticfiles import StaticFiles
 
 from quarry.publish import check_stale
 from quarry.ui import gitops, ingest_api, jobs, read_api, vocab_api, write_api
@@ -90,6 +91,10 @@ def create_app(repo_root: Path, fake_embedder: bool = False, skill_dir: Path | N
     @app.get("/")
     def root():
         return FileResponse(STATIC_DIR / "index.html")
+
+    # Built frontend bundle + Quantic fonts (both land in static/assets/).
+    if (STATIC_DIR / "assets").is_dir():
+        app.mount("/assets", StaticFiles(directory=STATIC_DIR / "assets"), name="assets")
 
     return app
 

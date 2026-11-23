@@ -41,3 +41,14 @@ def test_cli_ui_flag_parsing(monkeypatch, repo):
     assert calls == {"root": repo.root, "port": 9000, "fake": True}
     assert main(["ui", "--repo", str(repo.root)]) == 0
     assert calls["port"] == 8787 and calls["fake"] is False
+
+
+def test_built_bundle_assets_are_served(repo):
+    import re
+
+    client = TestClient(create_app(repo.root))
+    html = client.get("/").text
+    bundle = re.search(r'src="\./(assets/[^"]+\.js)"', html).group(1)
+    r = client.get("/" + bundle)
+    assert r.status_code == 200 and "javascript" in r.headers["content-type"]
+    assert client.get("/assets/Inter-Regular.woff2").status_code == 200

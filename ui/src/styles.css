@@ -1,0 +1,174 @@
+@import '@ctrliq/quantic-css/base';
+@import '@ctrliq/quantic-css/reset';
+@import '@ctrliq/quantic-css/tokens';
+@import '@ctrliq/quantic-css/type';
+
+/* Layout only; every colour, space, radius and font is a Quantic token. */
+html,
+body,
+#root {
+  height: 100%;
+  margin: 0;
+}
+
+body {
+  background: var(--quantic-bg-primary);
+  color: var(--quantic-text-primary);
+  font-family: var(--quantic-font-family-body);
+}
+
+.app {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+.topbar,
+.ops-bar {
+  display: flex;
+  align-items: center;
+  gap: var(--quantic-spacing-3);
+  padding: var(--quantic-spacing-2) var(--quantic-spacing-4);
+  border-bottom: 1px solid var(--quantic-border-secondary);
+}
+
+.topbar h1 {
+  margin: 0;
+  font-size: var(--quantic-font-size-body-md);
+}
+
+.topbar .search {
+  flex: 1;
+  max-width: var(--quantic-spacing-96);
+}
+
+.result-count {
+  color: var(--quantic-text-tertiary);
+  font-size: var(--quantic-font-size-body-sm);
+}
+
+.ops-bar {
+  background: var(--quantic-bg-secondary);
+  flex-wrap: wrap;
+}
+
+.ops-spacer {
+  flex: 1;
+}
+
+.body {
+  display: flex;
+  flex: 1;
+  min-height: 0;
+}
+
+.facet-rail {
+  flex: none;
+  width: var(--quantic-spacing-64);
+  overflow-y: auto;
+  padding: var(--quantic-spacing-3) var(--quantic-spacing-4);
+  border-right: 1px solid var(--quantic-border-secondary);
+  background: var(--quantic-bg-secondary);
+}
+
+.facet-group {
+  display: flex;
+  flex-direction: column;
+  gap: var(--quantic-spacing-1);
+  margin: 0 0 var(--quantic-spacing-4);
+  padding: 0;
+  border: 0;
+}
+
+.facet-group legend {
+  padding: 0;
+  margin-bottom: var(--quantic-spacing-1);
+  color: var(--quantic-text-tertiary);
+  font-size: var(--quantic-font-size-body-xs);
+  text-transform: uppercase;
+}
+
+.facet-row {
+  display: inline-flex;
+  justify-content: space-between;
+  gap: var(--quantic-spacing-3);
+  min-width: var(--quantic-spacing-40);
+}
+
+.facet-count {
+  color: var(--quantic-text-tertiary);
+  font-variant-numeric: tabular-nums;
+}
+
+.main {
+  flex: 1;
+  overflow-y: auto;
+  padding: var(--quantic-spacing-3) var(--quantic-spacing-4);
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(var(--quantic-spacing-48), 1fr));
+  gap: var(--quantic-spacing-3);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+/* Cheap virtualization: off-screen tiles skip layout and paint (fine at ~500 assets). */
+.tile {
+  display: flex;
+  flex-direction: column;
+  gap: var(--quantic-spacing-1);
+  padding: var(--quantic-spacing-2);
+  border: 1px solid var(--quantic-border-primary);
+  border-radius: var(--quantic-radius-md);
+  background: var(--quantic-bg-secondary);
+  content-visibility: auto;
+  contain-intrinsic-size: auto var(--quantic-spacing-56);
+}
+
+.tile-retired {
+  opacity: 0.45;
+}
+
+.tile-thumb {
+  display: block;
+  aspect-ratio: 4 / 3;
+  overflow: hidden;
+  border-radius: var(--quantic-radius-sm);
+  background: var(--quantic-bg-tertiary);
+}
+
+.tile-thumb img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.tile-meta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--quantic-spacing-2);
+}
+
+.tile-id {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: var(--quantic-font-size-body-sm);
+}
+
+.tile-sub {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--quantic-spacing-2);
+  color: var(--quantic-text-tertiary);
+  font-size: var(--quantic-font-size-body-xs);
+}
+
+.empty {
+  color: var(--quantic-text-tertiary);
+}
