@@ -25,5 +25,32 @@
   "usage_restrictions": [
     "editorial-use-only"
   ],
-  "description": ""
+  "description": "Close-up shallow-focus photo of a road map centered on Charlotte, North Carolina, with highways and nearby towns like Gastonia and Concord.",
+  "rating": {
+    "bot": {
+      "verdict": "no",
+      "strength": "unsure",
+      "reason": "Generic road-map stock of Charlotte, NC; off-topic for CIQ's products unless tied to a specific local event.",
+      "model": "claude-opus-5-5",
+      "at": "2026-11-23T19:36:23Z",
+      "examples": [
+        "life-scientist-workstation",
+        "life-sysadmin-server-rack"
+      ],
+      "suggested_slugs": {
+        "products": [],
+        "categories": [],
+        "verticals": [],
+        "concepts": [
+          "location",
+          "events"
+        ],
+        "style": [
+          "stock-photo",
+          "map",
+          "shallow-depth-of-field"
+        ]
+      }
+    }
+  }
 }

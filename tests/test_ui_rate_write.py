@@ -1,0 +1,293 @@
+import json
+
+from fastapi.testclient import TestClient
+
+from quarry.ui.app import create_app
+
+
+def _client(repo):
+    return TestClient(create_app(repo.root))
+
+
+def _commit(repo):
+    repo.git("add", "-A")
+    repo.git("commit", "-q", "-m", "seed")
+
+
+def _subject(repo):
+    return repo.git("log", "-1", "--format=%s")
+
+
+def test_verdict_yes_confirms_and_records_human(git_repo):
+    git_repo.add_asset("hero", "h1", status="proposed")
+    _commit(git_repo)
+    r = _client(git_repo).post("/api/assets/h1/verdict", json={"verdict": "yes"})
+    assert r.status_code == 200, r.text
+    assert r.json()["asset"]["status"] == "confirmed"
+    assert r.json()["needs_details"] is None
+    assert r.json()["asset"]["rating"]["human"]["by"] == "Test <test@example.com>"
+    assert _subject(git_repo) == "rate: yes h1\n"
+
+
+def test_verdict_maybe_parks_and_no_retires(git_repo):
+    git_repo.add_asset("hero", "h1", status="proposed")
+    git_repo.add_asset("hero", "h2", status="proposed")
+    _commit(git_repo)
+    c = _client(git_repo)
+    r = c.post("/api/assets/h1/verdict", json={"verdict": "maybe"})
+    assert r.json()["asset"]["status"] == "parked" and _subject(git_repo) == "rate: maybe h1\n"
+    r = c.post("/api/assets/h2/verdict", json={"verdict": "no"})
+    assert r.json()["asset"]["status"] == "retired" and _subject(git_repo) == "rate: no h2\n"
+
+
+def test_parked_can_be_upgraded(git_repo):
+    git_repo.add_asset("hero", "h1", status="parked")
+    _commit(git_repo)
+    r = _client(git_repo).post("/api/assets/h1/verdict", json={"verdict": "yes"})
+    assert r.status_code == 200 and r.json()["asset"]["status"] == "confirmed"
+
+
+def test_wrong_status_409_and_bad_verdict_422(git_repo):
+    git_repo.add_asset("hero", "h1", status="retired")
+    _commit(git_repo)
+    c = _client(git_repo)
+    assert c.post("/api/assets/h1/verdict", json={"verdict": "yes"}).status_code == 409
+    assert c.post("/api/assets/h1/verdict", json={"verdict": "wat"}).status_code == 422
+    assert c.post("/api/assets/nope/verdict", json={"verdict": "yes"}).status_code == 404
+
+
+def test_confirmed_can_be_dropped_to_no_but_not_maybe(git_repo):
+    git_repo.add_asset("hero", "h1", status="confirmed")
+    _commit(git_repo)
+    c = _client(git_repo)
+    assert c.post("/api/assets/h1/verdict", json={"verdict": "maybe"}).status_code == 409
+    assert c.post("/api/assets/h1/verdict", json={"verdict": "no"}).status_code == 200
+
+
+def test_yes_with_missing_license_records_needs_details(git_repo):
+    git_repo.add_asset("hero", "h1", status="proposed", license="")
+    _commit(git_repo)
+    body = _client(git_repo).post("/api/assets/h1/verdict", json={"verdict": "yes"}).json()
+    assert body["asset"]["status"] == "proposed"
+    assert body["asset"]["rating"]["human"]["verdict"] == "yes"
+    assert body["needs_details"] == ["license: required for confirmed assets"]
+
+
+def test_yes_with_only_card_fixable_errors_is_422_and_untouched(git_repo, drop):
+    git_repo.add_asset("background", "b1", status="proposed", tone=drop)
+    _commit(git_repo)
+    r = _client(git_repo).post("/api/assets/b1/verdict", json={"verdict": "yes"})
+    assert r.status_code == 422
+    assert "tone: required (dark|light) for background" in r.json()["errors"]
+    assert git_repo.git("status", "--porcelain") == ""
+
+
+def test_override_reason_stored(git_repo):
+    git_repo.add_asset("hero", "h1", status="proposed")
+    _commit(git_repo)
+    r = _client(git_repo).post("/api/assets/h1/verdict", json={"verdict": "no", "reason": "too cliché"})
+    assert r.json()["asset"]["rating"]["human"]["reason"] == "too cliché"
+
+
+def test_confirm_and_retire_routes_record_human_verdict(git_repo):
+    git_repo.add_asset("hero", "h1", status="proposed")
+    git_repo.add_asset("hero", "h2", status="proposed")
+    _commit(git_repo)
+    c = _client(git_repo)
+    a = c.post("/api/assets/h1/confirm").json()["asset"]
+    assert a["rating"]["human"]["verdict"] == "yes"
+    b = c.post("/api/assets/h2/retire").json()["asset"]
+    assert b["rating"]["human"]["verdict"] == "no"
+
+
+def test_batch_one_commit_and_partial_results(git_repo, drop):
+    git_repo.add_asset("hero", "h1", status="proposed")
+    git_repo.add_asset("hero", "h2", status="proposed")
+    git_repo.add_asset("hero", "h3", status="proposed", license="")
+    git_repo.add_asset("background", "b1", status="proposed", tone=drop)
+    _commit(git_repo)
+    seed = int(git_repo.git("rev-list", "--count", "HEAD").strip())
+    body = _client(git_repo).post("/api/verdicts", json={"verdict": "yes", "ids": ["h1", "h2", "h3", "b1"]}).json()
+    assert body["applied"] == ["h1", "h2"]
+    assert list(body["needs_details"]) == ["h3"] and list(body["failed"]) == ["b1"]
+    assert _subject(git_repo) == "rate: accept 3 strong yes\n"
+    assert git_repo.git("rev-list", "--count", "HEAD").strip() == str(seed + 1)
+    assert body["commit"] == git_repo.git("rev-parse", "HEAD").strip()
+
+
+def test_batch_nothing_applied_makes_no_commit(git_repo):
+    git_repo.add_asset("hero", "h1", status="retired")
+    _commit(git_repo)
+    head = git_repo.git("rev-parse", "HEAD")
+    body = _client(git_repo).post("/api/verdicts", json={"verdict": "yes", "ids": ["h1", "ghost"]}).json()
+    assert body["commit"] is None and body["applied"] == [] and set(body["failed"]) == {"h1", "ghost"}
+    assert git_repo.git("rev-parse", "HEAD") == head
+
+
+def test_undo_restores_previous_content(git_repo):
+    path = git_repo.add_asset("hero", "h1", status="proposed")
+    _commit(git_repo)
+    before = path.read_text()
+    c = _client(git_repo)
+    sha = c.post("/api/assets/h1/verdict", json={"verdict": "no"}).json()["commit"]
+    r = c.post("/api/undo", json={"commit": sha})
+    assert r.status_code == 200, r.text
+    assert path.read_text() == before and r.json()["ids"] == ["h1"]
+    assert _subject(git_repo) == "rate: undo no h1\n"
+    assert c.get("/api/assets/h1").json()["status"] == "proposed"
+
+
+def test_undo_refuses_when_changed_since(git_repo):
+    path = git_repo.add_asset("hero", "h1", status="proposed")
+    _commit(git_repo)
+    c = _client(git_repo)
+    sha = c.post("/api/assets/h1/verdict", json={"verdict": "maybe"}).json()["commit"]
+    assert c.patch("/api/assets/h1", json={"description": "edited later"}).status_code == 200
+    r = c.post("/api/undo", json={"commit": sha})
+    assert r.status_code == 409
+    assert json.loads(path.read_text())["description"] == "edited later"
+
+
+def test_undo_refuses_non_rate_commits_and_unknown_sha(git_repo):
+    git_repo.add_asset("hero", "h1", status="proposed")
+    _commit(git_repo)
+    c = _client(git_repo)
+    sha = c.patch("/api/assets/h1", json={"description": "x"}).json()["commit"]
+    assert c.post("/api/undo", json={"commit": sha}).status_code == 409
+    assert c.post("/api/undo", json={"commit": "deadbeef" * 5}).status_code == 404
+    assert c.post("/api/undo", json={"commit": "--bad"}).status_code == 404
+
+
+def test_gitops_identity_fallbacks(git_repo):
+    from quarry.ui import gitops
+    assert gitops.identity(git_repo.root) == "Test <test@example.com>"
+    git_repo.git("config", "--unset", "user.email")
+    # a global email may exist on the machine; only assert the name survives
+    assert gitops.identity(git_repo.root).startswith("Test")
+
+
+def test_confirm_anti_example_records_no_with_avoid_reason(git_repo):
+    git_repo.add_asset("hero", "a1", status="proposed", anti_example=True, avoid_reason="cliché handshake")
+    git_repo.add_asset("hero", "a2", status="proposed", anti_example=True, avoid_reason="stocky")
+    _commit(git_repo)
+    c = _client(git_repo)
+    h = c.post("/api/assets/a1/confirm").json()["asset"]["rating"]["human"]
+    assert h["verdict"] == "no" and h["reason"] == "cliché handshake"
+    h = c.post("/api/assets/a2/verdict", json={"verdict": "yes"}).json()["asset"]["rating"]["human"]
+    assert h["verdict"] == "no" and h["reason"] == "stocky"
+
+
+def test_human_verdict_confirmed_anti_example_is_no_regardless():
+    from quarry.rating import human_verdict
+    sc = {"status": "confirmed", "anti_example": True, "rating": {"human": {"verdict": "yes"}}}
+    assert human_verdict(sc) == "no"
+
+
+def test_restore_records_yes_or_no_for_anti_example(git_repo):
+    git_repo.add_asset("hero", "h1", status="retired", rating={"human": {"verdict": "no", "by": "x", "at": "2026-01-01T00:00:00Z"}})
+    git_repo.add_asset("hero", "a1", status="retired", anti_example=True, avoid_reason="why")
+    _commit(git_repo)
+    c = _client(git_repo)
+    assert c.post("/api/assets/h1/restore").json()["asset"]["rating"]["human"]["verdict"] == "yes"
+    h = c.post("/api/assets/a1/restore").json()["asset"]["rating"]["human"]
+    assert h["verdict"] == "no" and h["reason"] == "why"
+
+
+def test_parked_yes_needing_details_becomes_proposed(git_repo):
+    git_repo.add_asset("hero", "h1", status="parked", license="")
+    _commit(git_repo)
+    body = _client(git_repo).post("/api/assets/h1/verdict", json={"verdict": "yes"}).json()
+    assert body["asset"]["status"] == "proposed" and body["needs_details"]
+
+
+def test_bad_bodies_still_422(git_repo):
+    git_repo.add_asset("hero", "h1", status="proposed")
+    _commit(git_repo)
+    c = _client(git_repo)
+    for url in ("/api/assets/h1/verdict", "/api/verdicts", "/api/undo"):
+        for kw in ({"json": [1]}, {"content": b"not json", "headers": {"content-type": "application/json"}}, {}):
+            r = c.post(url, **kw)
+            assert r.status_code == 422 and "error" in r.json(), (url, kw)
+
+
+def test_undo_refuses_commit_touching_non_sidecar_files(git_repo):
+    git_repo.add_asset("hero", "h1", status="proposed")
+    _commit(git_repo)
+    (git_repo.root / "taxonomy" / "note.txt").write_text("x")
+    git_repo.git("add", "-A")
+    git_repo.git("commit", "-q", "-m", "rate: sneaky")
+    sha = git_repo.git("rev-parse", "HEAD").strip()
+    assert _client(git_repo).post("/api/undo", json={"commit": sha}).status_code == 409
+
+
+def test_undo_refuses_invalid_previous_content(git_repo):
+    path = git_repo.add_asset("hero", "h1", status="proposed")
+    _commit(git_repo)
+    bad = json.loads(path.read_text())
+    bad["status"] = "bogus"
+    path.write_text(json.dumps(bad, indent=2))
+    git_repo.git("add", "-A")
+    git_repo.git("commit", "-q", "-m", "seed bad")
+    c = _client(git_repo)
+    good = {**bad, "status": "proposed"}
+    path.write_text(json.dumps(good, indent=2))
+    git_repo.git("add", "-A")
+    git_repo.git("commit", "-q", "-m", "rate: fix h1")
+    sha = git_repo.git("rev-parse", "HEAD").strip()
+    after = path.read_bytes()
+    r = c.post("/api/undo", json={"commit": sha})
+    assert r.status_code == 422 and path.read_bytes() == after
+
+
+def test_batch_commit_failure_rolls_back_everything(git_repo, monkeypatch):
+    from quarry.ui import gitops
+    p1 = git_repo.add_asset("hero", "h1", status="proposed")
+    p2 = git_repo.add_asset("hero", "h2", status="proposed")
+    _commit(git_repo)
+    before = (p1.read_bytes(), p2.read_bytes())
+
+    def boom(*a, **k):
+        raise gitops.GitError("boom")
+    monkeypatch.setattr(gitops, "commit_paths", boom)
+    r = _client(git_repo).post("/api/verdicts", json={"verdict": "yes", "ids": ["h1", "h2"]})
+    assert r.status_code == 500
+    assert (p1.read_bytes(), p2.read_bytes()) == before
+    assert git_repo.git("status", "--porcelain") == ""
+
+
+def test_write_sidecars_rolls_back_on_non_git_errors(git_repo, monkeypatch):
+    from quarry.ui import gitops
+    p1 = git_repo.add_asset("hero", "h1", status="proposed")
+    _commit(git_repo)
+    before = p1.read_bytes()
+    monkeypatch.setattr(gitops, "commit_paths", lambda *a, **k: (_ for _ in ()).throw(OSError("disk")))
+    c = TestClient(create_app(git_repo.root), raise_server_exceptions=False)
+    assert c.post("/api/assets/h1/verdict", json={"verdict": "yes"}).status_code == 500
+    assert p1.read_bytes() == before and git_repo.git("status", "--porcelain") == ""
+
+
+def test_needs_details_lists_blocking_errors(git_repo):
+    git_repo.add_asset("hero", "h1", status="proposed", license="")
+    git_repo.add_asset("hero", "h2", status="proposed")
+    _commit(git_repo)
+    c = _client(git_repo)
+    assert c.post("/api/assets/h1/verdict", json={"verdict": "yes"}).json()["needs_details"]
+    assert c.get("/api/rate/needs-details").json() == {
+        "h1": [{"error": "license: required for confirmed assets", "editable": True}]}
+    # now fixable from the editor: PATCH license, then confirm
+    assert c.patch("/api/assets/h1", json={"license": "owned"}).status_code == 200
+    assert c.get("/api/rate/needs-details").json() == {"h1": []}
+    assert c.post("/api/assets/h1/confirm").json()["asset"]["status"] == "confirmed"
+
+
+def test_patch_license_and_generation_shapes(git_repo):
+    git_repo.add_asset("hero", "m1", status="proposed",
+                       source={"origin": "midjourney", "ingested_at": "2026-01-01T00:00:00Z"})
+    _commit(git_repo)
+    c = _client(git_repo)
+    assert c.patch("/api/assets/m1", json={"license": 5}).status_code == 422
+    assert c.patch("/api/assets/m1", json={"generation": {"prompt": "p", "extra": 1}}).status_code == 422
+    assert c.post("/api/assets/m1/confirm").status_code == 422  # generation missing
+    gen = {"prompt": "glowing nodes", "model": "v6", "seed": 42}
+    assert c.patch("/api/assets/m1", json={"generation": gen}).json()["asset"]["generation"] == gen
+    assert c.post("/api/assets/m1/confirm").json()["asset"]["status"] == "confirmed"

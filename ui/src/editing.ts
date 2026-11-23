@@ -11,7 +11,14 @@ export interface Draft {
   usage_restrictions: string
   anti_example: boolean
   avoid_reason: string
+  license: string
+  /** Midjourney provenance; edited (and sent) only for midjourney-origin assets. */
+  generation: { prompt: string; model: string; seed: string }
 }
+
+const str = (v: unknown) => (v === null || v === undefined ? '' : String(v))
+/** Seeds are numbers in the sidecars; keep a typed number when the text is one. */
+const seedValue = (s: string): string | number | null => (s.trim() === '' ? null : /^\d+$/.test(s.trim()) ? Number(s.trim()) : s.trim())
 
 export const toDraft = (a: Asset): Draft => ({
   description: a.description ?? '',
@@ -22,6 +29,8 @@ export const toDraft = (a: Asset): Draft => ({
   usage_restrictions: (a.usage_restrictions ?? []).join(', '),
   anti_example: !!a.anti_example,
   avoid_reason: a.avoid_reason ?? '',
+  license: a.license ?? '',
+  generation: { prompt: str(a.generation?.prompt), model: str(a.generation?.model), seed: str(a.generation?.seed) },
 })
 
 const sameList = (a: string[], b: string[]) => a.length === b.length && a.every((v, i) => v === b[i])
@@ -42,10 +51,25 @@ export function diffDraft(a: Asset, d: Draft): Record<string, unknown> {
   if (d.anti_example !== !!a.anti_example) out.anti_example = d.anti_example
   if (d.anti_example && (out.anti_example !== undefined || d.avoid_reason !== (a.avoid_reason ?? '')))
     out.avoid_reason = d.avoid_reason
+  if (d.license.trim() !== (a.license ?? '')) out.license = d.license.trim()
+  if (a.source?.origin === 'midjourney') {
+    const g = d.generation
+    const before = toDraft(a).generation
+    if (g.prompt !== before.prompt || g.model !== before.model || g.seed !== before.seed) {
+      out.generation = { prompt: g.prompt.trim() || null, model: g.model.trim() || null, seed: seedValue(g.seed) }
+    }
+  }
   return out
 }
 
 /** True when it is safe to drop the current draft: nothing unsaved, or the user agreed to discard it. */
 export function canDiscard(dirty: boolean, ask: () => boolean): boolean {
   return !dirty || ask()
+}
+
+/** A tag list with `slug` added (at the end, once) or removed; the input is not changed. */
+export function withSlug(list: readonly string[] | undefined, slug: string, on: boolean): string[] {
+  const cur = list ?? []
+  if (on) return cur.includes(slug) ? [...cur] : [...cur, slug]
+  return cur.filter((s) => s !== slug)
 }

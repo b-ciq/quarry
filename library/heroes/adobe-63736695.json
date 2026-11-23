@@ -6,7 +6,9 @@
   "products": [],
   "categories": [],
   "verticals": [],
-  "concepts": [],
+  "concepts": [
+    "infrastructure"
+  ],
   "style": [],
   "aspect": "4000:2667",
   "license": "adobe-stock:63736695",
@@ -23,5 +25,32 @@
     }
   },
   "usage_restrictions": [],
-  "description": ""
+  "description": "Upward view of a steel lattice roof structure with branching tree-like columns, rendered in cool blue-gray monochrome. A band of windows runs along the curved wall below.",
+  "rating": {
+    "bot": {
+      "verdict": "maybe",
+      "strength": "unsure",
+      "reason": "Polished monochrome architectural abstract with a structural, network-like feel, but weak on CIQ subject matter; a hero background if a curator vouches.",
+      "model": "claude-opus-5-5",
+      "at": "2026-11-23T19:36:41Z",
+      "examples": [
+        "life-scientist-workstation",
+        "life-sysadmin-server-rack"
+      ],
+      "suggested_slugs": {
+        "products": [],
+        "categories": [],
+        "verticals": [],
+        "concepts": [
+          "architecture",
+          "abstract"
+        ],
+        "style": [
+          "monochrome",
+          "architectural",
+          "background"
+        ]
+      }
+    }
+  }
 }

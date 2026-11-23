@@ -129,6 +129,23 @@ def test_wrong_state_transitions_409(git_repo):
     assert c.post("/api/assets/ret/retire").status_code == 409
 
 
+def test_parked_can_be_retired_or_confirmed_from_the_editor(git_repo):
+    git_repo.add_asset("hero", "p1", status="parked")
+    git_repo.add_asset("hero", "p2", status="parked")
+    _commit(git_repo)
+    c = _client(git_repo)
+    r = c.post("/api/assets/p1/retire")
+    assert r.status_code == 200, r.text
+    a = r.json()["asset"]
+    assert a["status"] == "retired" and a["rating"]["human"]["verdict"] == "no"
+    assert a["rating"]["human"]["by"] == "Test <test@example.com>"
+    r = c.post("/api/assets/p2/confirm")
+    assert r.status_code == 200, r.text
+    a = r.json()["asset"]
+    assert a["status"] == "confirmed" and a["rating"]["human"]["verdict"] == "yes"
+    assert git_repo.git("log", "-2", "--format=%s").splitlines() == ["curate: confirm p2", "curate: retire p1"]
+
+
 def test_dirty_managed_blocks_all_writes_with_409(git_repo):
     git_repo.add_asset("hero", "h1")
     git_repo.add_asset("hero", "h2", status="proposed")
@@ -154,3 +171,12 @@ def test_unrelated_dirt_does_not_block_or_get_committed(git_repo):
     assert r.status_code == 200
     assert git_repo.git("show", "--name-only", "--format=", "HEAD").split() == ["library/hero/h1.json"]
     assert "notes.txt" in git_repo.git("status", "--porcelain")
+
+
+def test_patch_bad_bodies_are_422_with_message(git_repo):
+    git_repo.add_asset("hero", "h1")
+    _commit(git_repo)
+    c = _client(git_repo)
+    for kw in ({"json": [1]}, {"content": b"not json", "headers": {"content-type": "application/json"}}, {}):
+        r = c.patch("/api/assets/h1", **kw)
+        assert r.status_code == 422 and r.json()["error"] == "body must be a JSON object"

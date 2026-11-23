@@ -23,5 +23,32 @@
     }
   },
   "usage_restrictions": [],
-  "description": ""
+  "description": "Abstract dark background with glowing rainbow light lines (blue, purple, orange, red) curving from vertical into a sweeping floor plane. Large black negative space on the left and top.",
+  "rating": {
+    "bot": {
+      "verdict": "maybe",
+      "strength": "unsure",
+      "reason": "Polished abstract hero with plenty of text space, but the subject is generic light streaks with no clear tie to CIQ's world; needs a curator to vouch for it.",
+      "model": "claude-opus-5-5",
+      "at": "2026-11-23T19:35:47Z",
+      "examples": [
+        "life-scientist-workstation",
+        "life-sysadmin-server-rack"
+      ],
+      "suggested_slugs": {
+        "products": [],
+        "categories": [],
+        "verticals": [],
+        "concepts": [
+          "speed",
+          "data-flow"
+        ],
+        "style": [
+          "abstract",
+          "light-trails",
+          "dark-background"
+        ]
+      }
+    }
+  }
 }

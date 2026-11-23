@@ -4,9 +4,16 @@
   "status": "proposed",
   "class": "hero",
   "products": [],
-  "categories": [],
-  "verticals": [],
-  "concepts": [],
+  "categories": [
+    "hpc"
+  ],
+  "verticals": [
+    "life-sciences"
+  ],
+  "concepts": [
+    "science",
+    "research"
+  ],
   "style": [],
   "aspect": "91:51",
   "license": "",
@@ -23,5 +30,32 @@
     }
   },
   "usage_restrictions": [],
-  "description": ""
+  "description": "A vivid green microscopy-style close-up of plant cells with blue-edged walls and detailed internal structures against a blurred green background.",
+  "rating": {
+    "bot": {
+      "verdict": "maybe",
+      "strength": "unsure",
+      "reason": "Striking science imagery fits life-sciences research, but abstract micrography is weak on CIQ's subject and looks AI-generated, so it needs a license/provenance check.",
+      "model": "claude-opus-5-5",
+      "at": "2026-11-23T19:37:31Z",
+      "examples": [
+        "life-scientist-workstation",
+        "life-sysadmin-server-rack"
+      ],
+      "suggested_slugs": {
+        "products": [],
+        "categories": [],
+        "verticals": [],
+        "concepts": [
+          "biology",
+          "microscopy"
+        ],
+        "style": [
+          "macro",
+          "abstract",
+          "colorful"
+        ]
+      }
+    }
+  }
 }

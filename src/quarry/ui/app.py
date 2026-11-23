@@ -9,9 +9,11 @@ from fastapi.responses import FileResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 
 from quarry.publish import check_stale, sidecar_digest
-from quarry.ui import gitops, ingest_api, jobs, read_api, vocab_api, write_api
+from quarry.rater import Rater
+from quarry.ui import gitops, ingest_api, jobs, rate_api, read_api, vocab_api, write_api
 
 STATIC_DIR = Path(__file__).parent / "static"
+SYNC_LOCK_WAIT = 5.0  # seconds /api/sync waits for an in-progress write before answering 409
 
 
 def _index_meta(repo_root: Path, key: str) -> str | None:
@@ -33,10 +35,13 @@ def _embedder_mode(repo_root: Path) -> str | None:
     return _index_meta(repo_root, "embedder_mode")
 
 
-def create_app(repo_root: Path, fake_embedder: bool = False, skill_dir: Path | None = None) -> FastAPI:
+def create_app(repo_root: Path, fake_embedder: bool = False, skill_dir: Path | None = None,
+               rater: Rater | None = None) -> FastAPI:
     repo_root = Path(repo_root)
     app = FastAPI(title="quarry workbench")
     app.state.repo_root = repo_root
+    app.state.rater = rater  # injected (tests); rate_api builds a ClaudeRater lazily otherwise
+    app.state.embedder_mode = lambda: _embedder_mode(repo_root)
     app.state.fake_embedder = fake_embedder
     env_skill = os.environ.get("QUARRY_DECK_SKILL_DIR")
     app.state.skill_dir = Path(skill_dir) if skill_dir else (Path(env_skill) if env_skill else None)
@@ -80,15 +85,22 @@ def create_app(repo_root: Path, fake_embedder: bool = False, skill_dir: Path | N
 
     @app.post("/api/sync")
     def sync():
+        # pull --rebase --autostash rewrites the working tree: never under a write (e.g. an Auto-rate chunk).
+        lock = app.state.write_lock
+        if not lock.acquire(timeout=SYNC_LOCK_WAIT):
+            return JSONResponse({"error": "busy saving changes; try again in a moment"}, status_code=409)
         try:
             r = gitops.sync(repo_root)
         except gitops.GitError as exc:
             return JSONResponse({"error": str(exc)}, status_code=500)
+        finally:
+            lock.release()
         body = {"pulled": r.pulled, "pushed": r.pushed, "conflict": r.conflict, "message": r.message}
         return JSONResponse(body, status_code=409 if r.conflict else 200)
 
     read_api.mount(app, index_stale)
     write_api.mount(app)
+    rate_api.mount(app)
     vocab_api.mount(app)
     ingest_api.mount(app)
     jobs.mount(app)
@@ -104,7 +116,18 @@ def create_app(repo_root: Path, fake_embedder: bool = False, skill_dir: Path | N
     return app
 
 
+def dev_rater() -> Rater | None:
+    """Dev-only: QUARRY_FAKE_RATER=1 swaps in FakeRater (every asset rated maybe/unsure, no API key,
+    no cost) so the Rate view can be exercised locally. It still commits bot ratings: never point it
+    at a real library."""
+    if os.environ.get("QUARRY_FAKE_RATER") == "1":
+        from quarry.rater import FakeRater
+        return FakeRater()
+    return None
+
+
 def serve(repo_root: Path, port: int = 8787, fake_embedder: bool = False) -> None:
     import uvicorn
     skill = Path(os.environ.get("QUARRY_DECK_SKILL_DIR", "~/.claude/skills/quantic-deck-builder")).expanduser()
-    uvicorn.run(create_app(repo_root, fake_embedder, skill_dir=skill), host="127.0.0.1", port=port)
+    app = create_app(repo_root, fake_embedder, skill_dir=skill, rater=dev_rater())
+    uvicorn.run(app, host="127.0.0.1", port=port)

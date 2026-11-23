@@ -4,9 +4,17 @@
   "status": "proposed",
   "class": "hero",
   "products": [],
-  "categories": [],
-  "verticals": [],
-  "concepts": [],
+  "categories": [
+    "hpc"
+  ],
+  "verticals": [
+    "manufacturing"
+  ],
+  "concepts": [
+    "science",
+    "compute",
+    "data-analysis"
+  ],
   "style": [],
   "aspect": "4096:2375",
   "license": "istock:2223645787",
@@ -23,5 +31,34 @@
     }
   },
   "usage_restrictions": [],
-  "description": ""
+  "description": "A translucent wireframe render of a sports car on a black background, colored with a blue-to-orange heat-map gradient suggesting thermal or CFD simulation.",
+  "rating": {
+    "bot": {
+      "verdict": "maybe",
+      "strength": "unsure",
+      "reason": "Striking simulation-style visual fitting HPC/manufacturing, but subject is a generic sports car render and needs a license check.",
+      "model": "claude-opus-5-5",
+      "at": "2026-11-23T19:37:31Z",
+      "examples": [
+        "life-scientist-workstation",
+        "life-sysadmin-server-rack"
+      ],
+      "suggested_slugs": {
+        "products": [],
+        "categories": [],
+        "verticals": [
+          "automotive"
+        ],
+        "concepts": [
+          "simulation",
+          "engineering"
+        ],
+        "style": [
+          "wireframe",
+          "3d-render",
+          "dark-background"
+        ]
+      }
+    }
+  }
 }

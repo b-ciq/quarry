@@ -1,6 +1,8 @@
 // Pure filtering/faceting logic. No React, no DOM: reused by later tasks.
 
-export type Status = 'proposed' | 'confirmed' | 'retired' | string
+import type { Rating } from './rating'
+
+export type Status = 'proposed' | 'confirmed' | 'retired' | 'parked' | string
 
 export interface Asset {
   id: string
@@ -22,8 +24,10 @@ export interface Asset {
   description: string
   anti_example?: boolean
   avoid_reason?: string
+  generation?: { prompt?: string | null; model?: string | null; seed?: string | number | null }
   thumb_url: string
   full_url: string
+  rating?: Rating
 }
 
 export const AXES = ['use', 'class', 'status', 'product', 'tone', 'categories', 'verticals', 'concepts', 'style', 'license'] as const
@@ -132,4 +136,37 @@ export function resolveHits(hits: { id: string }[], assets: Asset[]): Asset[] {
 /** Next image source after a load error: thumbnail -> full image -> give up (null). */
 export function nextImgSrc(current: string, a: Pick<Asset, 'thumb_url' | 'full_url'>): string | null {
   return current === a.thumb_url && a.full_url !== a.thumb_url ? a.full_url : null
+}
+
+/**
+ * Asset-list reloads race local saves: a reload that started before a save landed carries the old
+ * sidecar and would bring a decided card back. Each reload takes a ticket from `begin()`. `accept()`
+ * drops a result older than one already applied; `merge()` keeps the local copy of any asset saved
+ * after that reload started.
+ */
+export class ReloadGuard {
+  private seq = 0
+  private applied = 0
+  private savedAt = new Map<string, number>()
+
+  begin(): number {
+    return ++this.seq
+  }
+
+  /** A write for `id` landed and its result is already in local state. */
+  saved(id: string): void {
+    this.savedAt.set(id, this.seq)
+  }
+
+  accept(ticket: number): boolean {
+    if (ticket < this.applied) return false
+    this.applied = ticket
+    for (const [id, at] of this.savedAt) if (at < ticket) this.savedAt.delete(id) // fresh data covers it
+    return true
+  }
+
+  merge(ticket: number, fresh: Asset[], current: Asset[]): Asset[] {
+    const local = new Map(current.map((a) => [a.id, a]))
+    return fresh.map((a) => ((this.savedAt.get(a.id) ?? -1) >= ticket ? (local.get(a.id) ?? a) : a))
+  }
 }

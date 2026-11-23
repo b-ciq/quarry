@@ -1,6 +1,6 @@
 import { useRef, useState } from 'react'
 import { Alert, Button, Checkbox, Select, TextInput } from '@ctrliq/quantic-react'
-import { ingestFiles, startJob, type IngestResult } from '../api'
+import { ingestFiles, startJob, type IngestResult, type RateSummary } from '../api'
 import { JobLog } from './JobLog'
 
 const CLASSES = ['hero', 'spot-illustration', 'background', 'screenshot', 'diagram', 'lifestyle']
@@ -10,9 +10,16 @@ interface Props {
   /** Called after a successful ingest so the app can refresh and offer the review queue. */
   onIngested: (r: IngestResult) => void
   onReviewQueue: () => void
+  /** Rater status (null until the rate summary loads); Auto-rate is offered only when available. */
+  rater: RateSummary['rater'] | null
+  rateJob: { id: string; running: boolean } | null
+  /** Images waiting for the bot (Auto-rate rates all of them, not just this ingest). */
+  waiting: number
+  onAutoRate: () => void
+  rateError: string | null
 }
 
-export function IngestDrop({ products, onIngested, onReviewQueue }: Props) {
+export function IngestDrop({ products, onIngested, onReviewQueue, rater, rateJob, onAutoRate, rateError, waiting }: Props) {
   const [files, setFiles] = useState<File[]>([])
   const [over, setOver] = useState(false)
   const [cls, setCls] = useState('')
@@ -26,6 +33,10 @@ export function IngestDrop({ products, onIngested, onReviewQueue }: Props) {
   const [result, setResult] = useState<IngestResult | null>(null)
   const [reindexJob, setReindexJob] = useState<string | null>(null)
   const [reindexError, setReindexError] = useState<string | null>(null)
+  /** Set when Auto-rate is asked for from this report: the job id that was current then (a new one is ours). */
+  const [askedOver, setAskedOver] = useState<string | null | undefined>(undefined)
+  const asked = askedOver !== undefined
+  const ourJob = asked && rateJob && rateJob.id !== askedOver ? rateJob : null
   const picker = useRef<HTMLInputElement>(null)
 
   const addFiles = (list: FileList | null) => {
@@ -47,6 +58,7 @@ export function IngestDrop({ products, onIngested, onReviewQueue }: Props) {
     setResult(null)
     setReindexJob(null)
     setReindexError(null)
+    setAskedOver(undefined)
     const form = new FormData()
     files.forEach((f) => form.append('files', f))
     form.append('asset_class', cls)
@@ -149,6 +161,20 @@ export function IngestDrop({ products, onIngested, onReviewQueue }: Props) {
               </div>
               {reindexError && <Alert type="error">{reindexError}</Alert>}
               {reindexJob && <JobLog key={reindexJob} jobId={reindexJob} name="Re-index" onFinished={() => onIngested(result)} />}
+              {rater?.available && !ourJob && waiting > 0 && (
+                <div className="ingest-autorate">
+                  <span>
+                    {rateJob?.running
+                      ? 'Auto-rate is already running; these images join the next run.'
+                      : `Auto-rate ${waiting} image${waiting === 1 ? '' : 's'} waiting for the bot?`}
+                  </span>
+                  <Button size="sm" disabled={!!rateJob?.running} onClick={() => { setAskedOver(rateJob?.id ?? null); onAutoRate() }}>
+                    Auto-rate
+                  </Button>
+                </div>
+              )}
+              {asked && rateError && <Alert type="error">{rateError}</Alert>}
+              {ourJob && <JobLog key={ourJob.id} jobId={ourJob.id} name="Auto-rate" onFinished={() => {}} />}
             </>
           )}
           {result.skipped.length > 0 && (

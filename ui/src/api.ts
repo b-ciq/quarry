@@ -1,4 +1,5 @@
 import type { Asset } from './state'
+import type { Agreement, Verdict } from './rating'
 
 export interface GitStatus {
   ahead: number
@@ -36,10 +37,7 @@ async function send(method: string, url: string, body?: unknown): Promise<WriteR
       body: body === undefined ? undefined : JSON.stringify(body),
     })
     const data = (await res.json().catch(() => ({}))) as { asset?: Asset; error?: string; errors?: string[] }
-    if (res.ok && data.asset) {
-      const id = data.asset.id
-      return { ok: true, asset: { ...data.asset, thumb_url: `/thumbs/${id}.webp`, full_url: `/files/${id}` } }
-    }
+    if (res.ok && data.asset) return { ok: true, asset: withUrls(data.asset) }
     return { ok: false, status: res.status, error: data.error ?? `HTTP ${res.status}`, errors: data.errors ?? [] }
   } catch (e) {
     return { ok: false, status: 0, error: (e as Error).message, errors: [] }
@@ -132,3 +130,54 @@ export async function searchIndex(q: string, limit = 50): Promise<SearchResult> 
     'GET', `/api/search?q=${encodeURIComponent(q)}&limit=${limit}`)
   return { ok: r.ok, hits: r.data.hits ?? [], stale: !!r.data.stale, error: r.error }
 }
+
+// --- Rating ---
+export interface VerdictResult {
+  asset: Asset
+  commit: string
+  needs_details: string[] | null
+}
+export interface BatchVerdictResult {
+  commit: string | null
+  applied: string[]
+  needs_details: Record<string, string[]>
+  failed: Record<string, string[]>
+}
+export interface RateSummary {
+  waiting_for_bot: number
+  to_review: number
+  needs_details: number
+  parked: number
+  agreement: Agreement
+  rater: { available: boolean; model: string; reason: string | null }
+  learning: 'look-alike' | 'recent'
+}
+
+/** Sidecars from write endpoints lack the URLs the list endpoint adds. */
+export const withUrls = (a: Asset): Asset => ({ ...a, thumb_url: `/thumbs/${a.id}.webp`, full_url: `/files/${a.id}` })
+
+/** Validator errors from a failed call (422 bodies carry them as `errors`). */
+export const callErrors = (r: CallResult<unknown>): string[] => {
+  const errors = (r.data as { errors?: unknown } | null)?.errors
+  return Array.isArray(errors) ? (errors as string[]) : []
+}
+
+export async function postVerdict(id: string, verdict: Verdict, reason?: string) {
+  const r = await call<VerdictResult>('POST', `/api/assets/${seg(id)}/verdict`,
+    { json: reason === undefined ? { verdict } : { verdict, reason } })
+  if (r.ok && r.data.asset) r.data = { ...r.data, asset: withUrls(r.data.asset) }
+  return r
+}
+export const postVerdicts = (verdict: Verdict, ids: string[]) =>
+  call<BatchVerdictResult>('POST', '/api/verdicts', { json: { verdict, ids } })
+export const postUndo = (commit: string) => call<{ commit: string; ids: string[] }>('POST', '/api/undo', { json: { commit } })
+export const startAutoRate = (redo?: 'unsure') =>
+  call<{ job_id: string }>('POST', `/api/rate${redo ? `?redo=${redo}` : ''}`)
+export const fetchRateSummary = () => call<RateSummary>('GET', '/api/rate/summary')
+/** A validator error blocking confirm, and whether the asset editor can fix that field. */
+export interface NeedsDetailsError {
+  error: string
+  editable: boolean
+}
+/** Needs-details assets mapped to the errors that block confirming them. */
+export const fetchNeedsDetails = () => call<Record<string, NeedsDetailsError[]>>('GET', '/api/rate/needs-details')

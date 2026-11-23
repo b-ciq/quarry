@@ -40,6 +40,7 @@ Set `"status": "retired"` in the sidecar. Never delete files. Then publish.
 
 - Vocabulary rename/merge rewrites all carrier sidecars and `taxonomy/vocabulary.json` in one commit. It is blocked with HTTP 422 if any carrier sidecar is already invalid (or would become invalid); fix that asset first, then retry. Delete is refused with 409 while any asset uses the slug.
 - Edits are local commits; the Sync button pulls (rebase) and pushes. On conflict nothing is pushed and edits are kept in the latest git stash.
+- Rate view: the bot needs `ANTHROPIC_API_KEY` (or `ant auth login`) and the `rate` extra; model defaults to `claude-opus-5-5`, override with `QUARRY_RATER_MODEL`. `QUARRY_FAKE_RATER=1` swaps in a fake rater for UI testing (dev only). Each verdict is a `rate: ...` commit. CLI fallback: set `status` (and `rating.human`, see `skills/tag-assets/SKILL.md`) in the sidecar.
 - Publish/Re-index buttons run the same code as `quarry publish` / `quarry index`.
 
 ## Index and exports

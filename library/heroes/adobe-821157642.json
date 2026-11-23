@@ -6,7 +6,10 @@
   "products": [],
   "categories": [],
   "verticals": [],
-  "concepts": [],
+  "concepts": [
+    "people",
+    "data-analysis"
+  ],
   "style": [],
   "aspect": "512:287",
   "license": "adobe-stock:821157642",
@@ -23,5 +26,29 @@
     }
   },
   "usage_restrictions": [],
-  "description": ""
+  "description": "Three silhouetted people stand before a huge glowing blue holographic wall covered in diagrams, circuits and orbs, one reaching up to point at it.",
+  "rating": {
+    "bot": {
+      "verdict": "no",
+      "strength": "unsure",
+      "reason": "Generic AI-looking sci-fi stock clich\u00e9 of people pointing at glowing holographic screens, with gibberish interface detail.",
+      "model": "claude-opus-5-5",
+      "at": "2026-11-23T19:36:58Z",
+      "examples": [
+        "life-scientist-workstation",
+        "life-sysadmin-server-rack"
+      ],
+      "suggested_slugs": {
+        "products": [],
+        "categories": [],
+        "verticals": [],
+        "concepts": [],
+        "style": [
+          "ai-generated",
+          "holographic",
+          "sci-fi"
+        ]
+      }
+    }
+  }
 }

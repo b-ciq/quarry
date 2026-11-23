@@ -6,7 +6,9 @@
   "products": [],
   "categories": [],
   "verticals": [],
-  "concepts": [],
+  "concepts": [
+    "compute"
+  ],
   "style": [],
   "aspect": "512:287",
   "license": "adobe-stock:1235970311",
@@ -23,5 +25,29 @@
     }
   },
   "usage_restrictions": [],
-  "description": ""
+  "description": "A glowing circular display with an orange segmented readout showing garbled digits, set against a textured dark surface with orange and blue bokeh lights.",
+  "rating": {
+    "bot": {
+      "verdict": "no",
+      "strength": "unsure",
+      "reason": "AI-generated abstract with garbled digital readout text; generic and not clearly tied to CIQ's world.",
+      "model": "claude-opus-5-5",
+      "at": "2026-11-23T19:35:12Z",
+      "examples": [
+        "life-scientist-workstation",
+        "life-sysadmin-server-rack"
+      ],
+      "suggested_slugs": {
+        "products": [],
+        "categories": [],
+        "verticals": [],
+        "concepts": [],
+        "style": [
+          "abstract",
+          "ai-generated",
+          "neon"
+        ]
+      }
+    }
+  }
 }

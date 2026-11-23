@@ -6,7 +6,9 @@
   "products": [],
   "categories": [],
   "verticals": [],
-  "concepts": [],
+  "concepts": [
+    "security"
+  ],
   "style": [],
   "aspect": "16:9",
   "license": "ciq-original",
@@ -16,5 +18,33 @@
     "sha256": "21292bafb97a0340066d167ad1ff8877b1e44cadda561d648eaf849be033c559"
   },
   "usage_restrictions": [],
-  "description": ""
+  "description": "A glowing blue particle-and-mesh checkmark sits in the lower right of a near-black background, leaving most of the frame empty.",
+  "tone": "dark",
+  "rating": {
+    "bot": {
+      "verdict": "yes",
+      "strength": "unsure",
+      "reason": "Clean dark background with ample negative space for text; abstract checkmark suits compliance/validation messaging.",
+      "model": "claude-opus-5-5",
+      "at": "2026-11-23T19:37:15Z",
+      "examples": [
+        "life-scientist-workstation",
+        "life-sysadmin-server-rack"
+      ],
+      "suggested_slugs": {
+        "products": [],
+        "categories": [],
+        "verticals": [],
+        "concepts": [
+          "compliance",
+          "validation"
+        ],
+        "style": [
+          "abstract",
+          "particles",
+          "negative-space"
+        ]
+      }
+    }
+  }
 }

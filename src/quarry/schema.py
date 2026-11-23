@@ -10,7 +10,9 @@ CLASS_DIRS = {
     "diagram": "diagrams",
     "lifestyle": "lifestyle",
 }
-STATUSES = {"proposed", "confirmed", "retired"}
+STATUSES = {"proposed", "confirmed", "retired", "parked"}
+VERDICTS = ("yes", "no", "maybe")
+STRENGTHS = ("strong", "unsure")
 TONES = {"dark", "light"}
 
 REQUIRED_KEYS = (
@@ -19,7 +21,7 @@ REQUIRED_KEYS = (
     "description",
 )
 OPTIONAL_KEYS = ("tone", "license_expiry", "product_version", "captured_at", "generation",
-                 "anti_example", "avoid_reason")
+                 "anti_example", "avoid_reason", "rating")
 KEBAB_RE = re.compile(r"^[a-z0-9]+(-[a-z0-9]+)*$")
 TAG_AXES = ("products", "categories", "verticals", "concepts", "style")
 
@@ -33,6 +35,24 @@ def is_servable(entry: dict) -> bool:
 def is_anti_example(entry: dict) -> bool:
     """A confirmed "don't do this" reference, served only through the anti-example paths."""
     return entry.get("status") == "confirmed" and entry.get("anti_example") is True
+
+
+def _validate_rating(rating) -> list[str]:
+    if not isinstance(rating, dict):
+        return ["rating: must be an object"]
+    errors: list[str] = []
+    for who in ("bot", "human"):
+        if who not in rating:
+            continue
+        block = rating[who]
+        if not isinstance(block, dict):
+            errors.append(f"rating.{who}: must be an object")
+            continue
+        if "verdict" in block and block["verdict"] not in VERDICTS:
+            errors.append(f"rating.{who}.verdict: invalid value {block['verdict']!r}")
+        if who == "bot" and "strength" in block and block["strength"] not in STRENGTHS:
+            errors.append(f"rating.bot.strength: invalid value {block['strength']!r}")
+    return errors
 
 
 def validate_sidecar(entry: dict, vocab: dict) -> list[str]:
@@ -66,6 +86,8 @@ def validate_sidecar(entry: dict, vocab: dict) -> list[str]:
             errors.append("avoid_reason: only allowed when anti_example is true")
         elif not isinstance(entry["avoid_reason"], str):
             errors.append("avoid_reason: must be a string")
+    if "rating" in entry:
+        errors.extend(_validate_rating(entry["rating"]))
     if errors or entry["status"] != "confirmed":
         return errors
 

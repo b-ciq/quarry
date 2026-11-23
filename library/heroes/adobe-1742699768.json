@@ -6,7 +6,10 @@
   "products": [],
   "categories": [],
   "verticals": [],
-  "concepts": [],
+  "concepts": [
+    "compute",
+    "data-analysis"
+  ],
   "style": [],
   "aspect": "2000:1121",
   "license": "adobe-stock:1742699768",
@@ -23,5 +26,32 @@
     }
   },
   "usage_restrictions": [],
-  "description": ""
+  "description": "Abstract dark background with vertical streaks of glowing cyan, blue, and purple light and bokeh particles, suggesting data streams.",
+  "rating": {
+    "bot": {
+      "verdict": "maybe",
+      "strength": "unsure",
+      "reason": "Polished abstract data-light background with room for text, but subject is generic and loosely tied to CIQ's world.",
+      "model": "claude-opus-5-5",
+      "at": "2026-11-23T19:36:05Z",
+      "examples": [
+        "life-scientist-workstation",
+        "life-sysadmin-server-rack"
+      ],
+      "suggested_slugs": {
+        "products": [],
+        "categories": [],
+        "verticals": [],
+        "concepts": [
+          "abstract",
+          "data-flow"
+        ],
+        "style": [
+          "abstract-background",
+          "dark",
+          "neon-gradient"
+        ]
+      }
+    }
+  }
 }

@@ -8,7 +8,9 @@
   ],
   "categories": [],
   "verticals": [],
-  "concepts": [],
+  "concepts": [
+    "compute"
+  ],
   "style": [],
   "aspect": "1:1",
   "license": "midjourney",
@@ -27,10 +29,36 @@
     "product_note": "RLC-H"
   },
   "usage_restrictions": [],
-  "description": "",
+  "description": "An abstract dark navy background with a flowing wave of tiny glowing particles and soft bokeh highlights in blue and warm gold.",
   "generation": {
     "prompt": "dense wall of floating blue particles forming security barrier, digital firewall made of glowing data points, impenetrable protection layer, cyber security concept, depth of field, cinematic",
     "model": null,
     "seed": null
+  },
+  "rating": {
+    "bot": {
+      "verdict": "maybe",
+      "strength": "unsure",
+      "reason": "Polished dark abstract particle wave with lots of text room, but generic tech backdrop weakly tied to CIQ subjects.",
+      "model": "claude-opus-5-5",
+      "at": "2026-11-23T19:37:31Z",
+      "examples": [
+        "life-scientist-workstation",
+        "life-sysadmin-server-rack"
+      ],
+      "suggested_slugs": {
+        "products": [],
+        "categories": [],
+        "verticals": [],
+        "concepts": [
+          "abstract"
+        ],
+        "style": [
+          "particle-wave",
+          "dark-background",
+          "bokeh"
+        ]
+      }
+    }
   }
 }

@@ -1,12 +1,15 @@
 {
   "id": "adobe-724163595",
   "file": "adobe-724163595.jpg",
-  "status": "proposed",
+  "status": "retired",
   "class": "hero",
   "products": [],
   "categories": [],
   "verticals": [],
-  "concepts": [],
+  "concepts": [
+    "security",
+    "datacenter"
+  ],
   "style": [],
   "aspect": "4096:2731",
   "license": "adobe-stock:724163595",
@@ -23,5 +26,33 @@
     }
   },
   "usage_restrictions": [],
-  "description": ""
+  "description": "A symmetrical datacenter corridor lined with server racks covered in blue and orange lights, with a glowing blue padlock icon floating at the far end.",
+  "rating": {
+    "bot": {
+      "verdict": "no",
+      "strength": "strong",
+      "reason": "Glowing padlock in a server corridor is the exact generic stock security cliche the rubric rejects.",
+      "model": "claude-opus-5-5",
+      "at": "2026-11-23T19:36:41Z",
+      "examples": [
+        "life-scientist-workstation",
+        "life-sysadmin-server-rack"
+      ],
+      "suggested_slugs": {
+        "products": [],
+        "categories": [],
+        "verticals": [],
+        "concepts": [],
+        "style": [
+          "stock-cliche",
+          "glowing-padlock"
+        ]
+      }
+    },
+    "human": {
+      "verdict": "no",
+      "by": "b-ciq <bkfchristensen@gmail.com>",
+      "at": "2026-11-23T19:56:43Z"
+    }
+  }
 }

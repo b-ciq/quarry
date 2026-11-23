@@ -1,7 +1,7 @@
 {
   "id": "adobe-277266538",
   "file": "adobe-277266538.jpg",
-  "status": "proposed",
+  "status": "retired",
   "class": "hero",
   "products": [],
   "categories": [],
@@ -23,5 +23,36 @@
     }
   },
   "usage_restrictions": [],
-  "description": ""
+  "description": "Interior of a car at night with the driver door open, showing leather seats, steering wheel, center console and a travel mug, with blurred city lights outside.",
+  "rating": {
+    "bot": {
+      "verdict": "no",
+      "strength": "strong",
+      "reason": "Car interior at night is off-topic for CIQ's products and audiences; nothing connects it to Linux, HPC, or infrastructure.",
+      "model": "claude-opus-5-5",
+      "at": "2026-11-23T19:36:05Z",
+      "examples": [
+        "life-scientist-workstation",
+        "life-sysadmin-server-rack"
+      ],
+      "suggested_slugs": {
+        "products": [],
+        "categories": [],
+        "verticals": [
+          "automotive"
+        ],
+        "concepts": [],
+        "style": [
+          "night",
+          "bokeh",
+          "color-photo"
+        ]
+      }
+    },
+    "human": {
+      "verdict": "no",
+      "by": "b-ciq <bkfchristensen@gmail.com>",
+      "at": "2026-11-23T19:56:43Z"
+    }
+  }
 }

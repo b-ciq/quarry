@@ -4,9 +4,14 @@
   "status": "proposed",
   "class": "background",
   "products": [],
-  "categories": [],
+  "categories": [
+    "hpc"
+  ],
   "verticals": [],
-  "concepts": [],
+  "concepts": [
+    "infrastructure",
+    "compute"
+  ],
   "style": [],
   "aspect": "16:9",
   "license": "ciq-original",
@@ -16,5 +21,32 @@
     "sha256": "27876ad051505962313c7aa68e0cada24be673e163af6c7f5bc449bd45b5b26e"
   },
   "usage_restrictions": [],
-  "description": ""
+  "description": "Dark navy abstract background with a glowing blue particle wave and connected network nodes in the lower right, leaving open dark space at upper left.",
+  "tone": "dark",
+  "rating": {
+    "bot": {
+      "verdict": "yes",
+      "strength": "unsure",
+      "reason": "Clean dark abstract network background with ample negative space for text; fits CIQ's tech mood, though somewhat generic.",
+      "model": "claude-opus-5-5",
+      "at": "2026-11-23T19:37:15Z",
+      "examples": [
+        "life-scientist-workstation",
+        "life-sysadmin-server-rack"
+      ],
+      "suggested_slugs": {
+        "products": [],
+        "categories": [],
+        "verticals": [],
+        "concepts": [
+          "network"
+        ],
+        "style": [
+          "abstract",
+          "particles",
+          "plexus"
+        ]
+      }
+    }
+  }
 }

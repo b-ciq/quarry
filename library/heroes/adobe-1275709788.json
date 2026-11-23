@@ -4,9 +4,17 @@
   "status": "proposed",
   "class": "hero",
   "products": [],
-  "categories": [],
-  "verticals": [],
-  "concepts": [],
+  "categories": [
+    "hpc"
+  ],
+  "verticals": [
+    "higher-education"
+  ],
+  "concepts": [
+    "science",
+    "research",
+    "compute"
+  ],
   "style": [],
   "aspect": "2048:1117",
   "license": "adobe-stock:1275709788",
@@ -23,5 +31,33 @@
     }
   },
   "usage_restrictions": [],
-  "description": ""
+  "description": "A glowing neon pi symbol in a blue-to-pink gradient on a dark background, surrounded by faint math sketches and formulas. Most of the right side is open dark space.",
+  "anti_example": true,
+  "avoid_reason": "it features glossy purple and blue science fiction aesthetic ",
+  "rating": {
+    "bot": {
+      "verdict": "maybe",
+      "strength": "unsure",
+      "reason": "Clean dark hero with text room and a science/math theme, but the neon pi stock look is generic and only loosely tied to CIQ's world.",
+      "model": "claude-opus-5-5",
+      "at": "2026-11-23T19:35:12Z",
+      "examples": [
+        "life-scientist-workstation",
+        "life-sysadmin-server-rack"
+      ],
+      "suggested_slugs": {
+        "products": [],
+        "categories": [],
+        "verticals": [],
+        "concepts": [
+          "mathematics"
+        ],
+        "style": [
+          "neon",
+          "dark-background",
+          "stock-illustration"
+        ]
+      }
+    }
+  }
 }

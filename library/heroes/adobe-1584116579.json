@@ -3,10 +3,20 @@
   "file": "adobe-1584116579.jpg",
   "status": "proposed",
   "class": "hero",
-  "products": [],
-  "categories": [],
+  "products": [
+    "ascender-pro",
+    "fuzzball"
+  ],
+  "categories": [
+    "automation",
+    "containers"
+  ],
   "verticals": [],
-  "concepts": [],
+  "concepts": [
+    "infrastructure",
+    "operations",
+    "compute"
+  ],
   "style": [],
   "aspect": "512:287",
   "license": "adobe-stock:1584116579",
@@ -23,5 +33,32 @@
     }
   },
   "usage_restrictions": [],
-  "description": ""
+  "description": "A dark isometric field of floating code panels connected by glowing green and orange circuit-like lines, suggesting automated workflows or pipelines.",
+  "rating": {
+    "bot": {
+      "verdict": "maybe",
+      "strength": "unsure",
+      "reason": "Dark, techy mood fits automation/containers themes, but it's AI-generated with gibberish code text and a generic look, so it needs curator review.",
+      "model": "claude-opus-5-5",
+      "at": "2026-11-23T19:35:30Z",
+      "examples": [
+        "life-scientist-workstation",
+        "life-sysadmin-server-rack"
+      ],
+      "suggested_slugs": {
+        "products": [],
+        "categories": [],
+        "verticals": [],
+        "concepts": [
+          "workflows",
+          "pipelines"
+        ],
+        "style": [
+          "ai-generated",
+          "abstract",
+          "dark-background"
+        ]
+      }
+    }
+  }
 }

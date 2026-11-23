@@ -23,5 +23,31 @@
     }
   },
   "usage_restrictions": [],
-  "description": ""
+  "description": "A macro render of puffy, popcorn-like particles floating against a blue background with fine white specks.",
+  "rating": {
+    "bot": {
+      "verdict": "no",
+      "strength": "unsure",
+      "reason": "Popcorn-like floating particles look polished but are off-topic for CIQ's products and audiences, and possibly AI-generated.",
+      "model": "claude-opus-5-5",
+      "at": "2026-11-23T19:35:47Z",
+      "examples": [
+        "life-scientist-workstation",
+        "life-sysadmin-server-rack"
+      ],
+      "suggested_slugs": {
+        "products": [],
+        "categories": [],
+        "verticals": [],
+        "concepts": [
+          "abstract"
+        ],
+        "style": [
+          "macro",
+          "3d-render",
+          "ai-generated"
+        ]
+      }
+    }
+  }
 }

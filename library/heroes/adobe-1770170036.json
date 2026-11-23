@@ -1,12 +1,14 @@
 {
   "id": "adobe-1770170036",
   "file": "adobe-1770170036.jpg",
-  "status": "proposed",
+  "status": "retired",
   "class": "hero",
   "products": [],
   "categories": [],
   "verticals": [],
-  "concepts": [],
+  "concepts": [
+    "security"
+  ],
   "style": [],
   "aspect": "4096:2731",
   "license": "adobe-stock:1770170036",
@@ -23,5 +25,33 @@
     }
   },
   "usage_restrictions": [],
-  "description": ""
+  "description": "A hand holds up a glowing digital shield with an orange padlock icon against a dark, blurred blue background.",
+  "rating": {
+    "bot": {
+      "verdict": "no",
+      "strength": "strong",
+      "reason": "Classic glowing padlock stock cliche, explicitly called out in the rubric as a No.",
+      "model": "claude-opus-5-5",
+      "at": "2026-11-23T19:36:05Z",
+      "examples": [
+        "life-scientist-workstation",
+        "life-sysadmin-server-rack"
+      ],
+      "suggested_slugs": {
+        "products": [],
+        "categories": [],
+        "verticals": [],
+        "concepts": [],
+        "style": [
+          "stock-cliche",
+          "glowing-padlock"
+        ]
+      }
+    },
+    "human": {
+      "verdict": "no",
+      "by": "b-ciq <bkfchristensen@gmail.com>",
+      "at": "2026-11-23T19:56:43Z"
+    }
+  }
 }

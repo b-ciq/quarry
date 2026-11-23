@@ -1,4 +1,5 @@
 """Scoped git operations for the workbench. Never stages anything outside the given paths."""
+import os
 import subprocess
 import time
 from dataclasses import dataclass, field
@@ -28,11 +29,33 @@ class SyncResult:
     message: str = ""
 
 
+# Read-only queries (status above all) must not take index.lock to refresh stat info: the curator's
+# /api/status polling would otherwise race a chunk's add+commit and fail it with "index.lock exists".
+# GIT_OPTIONAL_LOCKS=0 only drops those optional locks; writes still lock as usual.
+def _env() -> dict:
+    return {**os.environ, "GIT_OPTIONAL_LOCKS": "0"}
+
+
 def _git(repo, *args, check=True) -> subprocess.CompletedProcess:
-    p = subprocess.run(["git", "-C", str(repo), *args], capture_output=True, text=True)
+    p = subprocess.run(["git", "-C", str(repo), *args], capture_output=True, text=True, env=_env())
     if check and p.returncode != 0:
         raise GitError(f"git {' '.join(args)} failed: {(p.stderr or p.stdout).strip()}")
     return p
+
+
+def identity(repo) -> str:
+    """`Name <email>` from git config; falls back to whichever half is set, else "unknown"."""
+    name = _git(repo, "config", "user.name", check=False).stdout.strip()
+    email = _git(repo, "config", "user.email", check=False).stdout.strip()
+    if name and email:
+        return f"{name} <{email}>"
+    return name or (f"<{email}>" if email else "unknown")
+
+
+def show_bytes(repo, rev: str, path: str) -> bytes | None:
+    """Exact bytes of `path` (relative to `repo`) at `rev`, or None if it doesn't exist there."""
+    p = subprocess.run(["git", "-C", str(repo), "show", f"{rev}:./{path}"], capture_output=True, env=_env())
+    return p.stdout if p.returncode == 0 else None
 
 
 def is_git_repo(repo) -> bool:
@@ -75,7 +98,7 @@ def fetch_if_stale(repo, max_age: float | None = None) -> bool:
     _last_attempt[key] = now
     try:
         p = subprocess.run(["git", "-C", str(repo), "fetch", "--quiet"], capture_output=True,
-                           text=True, timeout=FETCH_TIMEOUT)
+                           text=True, timeout=FETCH_TIMEOUT, env=_env())
     except (subprocess.TimeoutExpired, OSError):
         return False
     return p.returncode == 0
@@ -99,12 +122,18 @@ def managed_status(repo) -> ManagedStatus:
     return ManagedStatus(sorted(managed), sorted(other), ahead, behind, up)
 
 
+# A commit may start a detached `git maintenance run --auto` / `gc --auto`. At rating speed (a commit a
+# second) on a repo full of loose image blobs those pile up and stall every write, so the workbench's
+# own commits never trigger them; the curator's normal git use still does.
+NO_AUTO_GC = ("-c", "gc.auto=0", "-c", "maintenance.auto=false")
+
+
 def commit_paths(repo, paths: list[str], message: str) -> str:
     """Commit ONLY `paths` (even if other files are dirty or staged); return the new sha."""
     if not paths:
         raise GitError("commit_paths requires at least one path")
-    _git(repo, "add", "--", *paths)
-    _git(repo, "commit", "-m", message, "--only", "--", *paths)
+    _git(repo, *NO_AUTO_GC, "add", "--", *paths)
+    _git(repo, *NO_AUTO_GC, "commit", "-m", message, "--only", "--", *paths)
     return _git(repo, "rev-parse", "HEAD").stdout.strip()
 
 

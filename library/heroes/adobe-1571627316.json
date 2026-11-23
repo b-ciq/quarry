@@ -4,9 +4,14 @@
   "status": "proposed",
   "class": "hero",
   "products": [],
-  "categories": [],
+  "categories": [
+    "hpc"
+  ],
   "verticals": [],
-  "concepts": [],
+  "concepts": [
+    "compute",
+    "infrastructure"
+  ],
   "style": [],
   "aspect": "512:287",
   "license": "adobe-stock:1571627316",
@@ -23,5 +28,31 @@
     }
   },
   "usage_restrictions": [],
-  "description": ""
+  "description": "A close-up 3D render of a processor chip on a dark circuit board, with glowing blue light traces radiating out from it.",
+  "rating": {
+    "bot": {
+      "verdict": "maybe",
+      "strength": "unsure",
+      "reason": "Polished and on-topic for compute, but a generic glowing-chip stock trope with limited CIQ specificity.",
+      "model": "claude-opus-5-5",
+      "at": "2026-11-23T19:35:30Z",
+      "examples": [
+        "life-scientist-workstation",
+        "life-sysadmin-server-rack"
+      ],
+      "suggested_slugs": {
+        "products": [],
+        "categories": [],
+        "verticals": [],
+        "concepts": [
+          "hardware"
+        ],
+        "style": [
+          "3d-render",
+          "dark-blue",
+          "abstract-tech"
+        ]
+      }
+    }
+  }
 }

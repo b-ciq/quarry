@@ -8,7 +8,7 @@ It also exports a manifest the Quantic deck builder consumes.
 
 ```
 python -m venv .venv && . .venv/bin/activate
-pip install -e ".[dev,ui]"  # tests + workbench; add .[mcp] for the server, .[ml] for real embeddings
+pip install -e ".[dev,ui]"  # tests + workbench; add .[mcp] for the server, .[ml] for real embeddings, .[rate] for the Claude rating bot (dev already includes it)
 ```
 
 Library images use git LFS (`git lfs install`).
@@ -27,7 +27,7 @@ Library images use git LFS (`git lfs install`).
 
 ## Workbench
 
-`quarry ui` serves the local curation workbench (127.0.0.1 only; default port 8787): library grid and facets, keyboard review queue, asset editor, vocabulary panel, ingest dropzone, re-index/publish, and git Sync. Needs the `ui` extra. Backend: `src/quarry/ui/` (FastAPI). Frontend source: `ui/` (Vite + React + Quantic); the build is committed in `src/quarry/ui/static/`, so running the UI needs no Node. After changing `ui/`, run `npm ci --prefix ui && npm run build --prefix ui` and commit `src/quarry/ui/static/` (CI fails on drift). Tests: `npm test --prefix ui`. Onboarding: `docs/onboarding.md`.
+`quarry ui` serves the local curation workbench (127.0.0.1 only; default port 8787): library grid and facets, keyboard review queue, a Rate view where a Claude bot proposes Yes / No / Maybe-yes verdicts for curators to check (set `ANTHROPIC_API_KEY`; dev-only `QUARRY_FAKE_RATER=1` tries the UI without a key; rubric in `taxonomy/rating-guide.md`), asset editor, vocabulary panel, ingest dropzone, re-index/publish, and git Sync. Needs the `ui` extra. Backend: `src/quarry/ui/` (FastAPI). Frontend source: `ui/` (Vite + React + Quantic); the build is committed in `src/quarry/ui/static/`, so running the UI needs no Node. After changing `ui/`, run `npm ci --prefix ui && npm run build --prefix ui` and commit `src/quarry/ui/static/` (CI fails on drift). Tests: `npm test --prefix ui`. Onboarding: `docs/onboarding.md`.
 
 ## Anti-examples
 

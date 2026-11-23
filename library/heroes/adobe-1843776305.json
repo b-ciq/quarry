@@ -1,12 +1,20 @@
 {
   "id": "adobe-1843776305",
   "file": "adobe-1843776305.jpg",
-  "status": "proposed",
+  "status": "retired",
   "class": "hero",
-  "products": [],
-  "categories": [],
+  "products": [
+    "rlc-pro-ai"
+  ],
+  "categories": [
+    "hpc"
+  ],
   "verticals": [],
-  "concepts": [],
+  "concepts": [
+    "datacenter",
+    "infrastructure",
+    "compute"
+  ],
   "style": [],
   "aspect": "4096:2305",
   "license": "adobe-stock:1843776305",
@@ -23,5 +31,35 @@
     }
   },
   "usage_restrictions": [],
-  "description": ""
+  "description": "A server aisle with racks on both sides and cables running along the floor. A glowing stack of translucent layered planes with light streaks and the word 'AI' floats in the center.",
+  "rating": {
+    "bot": {
+      "verdict": "maybe",
+      "strength": "unsure",
+      "reason": "Relevant datacenter/AI subject with a hero-friendly layout, but the glowing 'AI' text and layered-light effect feel generic stock and possibly AI-generated.",
+      "model": "claude-opus-5-5",
+      "at": "2026-11-23T19:36:05Z",
+      "examples": [
+        "life-scientist-workstation",
+        "life-sysadmin-server-rack"
+      ],
+      "suggested_slugs": {
+        "products": [],
+        "categories": [],
+        "verticals": [],
+        "concepts": [
+          "ai"
+        ],
+        "style": [
+          "stock-cliche",
+          "glowing-abstract"
+        ]
+      }
+    },
+    "human": {
+      "verdict": "no",
+      "by": "b-ciq <bkfchristensen@gmail.com>",
+      "at": "2026-11-23T19:59:30Z"
+    }
+  }
 }

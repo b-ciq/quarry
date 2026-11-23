@@ -73,12 +73,14 @@ def mount(app: FastAPI) -> None:
         return {"indexed": stats.indexed}
 
     def publish_job(log: Log):
-        log("syncing...")
-        r = gitops.sync(repo_root)
-        if r.conflict:
-            raise RuntimeError(r.message)
-        log(r.message)
+        # One lock span for sync + publish + commit: a write landing between them could be stashed by the
+        # sync's autostash or swept into the published exports. (threading.Lock is not re-entrant: take it once.)
         with app.state.write_lock:
+            log("syncing...")
+            r = gitops.sync(repo_root)
+            if r.conflict:
+                raise RuntimeError(r.message)
+            log(r.message)
             log("publishing...")
             res = publish(repo_root, app.state.get_embedder(), app.state.skill_dir)
             log(f"published {res.version}: {res.indexed} indexed, {res.exported} exported, {res.bundled} bundled")

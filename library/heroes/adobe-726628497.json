@@ -3,10 +3,17 @@
   "file": "adobe-726628497.jpg",
   "status": "proposed",
   "class": "hero",
-  "products": [],
+  "products": [
+    "rlc-pro-ai"
+  ],
   "categories": [],
-  "verticals": [],
-  "concepts": [],
+  "verticals": [
+    "manufacturing"
+  ],
+  "concepts": [
+    "compute",
+    "data-analysis"
+  ],
   "style": [],
   "aspect": "512:287",
   "license": "adobe-stock:726628497",
@@ -23,5 +30,36 @@
     }
   },
   "usage_restrictions": [],
-  "description": ""
+  "description": "A dark sedan drives on a highway at dusk, overlaid with glowing blue sensor rings and grid lines suggesting autonomous-driving detection. Other cars and streetlights recede into the background.",
+  "rating": {
+    "bot": {
+      "verdict": "maybe",
+      "strength": "unsure",
+      "reason": "Polished autonomous-vehicle stock that fits AI/edge compute and manufacturing stories, but it is off-core for CIQ and the Tesla-like car styling needs a brand and license check.",
+      "model": "claude-opus-5-5",
+      "at": "2026-11-23T19:36:41Z",
+      "examples": [
+        "life-scientist-workstation",
+        "life-sysadmin-server-rack"
+      ],
+      "suggested_slugs": {
+        "products": [],
+        "categories": [
+          "ai-ml",
+          "edge"
+        ],
+        "verticals": [
+          "automotive"
+        ],
+        "concepts": [
+          "autonomous-vehicles"
+        ],
+        "style": [
+          "stock-photo",
+          "tech-overlay",
+          "dusk"
+        ]
+      }
+    }
+  }
 }

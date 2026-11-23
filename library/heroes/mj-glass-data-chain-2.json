@@ -6,7 +6,9 @@
   "products": [],
   "categories": [],
   "verticals": [],
-  "concepts": [],
+  "concepts": [
+    "security"
+  ],
   "style": [],
   "aspect": "446:313",
   "license": "midjourney",
@@ -24,10 +26,37 @@
     "used_for": "Blog - Linux Kernel CVEs 2025; Original, edited"
   },
   "usage_restrictions": [],
-  "description": "",
+  "description": "A close-up of translucent glass chain links filled with glowing teal particles, set against a black background with shallow depth of field.",
   "generation": {
     "prompt": "A close-up, macro shot of a glowing digital chain made of translucent glass. The links are filled with shimmering bioluminescent particles and data points. Extreme shallow depth of field with a soft bokeh background. Cinematic lighting, octane render, 8k, highly detailed, futuristic tech aesthetic",
     "model": null,
     "seed": null
+  },
+  "rating": {
+    "bot": {
+      "verdict": "maybe",
+      "strength": "unsure",
+      "reason": "Polished teal glowing chain on dark background with room for text, but a chain metaphor leans toward generic security/blockchain stock clich\u00e9.",
+      "model": "claude-opus-5-5",
+      "at": "2026-11-23T19:37:31Z",
+      "examples": [
+        "life-scientist-workstation",
+        "life-sysadmin-server-rack"
+      ],
+      "suggested_slugs": {
+        "products": [],
+        "categories": [],
+        "verticals": [],
+        "concepts": [
+          "supply-chain",
+          "connectivity"
+        ],
+        "style": [
+          "abstract",
+          "dark-background",
+          "teal-glow"
+        ]
+      }
+    }
   }
 }
