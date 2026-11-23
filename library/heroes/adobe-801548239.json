@@ -6,7 +6,10 @@
   "products": [],
   "categories": [],
   "verticals": [],
-  "concepts": [],
+  "concepts": [
+    "security",
+    "data-analysis"
+  ],
   "style": [],
   "aspect": "4096:2107",
   "license": "adobe-stock:801548239",
@@ -23,5 +26,30 @@
     }
   },
   "usage_restrictions": [],
-  "description": ""
+  "description": "Abstract dark background of blue and orange glowing dots forming a wavy surface with concentric rings, resembling a digital fingerprint or ripple.",
+  "rating": {
+    "bot": {
+      "verdict": "maybe",
+      "strength": "unsure",
+      "reason": "Clean, dark abstract with room for text and a tech mood, but generic stock and only loosely tied to CIQ subjects. It reads as a fingerprint/security clich\u00e9.",
+      "model": "claude-opus-5-5",
+      "at": "2026-11-23T19:36:58Z",
+      "examples": [
+        "life-scientist-workstation",
+        "life-sysadmin-server-rack"
+      ],
+      "suggested_slugs": {
+        "products": [],
+        "categories": [],
+        "verticals": [],
+        "concepts": [
+          "abstract"
+        ],
+        "style": [
+          "abstract-particles",
+          "dark-background"
+        ]
+      }
+    }
+  }
 }

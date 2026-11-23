@@ -3,10 +3,18 @@
   "file": "adobe-844637819.jpg",
   "status": "proposed",
   "class": "hero",
-  "products": [],
-  "categories": [],
-  "verticals": [],
-  "concepts": [],
+  "products": [
+    "rlc-pro-hardened"
+  ],
+  "categories": [
+    "enterprise-linux"
+  ],
+  "verticals": [
+    "government"
+  ],
+  "concepts": [
+    "security"
+  ],
   "style": [],
   "aspect": "512:287",
   "license": "adobe-stock:844637819",
@@ -23,5 +31,30 @@
     }
   },
   "usage_restrictions": [],
-  "description": ""
+  "description": "A dark metallic sci-fi panel with a circular vault-like door at center, outlined by glowing red rings and a horizontal red laser line.",
+  "rating": {
+    "bot": {
+      "verdict": "maybe",
+      "strength": "unsure",
+      "reason": "Moody, polished security-themed hero with strong red accent, but leans toward vault/lock cliche and likely AI-generated; needs curator check.",
+      "model": "claude-opus-5-5",
+      "at": "2026-11-23T19:36:58Z",
+      "examples": [
+        "life-scientist-workstation",
+        "life-sysadmin-server-rack"
+      ],
+      "suggested_slugs": {
+        "products": [],
+        "categories": [],
+        "verticals": [],
+        "concepts": [],
+        "style": [
+          "abstract",
+          "dark-background",
+          "red-accent",
+          "ai-generated"
+        ]
+      }
+    }
+  }
 }

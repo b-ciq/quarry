@@ -3,10 +3,20 @@
   "file": "adobe-829377199.jpg",
   "status": "proposed",
   "class": "hero",
-  "products": [],
-  "categories": [],
+  "products": [
+    "fuzzball",
+    "ascender-pro"
+  ],
+  "categories": [
+    "automation",
+    "hpc"
+  ],
   "verticals": [],
-  "concepts": [],
+  "concepts": [
+    "infrastructure",
+    "compute",
+    "data-analysis"
+  ],
   "style": [],
   "aspect": "512:287",
   "license": "adobe-stock:829377199",
@@ -23,5 +33,32 @@
     }
   },
   "usage_restrictions": [],
-  "description": ""
+  "description": "Abstract neon illustration of interconnected glowing panels and circuit-like lines in orange, pink and cyan against a dark blue background, suggesting a data pipeline or workflow diagram with bokeh depth.",
+  "rating": {
+    "bot": {
+      "verdict": "maybe",
+      "strength": "unsure",
+      "reason": "Polished abstract tech hero with an on-topic workflow/network feel, but generic stock style with a busy composition, little text room, and likely AI origin needing a license check.",
+      "model": "claude-opus-5-5",
+      "at": "2026-11-23T19:36:58Z",
+      "examples": [
+        "life-scientist-workstation",
+        "life-sysadmin-server-rack"
+      ],
+      "suggested_slugs": {
+        "products": [],
+        "categories": [],
+        "verticals": [],
+        "concepts": [
+          "workflows",
+          "networking"
+        ],
+        "style": [
+          "abstract",
+          "neon",
+          "ai-generated"
+        ]
+      }
+    }
+  }
 }
