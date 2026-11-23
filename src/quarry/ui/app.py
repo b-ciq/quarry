@@ -3,10 +3,10 @@ import sqlite3
 from pathlib import Path
 
 from fastapi import FastAPI
-from fastapi.responses import FileResponse
+from fastapi.responses import FileResponse, JSONResponse
 
 from quarry.publish import check_stale
-from quarry.ui import read_api
+from quarry.ui import gitops, read_api
 
 STATIC_DIR = Path(__file__).parent / "static"
 
@@ -36,6 +36,13 @@ def create_app(repo_root: Path, fake_embedder: bool = False) -> FastAPI:
         # v1: the index records no sidecar digest, so approximate with export staleness.
         return (not (repo_root / "index" / "library.db").exists()) or check_stale(repo_root)
 
+    def git_block():
+        if not gitops.is_git_repo(repo_root):
+            return None
+        s = gitops.managed_status(repo_root)
+        return {"ahead": s.ahead, "behind": s.behind,
+                "dirty_managed": s.dirty_managed, "dirty_other": s.dirty_other}
+
     @app.get("/api/status")
     def status():
         exports_stale = check_stale(repo_root)
@@ -43,8 +50,17 @@ def create_app(repo_root: Path, fake_embedder: bool = False) -> FastAPI:
             "index_stale": index_stale(),
             "exports_stale": exports_stale,
             "embedder_mode": _embedder_mode(repo_root),
-            "git": None,
+            "git": git_block(),
         }
+
+    @app.post("/api/sync")
+    def sync():
+        try:
+            r = gitops.sync(repo_root)
+        except gitops.GitError as exc:
+            return JSONResponse({"error": str(exc)}, status_code=500)
+        body = {"pulled": r.pulled, "pushed": r.pushed, "conflict": r.conflict, "message": r.message}
+        return JSONResponse(body, status_code=409 if r.conflict else 200)
 
     read_api.mount(app, index_stale)
 
