@@ -3,12 +3,14 @@ All writes go through write_api.write_sidecars."""
 import json
 import re
 import threading
+from collections import deque
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 
 from fastapi import APIRouter, Depends, FastAPI, Query
 from fastapi.responses import JSONResponse
 
+from quarry import rater as rater_mod
 from quarry import rating
 from quarry.library import scan_library
 from quarry.rater import ClaudeRater, load_guide, rater_status
@@ -28,6 +30,8 @@ CARD_FIXABLE = {"description", "products", "categories", "verticals", "concepts"
 SHA_RE = re.compile(r"^[0-9a-fA-F]{4,40}$")
 CHUNK = 20  # bot results written per commit
 WORKERS = 4  # concurrent rater calls
+IN_FLIGHT = 2 * WORKERS  # rater calls submitted but not yet consumed; bounds what a shutdown waits for
+MAX_SAME_FAILURES = 5  # consecutive identical per-asset failures that stop the run
 
 
 def _bot(s: dict) -> dict | None:
@@ -88,11 +92,15 @@ def mount(app: FastAPI) -> None:
     injected = app.state.rater
 
     def get_rater():
-        """The injected rater, else one ClaudeRater built on first use."""
+        """The injected rater, else one ClaudeRater built on first use. A ClaudeRater's SDK client is
+        built here, so a credentials/config error fails the job once (and workers never race to build it)."""
         with rater_lock:
             if app.state.rater is None:
                 app.state.rater = ClaudeRater()
-            return app.state.rater
+            r = app.state.rater
+            if isinstance(r, rater_mod.ClaudeRater):
+                r.client  # noqa: B018 - force the lazy client now
+            return r
 
     def status_of_rater() -> dict:
         if injected is not None:
@@ -103,8 +111,8 @@ def mount(app: FastAPI) -> None:
     app.state.rater_status = status_of_rater
 
     def learning() -> str:
-        real = (repo_root / "index" / "library.db").exists() and app.state.embedder_mode() != "fake"
-        return "look-alike" if real else "recent"
+        # Only real (hf) embeddings make look-alikes meaningful; no index, fake or unknown -> recent verdicts.
+        return "look-alike" if app.state.embedder_mode() == "hf" else "recent"
 
     def sidecar_path(id: str) -> Path | None:
         img = app.state.library_cache.image_path(id)
@@ -251,9 +259,12 @@ def mount(app: FastAPI) -> None:
                         skipped += 1
                         log(f"{id}: skipped — changed during the run")
                         continue
-                    candidate = rating.apply_bot_rating(current, result, model=result.model or rater.model,
-                                                        examples=example_ids, vocab=vocab, now=now, redo=redo)
-                    errors = validate_sidecar(candidate, vocab)
+                    try:
+                        candidate = rating.apply_bot_rating(current, result, model=result.model or rater.model,
+                                                            examples=example_ids, vocab=vocab, now=now, redo=redo)
+                        errors = validate_sidecar(candidate, vocab)
+                    except Exception as exc:  # noqa: BLE001 - an odd result fails this asset only
+                        errors = [str(exc) or type(exc).__name__]
                     if errors:
                         failed[id] = "; ".join(errors)
                         log(f"{id}: FAILED {failed[id]}")
@@ -274,16 +285,40 @@ def mount(app: FastAPI) -> None:
             log(f"committed {sha[:8]}: {len(changes)} assets")
 
         pool = ThreadPoolExecutor(max_workers=WORKERS)
+        todo = iter(targets)
+        pending: deque = deque()
+
+        def top_up() -> None:  # keep at most IN_FLIGHT calls submitted but unconsumed
+            while len(pending) < IN_FLIGHT:
+                s = next(todo, None)
+                if s is None:
+                    return
+                pending.append((s["id"], pool.submit(rate_one, s)))
+
+        batch: list = []
+        streak, last = 0, None
         try:
-            futures = [(s["id"], pool.submit(rate_one, s)) for s in targets]
-            batch: list = []
-            for id, fut in futures:  # in id order; the pool keeps WORKERS calls in flight
+            top_up()
+            while pending:  # in id order
+                id, fut = pending.popleft()
                 try:
                     result, example_ids = fut.result()
                 except Exception as exc:  # noqa: BLE001 - one bad asset must not stop the run
                     failed[id] = str(exc) or type(exc).__name__
                     log(f"{id}: FAILED {failed[id]}")
+                    same = failed[id].replace(id, "<id>")
+                    streak, last = (streak + 1 if same == last else 1), same
+                    if streak >= MAX_SAME_FAILURES:
+                        pending.clear()
+                        if batch:
+                            write_chunk(batch)
+                        log(f"stopped: {rated} rated, {len(failed)} failed, {skipped} skipped")
+                        raise RuntimeError(f"stopped after the same failure on {streak} assets in a row "
+                                           f"(last: {failed[id]}); already-rated assets are saved") from None
+                    top_up()
                     continue
+                streak, last = 0, None
+                top_up()
                 log(f"{id}: {result.verdict} ({result.strength}) — {result.reason}")
                 batch.append((id, result, example_ids))
                 if len(batch) >= CHUNK:
@@ -313,7 +348,7 @@ def mount(app: FastAPI) -> None:
         sidecars = app.state.library_cache.assets()
         proposed = [s for s in sidecars if s.get("status") == "proposed"]
         return {
-            "waiting_for_bot": sum(1 for s in proposed if not _bot(s)),
+            "waiting_for_bot": sum(1 for s in proposed if not _bot(s) and not _human(s)),
             "to_review": sum(1 for s in proposed if _bot(s) and not _human(s)),
             "needs_details": sum(1 for s in proposed if (_human(s) or {}).get("verdict") == "yes"),
             "parked": sum(1 for s in sidecars if s.get("status") == "parked"),

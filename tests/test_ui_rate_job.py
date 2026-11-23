@@ -1,10 +1,11 @@
 import json
 import sqlite3
 import threading
+import time
 
 from fastapi.testclient import TestClient
 
-from quarry.rater import FakeRater
+from quarry.rater import ClaudeRater, FakeRater
 from quarry.rating import RatingResult
 from quarry.ui import gitops
 from quarry.ui import rate_api
@@ -228,6 +229,7 @@ def test_get_rater_and_status(git_repo, monkeypatch):
     assert app.state.rater_status() == {"available": True, "model": "fake", "reason": None}
     monkeypatch.setattr("quarry.ui.rate_api.rater_status",
                         lambda: {"available": False, "model": "m", "reason": "r"})
+    monkeypatch.setenv("ANTHROPIC_API_KEY", "test-key")
     app2 = create_app(git_repo.root)
     assert app2.state.rater_status()["reason"] == "r"
     built = app2.state.get_rater()
@@ -239,6 +241,7 @@ def test_summary_counts(git_repo):
     git_repo.add_asset("hero", "review", status="proposed", rating={"bot": BOT_UNSURE})
     git_repo.add_asset("hero", "details", status="proposed",
                        rating={"bot": BOT_STRONG, "human": HUMAN_YES})
+    git_repo.add_asset("hero", "human-only", status="proposed", rating={"human": HUMAN_YES})
     git_repo.add_asset("hero", "parked1", status="parked")
     git_repo.add_asset("hero", "done", status="confirmed")
     commit(git_repo)
@@ -248,22 +251,103 @@ def test_summary_counts(git_repo):
     body = r.json()
     assert body["waiting_for_bot"] == 1
     assert body["to_review"] == 1
-    assert body["needs_details"] == 1
+    assert body["needs_details"] == 2
     assert body["parked"] == 1
     assert body["agreement"]["recent"] == {"agreed": 1, "total": 1}
     assert body["rater"] == {"available": True, "model": "fake", "reason": None}
     assert body["learning"] == "recent"
 
 
-def test_summary_learning_look_alike_only_with_real_index(git_repo):
+def test_summary_learning_look_alike_only_with_hf_index(git_repo):
     c = TestClient(create_app(git_repo.root, rater=FakeRater()))
+    assert c.get("/api/rate/summary").json()["learning"] == "recent"  # no index
     (git_repo.root / "index").mkdir()
     conn = sqlite3.connect(git_repo.root / "index" / "library.db")
     conn.execute("CREATE TABLE meta (key TEXT PRIMARY KEY, value TEXT)")
-    conn.execute("INSERT INTO meta VALUES ('embedder_mode', 'fake')")
     conn.commit()
-    assert c.get("/api/rate/summary").json()["learning"] == "recent"
-    conn.execute("UPDATE meta SET value = 'hf' WHERE key = 'embedder_mode'")
-    conn.commit()
+    assert c.get("/api/rate/summary").json()["learning"] == "recent"  # no embedder_mode
+    for mode, want in (("fake", "recent"), ("unknown", "recent"), ("hf", "look-alike")):
+        conn.execute("INSERT OR REPLACE INTO meta VALUES ('embedder_mode', ?)", (mode,))
+        conn.commit()
+        assert c.get("/api/rate/summary").json()["learning"] == want, mode
     conn.close()
-    assert c.get("/api/rate/summary").json()["learning"] == "look-alike"
+
+
+def test_in_flight_calls_are_bounded(git_repo):
+    for i in range(30):
+        git_repo.add_asset("hero", f"h{i:02}", status="proposed")
+    commit(git_repo)
+    release = threading.Event()
+    started: list[str] = []
+
+    class FirstBlocks(FakeRater):
+        def rate(self, image, sidecar, *a):
+            started.append(sidecar["id"])
+            if sidecar["id"] == "h00":
+                release.wait(20)
+            return super().rate(image, sidecar, *a)
+
+    c = TestClient(create_app(git_repo.root, rater=FirstBlocks()))
+    job = c.post("/api/rate").json()["job_id"]
+    time.sleep(1.0)  # the free workers would drain an unbounded queue in this time
+    assert len(started) <= 2 * rate_api.WORKERS, started
+    release.set()
+    s = _wait(c, job)
+    assert s["result"]["rated"] == 30 and len(started) == 30
+
+
+def test_client_construction_error_fails_job_once(git_repo, monkeypatch):
+    git_repo.add_asset("hero", "h1", status="proposed")
+    commit(git_repo)
+    monkeypatch.setattr("quarry.ui.rate_api.rater_status",
+                        lambda: {"available": True, "model": "m", "reason": None})
+
+    class NoClient(ClaudeRater):
+        @property
+        def client(self):
+            raise RuntimeError("bad credentials")
+
+    monkeypatch.setattr("quarry.ui.rate_api.ClaudeRater", NoClient)
+    c = TestClient(create_app(git_repo.root))
+    s = _wait(c, c.post("/api/rate").json()["job_id"])
+    assert s["state"] == "failed"
+    assert s["error"] == "could not start the rater: bad credentials"
+    assert not any("FAILED" in line for line in s["log"])
+
+
+def test_repeated_same_failure_aborts_run(git_repo):
+    ids = [f"a{i:02}" for i in range(12)]
+    for id in ids:
+        git_repo.add_asset("hero", id, status="proposed")
+    commit(git_repo)
+    rater = FakeRater(fail=set(ids[2:9]))
+    c = TestClient(create_app(git_repo.root, rater=rater))
+    s = _wait(c, c.post("/api/rate").json()["job_id"])
+    assert s["state"] == "failed", s
+    assert "5 assets in a row" in s["error"] and "fake failure for" in s["error"]
+    assert _sidecar(git_repo, "a00")["rating"]["bot"]  # rated before the streak: committed
+    assert _sidecar(git_repo, "a01")["rating"]["bot"]
+    assert _subjects(git_repo, 1) == ["rate: bot rated 2 assets"]
+    for id in ids[2:]:
+        assert "rating" not in _sidecar(git_repo, id)
+    assert not gitops.managed_status(git_repo.root).dirty_managed
+
+
+def test_unexpected_apply_error_fails_only_that_asset(git_repo, monkeypatch):
+    git_repo.add_asset("hero", "h1", status="proposed")
+    git_repo.add_asset("hero", "h2", status="proposed")
+    commit(git_repo)
+    real = rate_api.rating.apply_bot_rating
+
+    def picky(sidecar, result, **kw):
+        if sidecar["id"] == "h1":
+            raise TypeError("weird result")
+        return real(sidecar, result, **kw)
+
+    monkeypatch.setattr(rate_api.rating, "apply_bot_rating", picky)
+    c = TestClient(create_app(git_repo.root, rater=FakeRater()))
+    s = _wait(c, c.post("/api/rate").json()["job_id"])
+    assert s["state"] == "done", s
+    assert s["result"]["rated"] == 1 and "weird result" in s["result"]["failed"]["h1"]
+    assert "h1: FAILED weird result" in s["log"]
+    assert "rating" not in _sidecar(git_repo, "h1")

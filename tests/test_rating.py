@@ -119,6 +119,17 @@ def test_select_examples_falls_back_when_asset_not_in_index(monkeypatch):
     assert [e["id"] for e in select_examples(Path("."), "t", sidecars, look_alike=True)] == ["p1"]
 
 
+def test_select_examples_falls_back_when_index_has_no_vector_tables(tmp_path):
+    import sqlite3
+    (tmp_path / "index").mkdir()
+    conn = sqlite3.connect(tmp_path / "index" / "library.db")
+    conn.execute("CREATE TABLE meta (key TEXT PRIMARY KEY, value TEXT)")
+    conn.commit()
+    conn.close()
+    sidecars = [_h("p1", "yes", at="2024-01-01")]
+    assert [e["id"] for e in select_examples(tmp_path, "t", sidecars, look_alike=True)] == ["p1"]
+
+
 def _pair(id, bot_v, strength, human_v, at):
     return _h(id, human_v, at=at, bot={"verdict": bot_v, "strength": strength})
 

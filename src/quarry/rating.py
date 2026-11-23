@@ -3,6 +3,7 @@
 Pure logic; no network and no writes. Callers persist the returned sidecars.
 """
 
+import sqlite3
 from dataclasses import dataclass, field
 from pathlib import Path
 
@@ -106,7 +107,7 @@ def select_examples(repo_root: Path, asset_id: str, sidecars: list[dict], *,
         try:
             hits = more_like(repo_root, asset_id, space="style", servable_only=False,
                              limit=len(sidecars) + 1)
-        except (KeyError, FileNotFoundError):
+        except (KeyError, FileNotFoundError, sqlite3.OperationalError):  # not indexed / no vector tables
             hits = []
         near = [by_id[h.id] for h in hits if h.id in by_id]
         seen = {s["id"] for s in near}
