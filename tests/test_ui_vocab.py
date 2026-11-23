@@ -55,6 +55,7 @@ def test_merge_atomic_single_commit_all_carriers(git_repo):
     stat = git_repo.git("show", "--name-only", "--format=", "HEAD").split()
     assert sorted(stat) == sorted(["taxonomy/vocabulary.json", "library/hero/c1.json",
                                    "library/hero/c3.json", "library/hero/c4.json"])
+    assert git_repo.git("log", "-1", "--format=%s") == "vocab: merge research into science\n"
     assert _side(git_repo, "hero", "c4")["concepts"] == ["science"]
     assert _side(git_repo, "hero", "c3")["concepts"] == ["science", "compute"]
     assert _side(git_repo, "hero", "c3")["status"] == "proposed"
@@ -97,7 +98,7 @@ def test_rename_rewrites_carriers_one_commit(git_repo):
     assert r.status_code == 200 and r.json()["rewritten"] == ["c1"]
     assert _n_commits(git_repo) == before + 1
     assert _side(git_repo, "hero", "c1")["concepts"] == ["inquiry", "compute"]
-    assert git_repo.git("log", "-1", "--format=%s") == "vocab: rename research\n"
+    assert git_repo.git("log", "-1", "--format=%s") == "vocab: rename research to inquiry\n"
 
 
 def test_rename_to_existing_409(git_repo):

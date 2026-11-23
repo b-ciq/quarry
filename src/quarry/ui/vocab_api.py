@@ -115,11 +115,13 @@ def mount(app: FastAPI) -> None:
                 staged.append((path, path.read_bytes(), json.dumps(new, indent=2) + "\n"))
             staged.append((vpath, vorig, _vocab_text(vdata)))
 
+            msg = {"merge": f"vocab: merge {slug} into {target}",
+                   "rename": f"vocab: rename {slug} to {target}"}.get(action, f"vocab: {action} {slug}")
             rels = [p.relative_to(repo_root).as_posix() for p, _, _ in staged]
             try:
                 for path, _, text in staged:
                     _write_text(path, text)
-                sha = gitops.commit_paths(repo_root, rels, f"vocab: {action} {slug}")
+                sha = gitops.commit_paths(repo_root, rels, msg)
             except Exception as exc:
                 gitops._git(repo_root, "reset", "-q", "--", *rels, check=False)
                 for path, orig, _ in staged:
