@@ -6,7 +6,10 @@
   "products": [],
   "categories": [],
   "verticals": [],
-  "concepts": [],
+  "concepts": [
+    "infrastructure",
+    "compute"
+  ],
   "style": [],
   "aspect": "16:9",
   "license": "ciq-original",
@@ -16,5 +19,32 @@
     "sha256": "35ed9173d35128edb04de47ad84e217399ab1ba8de78a9bacd15549882cf2f3a"
   },
   "usage_restrictions": [],
-  "description": ""
+  "description": "A dark blue, low-angle view of a glowing world map with arcing connection lines and points of light across the continents. The upper third is nearly black empty space.",
+  "tone": "dark",
+  "rating": {
+    "bot": {
+      "verdict": "yes",
+      "strength": "unsure",
+      "reason": "Polished dark network-globe background with ample negative space for text; fits infrastructure themes, though the global-network motif is fairly common stock.",
+      "model": "claude-opus-5-5",
+      "at": "2026-11-23T19:37:15Z",
+      "examples": [
+        "life-scientist-workstation",
+        "life-sysadmin-server-rack"
+      ],
+      "suggested_slugs": {
+        "products": [],
+        "categories": [],
+        "verticals": [],
+        "concepts": [
+          "global-network",
+          "connectivity"
+        ],
+        "style": [
+          "abstract",
+          "world-map"
+        ]
+      }
+    }
+  }
 }

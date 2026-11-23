@@ -4,9 +4,14 @@
   "status": "proposed",
   "class": "background",
   "products": [],
-  "categories": [],
+  "categories": [
+    "hpc"
+  ],
   "verticals": [],
-  "concepts": [],
+  "concepts": [
+    "infrastructure",
+    "compute"
+  ],
   "style": [],
   "aspect": "16:9",
   "license": "ciq-original",
@@ -16,5 +21,32 @@
     "sha256": "a6b0031d68b7dd0b88386586a212574e2cb072d8163048837af0519623e7f1bf"
   },
   "usage_restrictions": [],
-  "description": ""
+  "description": "A dark navy background with a glowing grid of blue-white particles and bokeh dots receding into the distance, suggesting a connected network. The top half is mostly empty dark space.",
+  "tone": "dark",
+  "rating": {
+    "bot": {
+      "verdict": "yes",
+      "strength": "unsure",
+      "reason": "Dark, subtle network-particle background with ample text space; on-brand mood for infrastructure/HPC, though somewhat generic.",
+      "model": "claude-opus-5-5",
+      "at": "2026-11-23T19:37:15Z",
+      "examples": [
+        "life-scientist-workstation",
+        "life-sysadmin-server-rack"
+      ],
+      "suggested_slugs": {
+        "products": [],
+        "categories": [],
+        "verticals": [],
+        "concepts": [
+          "network"
+        ],
+        "style": [
+          "particles",
+          "bokeh",
+          "abstract"
+        ]
+      }
+    }
+  }
 }

@@ -3,10 +3,17 @@
   "file": "figma-image.png",
   "status": "proposed",
   "class": "hero",
-  "products": [],
-  "categories": [],
+  "products": [
+    "apptainer"
+  ],
+  "categories": [
+    "containers"
+  ],
   "verticals": [],
-  "concepts": [],
+  "concepts": [
+    "compute",
+    "infrastructure"
+  ],
   "style": [],
   "aspect": "2048:1819",
   "license": "",
@@ -23,5 +30,29 @@
     }
   },
   "usage_restrictions": [],
-  "description": ""
+  "description": "A glowing translucent cyan and magenta cube filled with circuit-like patterns floats over a dark grid surface. Faint charts and data lines surround it.",
+  "rating": {
+    "bot": {
+      "verdict": "maybe",
+      "strength": "unsure",
+      "reason": "Moody dark hero with room for text and a container-like cube, but it reads as generic AI tech art and has faint garbled text in the background.",
+      "model": "claude-opus-5-5",
+      "at": "2026-11-23T19:37:15Z",
+      "examples": [
+        "life-scientist-workstation",
+        "life-sysadmin-server-rack"
+      ],
+      "suggested_slugs": {
+        "products": [],
+        "categories": [],
+        "verticals": [],
+        "concepts": [],
+        "style": [
+          "abstract",
+          "dark-background",
+          "neon-glow"
+        ]
+      }
+    }
+  }
 }

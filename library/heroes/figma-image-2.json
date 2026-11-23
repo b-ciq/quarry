@@ -4,9 +4,14 @@
   "status": "proposed",
   "class": "hero",
   "products": [],
-  "categories": [],
+  "categories": [
+    "hpc"
+  ],
   "verticals": [],
-  "concepts": [],
+  "concepts": [
+    "compute",
+    "infrastructure"
+  ],
   "style": [],
   "aspect": "813:473",
   "license": "",
@@ -23,5 +28,31 @@
     }
   },
   "usage_restrictions": [],
-  "description": ""
+  "description": "An abstract dark background with a bright central burst of fine fiber-like lines radiating outward, dotted with glowing nodes fading into soft focus.",
+  "rating": {
+    "bot": {
+      "verdict": "yes",
+      "strength": "unsure",
+      "reason": "Clean, moody abstract network burst with ample negative space; works as a hero background for compute/infrastructure themes.",
+      "model": "claude-opus-5-5",
+      "at": "2026-11-23T19:37:15Z",
+      "examples": [
+        "life-scientist-workstation",
+        "life-sysadmin-server-rack"
+      ],
+      "suggested_slugs": {
+        "products": [],
+        "categories": [],
+        "verticals": [],
+        "concepts": [
+          "networking"
+        ],
+        "style": [
+          "abstract",
+          "dark-background",
+          "hero-background"
+        ]
+      }
+    }
+  }
 }
