@@ -9,9 +9,10 @@ requires-python = ">=3.11"
 dependencies = ["Pillow", "numpy", "sqlite-vec"]
 
 [project.optional-dependencies]
-dev = ["pytest", "mcp>=1.2,<2", "fastapi", "httpx", "python-multipart"]
+dev = ["pytest", "mcp>=1.2,<2", "fastapi", "httpx", "python-multipart", "anthropic"]
 mcp = ["mcp>=1.2,<2"]
 ui = ["fastapi", "uvicorn", "python-multipart"]
+rate = ["anthropic"]
 ml = ["torch", "transformers"]
 
 [project.scripts]

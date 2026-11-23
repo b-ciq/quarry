@@ -1,0 +1,186 @@
+"""The rater: a Claude call behind a small protocol, plus a fake for tests.
+
+Nothing here writes to the repo. Callers persist the returned RatingResult.
+"""
+
+import base64
+import io
+import json
+import os
+from pathlib import Path
+from typing import Protocol
+
+from PIL import Image
+
+from quarry.rating import RatingResult, human_verdict
+from quarry.schema import CLASS_DIRS, STRENGTHS, TAG_AXES, VERDICTS
+
+DEFAULT_MODEL = "claude-opus-5-5"
+BETAS = ["server-side-fallback-2026-07-01"]
+TARGET_PX = 768
+EXAMPLE_PX = 256
+
+
+class RaterError(Exception):
+    """Refusal, API error, or unparseable output."""
+
+
+class Rater(Protocol):
+    model: str
+
+    def rate(self, image: Path, sidecar: dict, examples: list[dict], vocab: dict, guide: str,
+             repo_root: Path) -> RatingResult: ...
+
+
+class FakeRater:
+    model = "fake"
+
+    def __init__(self, results: dict[str, RatingResult] | None = None, fail: set[str] = frozenset()):
+        self.results = results or {}
+        self.fail = set(fail)
+        self.calls: list[str] = []
+
+    def rate(self, image, sidecar, examples, vocab, guide, repo_root) -> RatingResult:
+        sid = sidecar["id"]
+        self.calls.append(sid)
+        if sid in self.fail:
+            raise RaterError(f"fake failure for {sid}")
+        return self.results.get(sid) or RatingResult("maybe", "unsure", "fake", "Fake description.", {}, None, {})
+
+
+def load_guide(repo_root: Path) -> str:
+    p = Path(repo_root) / "taxonomy" / "rating-guide.md"
+    return p.read_text() if p.exists() else ""
+
+
+def rating_schema(vocab: dict, cls: str) -> dict:
+    tag_props = {axis: {"type": "array", "items": {"type": "string", "enum": list(vocab[axis])}}
+                 for axis in TAG_AXES if vocab.get(axis)}
+    props = {
+        "verdict": {"type": "string", "enum": list(VERDICTS)},
+        "strength": {"type": "string", "enum": list(STRENGTHS)},
+        "reason": {"type": "string"},
+        "description": {"type": "string"},
+        "tags": {"type": "object", "properties": tag_props, "required": list(tag_props),
+                 "additionalProperties": False},
+    }
+    if cls == "background":
+        props["tone"] = {"type": "string", "enum": ["dark", "light"]}
+    props["suggested_slugs"] = {
+        "type": "object",
+        "properties": {a: {"type": "array", "items": {"type": "string"}} for a in TAG_AXES},
+        "required": list(TAG_AXES),
+        "additionalProperties": False,
+    }
+    return {"type": "object", "properties": props, "required": list(props), "additionalProperties": False}
+
+
+def image_block(path: Path, max_px: int) -> dict:
+    with Image.open(path) as im:
+        im = im.convert("RGB")
+        im.thumbnail((max_px, max_px))
+        buf = io.BytesIO()
+        im.save(buf, "JPEG", quality=85)
+    data = base64.standard_b64encode(buf.getvalue()).decode()
+    return {"type": "image", "source": {"type": "base64", "media_type": "image/jpeg", "data": data}}
+
+
+def rater_status() -> dict:
+    model = os.environ.get("QUARRY_RATER_MODEL", DEFAULT_MODEL)
+    try:
+        import anthropic  # noqa: F401
+    except ImportError:
+        return {"available": False, "model": model,
+                "reason": "install the rate extra: pip install -e '.[rate]'"}
+    has_creds = (os.environ.get("ANTHROPIC_API_KEY") or os.environ.get("ANTHROPIC_AUTH_TOKEN")
+                 or (Path.home() / ".config" / "anthropic").is_dir())
+    if not has_creds:
+        return {"available": False, "model": model,
+                "reason": "set ANTHROPIC_API_KEY or run `ant auth login`"}
+    return {"available": True, "model": model, "reason": None}
+
+
+INSTRUCTIONS = """You rate one proposed image for CIQ's brand asset library.
+
+Verdicts:
+- yes: on-brand and usable as is.
+- no: not usable.
+- maybe: promising, but not ready to use.
+
+strength: "strong" means you would bet the curators agree with your verdict; otherwise "unsure".
+reason: one short line explaining the verdict.
+description: one or two plain sentences describing what the image shows.
+tags: choose only from the allowed slugs listed below, per axis. Omit anything that does not clearly apply.
+If a concept you need is missing from the vocabulary, put it in suggested_slugs for that axis instead of inventing a tag.
+Earlier human verdicts are shown as examples; learn from their reasons."""
+
+
+def _example_text(s: dict) -> str:
+    human = (s.get("rating") or {}).get("human") or {}
+    reason = human.get("reason") or s.get("avoid_reason") or "-"
+    tags = "; ".join(f"{a}: {', '.join(s[a])}" for a in TAG_AXES if s.get(a)) or "-"
+    return f"Example {s.get('id')}: human verdict {human_verdict(s)}. Reason: {reason}. Tags: {tags}."
+
+
+class ClaudeRater:
+    def __init__(self, client=None, model: str | None = None):
+        self._client = client
+        self.model = model or os.environ.get("QUARRY_RATER_MODEL", DEFAULT_MODEL)
+
+    @property
+    def client(self):
+        if self._client is None:
+            import anthropic
+            self._client = anthropic.Anthropic()
+        return self._client
+
+    def _messages(self, image, sidecar, examples, repo_root) -> list[dict]:
+        content: list[dict] = []
+        for s in examples:
+            path = Path(repo_root) / "library" / CLASS_DIRS[s["class"]] / s["file"]
+            content.append(image_block(path, EXAMPLE_PX))
+            content.append({"type": "text", "text": _example_text(s)})
+        content.append(image_block(image, TARGET_PX))
+        existing = "; ".join(f"{a}: {', '.join(sidecar[a])}" for a in TAG_AXES if sidecar.get(a)) or "none"
+        content.append({"type": "text", "text": (
+            f"Rate this image. Class: {sidecar.get('class')}. "
+            f"Existing description: {sidecar.get('description') or 'none'}. Existing tags: {existing}.")})
+        return [{"role": "user", "content": content}]
+
+    def rate(self, image, sidecar, examples, vocab, guide, repo_root) -> RatingResult:
+        import anthropic
+        cls = sidecar.get("class", "")
+        vocab_lines = "\n".join(f"- {a}: {', '.join(vocab[a])}" for a in TAG_AXES if vocab.get(a))
+        system_text = f"{INSTRUCTIONS}\n\n# Rubric\n{guide}\n\n# Allowed tag slugs\n{vocab_lines}"
+        if cls == "background":
+            system_text += "\n\nFor backgrounds also set tone: dark or light."
+        try:
+            msg = self.client.beta.messages.create(
+                model=self.model,
+                max_tokens=4096,
+                betas=BETAS,
+                fallbacks="default",
+                output_config={"effort": "low",
+                               "format": {"type": "json_schema", "schema": rating_schema(vocab, cls)}},
+                system=[{"type": "text", "text": system_text, "cache_control": {"type": "ephemeral"}}],
+                messages=self._messages(image, sidecar, examples, repo_root),
+            )
+        except anthropic.APIError as e:
+            raise RaterError(f"Claude API error: {e}") from e
+        except OSError as e:
+            raise RaterError(f"could not read image: {e}") from e
+        if msg.stop_reason == "refusal":
+            raise RaterError("Claude refused to rate this image")
+        if msg.stop_reason == "max_tokens":
+            raise RaterError("Claude's answer was cut off (max tokens)")
+        text = next((b.text for b in msg.content if getattr(b, "type", None) == "text"), None)
+        if text is None:
+            raise RaterError("Claude returned no text")
+        try:
+            d = json.loads(text)
+            return RatingResult(
+                verdict=d["verdict"], strength=d["strength"], reason=d["reason"],
+                description=d["description"], tags=d.get("tags") or {}, tone=d.get("tone"),
+                suggested_slugs=d.get("suggested_slugs") or {})
+        except (json.JSONDecodeError, KeyError, TypeError) as e:
+            raise RaterError(f"unparseable JSON from Claude: {e}") from e
