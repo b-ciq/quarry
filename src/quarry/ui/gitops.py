@@ -35,6 +35,21 @@ def _git(repo, *args, check=True) -> subprocess.CompletedProcess:
     return p
 
 
+def identity(repo) -> str:
+    """`Name <email>` from git config; falls back to whichever half is set, else "unknown"."""
+    name = _git(repo, "config", "user.name", check=False).stdout.strip()
+    email = _git(repo, "config", "user.email", check=False).stdout.strip()
+    if name and email:
+        return f"{name} <{email}>"
+    return name or (f"<{email}>" if email else "unknown")
+
+
+def show_bytes(repo, rev: str, path: str) -> bytes | None:
+    """Exact bytes of `path` at `rev`, or None if it doesn't exist there."""
+    p = subprocess.run(["git", "-C", str(repo), "show", f"{rev}:{path}"], capture_output=True)
+    return p.stdout if p.returncode == 0 else None
+
+
 def is_git_repo(repo) -> bool:
     return _git(repo, "rev-parse", "--git-dir", check=False).returncode == 0
 
