@@ -9,6 +9,7 @@ from fastapi.responses import FileResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 
 from quarry.publish import check_stale, sidecar_digest
+from quarry.rater import Rater
 from quarry.ui import gitops, ingest_api, jobs, rate_api, read_api, vocab_api, write_api
 
 STATIC_DIR = Path(__file__).parent / "static"
@@ -33,10 +34,13 @@ def _embedder_mode(repo_root: Path) -> str | None:
     return _index_meta(repo_root, "embedder_mode")
 
 
-def create_app(repo_root: Path, fake_embedder: bool = False, skill_dir: Path | None = None) -> FastAPI:
+def create_app(repo_root: Path, fake_embedder: bool = False, skill_dir: Path | None = None,
+               rater: Rater | None = None) -> FastAPI:
     repo_root = Path(repo_root)
     app = FastAPI(title="quarry workbench")
     app.state.repo_root = repo_root
+    app.state.rater = rater  # injected (tests); rate_api builds a ClaudeRater lazily otherwise
+    app.state.embedder_mode = lambda: _embedder_mode(repo_root)
     app.state.fake_embedder = fake_embedder
     env_skill = os.environ.get("QUARRY_DECK_SKILL_DIR")
     app.state.skill_dir = Path(skill_dir) if skill_dir else (Path(env_skill) if env_skill else None)

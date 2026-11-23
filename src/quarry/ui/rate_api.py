@@ -1,12 +1,17 @@
-"""Human verdict endpoints: single, batch and undo. All writes go through write_api.write_sidecars."""
+"""Rating endpoints: human verdicts (single, batch, undo), the Auto-rate job and the Rate summary.
+All writes go through write_api.write_sidecars."""
 import json
 import re
+import threading
+from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 
-from fastapi import APIRouter, Depends, FastAPI
+from fastapi import APIRouter, Depends, FastAPI, Query
 from fastapi.responses import JSONResponse
 
 from quarry import rating
+from quarry.library import scan_library
+from quarry.rater import ClaudeRater, load_guide, rater_status
 from quarry.schema import validate_sidecar
 from quarry.ui import gitops
 from quarry.ui.write_api import _err, json_body, require_clean_managed, utc_now, write_sidecars
@@ -21,6 +26,26 @@ ALLOWED_FROM = {
 # Fields a curator can fix from the rating card itself.
 CARD_FIXABLE = {"description", "products", "categories", "verticals", "concepts", "style", "tone"}
 SHA_RE = re.compile(r"^[0-9a-fA-F]{4,40}$")
+CHUNK = 20  # bot results written per commit
+WORKERS = 4  # concurrent rater calls
+
+
+def _bot(s: dict) -> dict | None:
+    return (s.get("rating") or {}).get("bot")
+
+
+def _human(s: dict) -> dict | None:
+    return (s.get("rating") or {}).get("human")
+
+
+def is_rate_target(s: dict, redo: bool) -> bool:
+    """Auto-rate scope: proposed, no human verdict; unrated, or (redo) rated unsure."""
+    if s.get("status") != "proposed" or _human(s):
+        return False
+    bot = _bot(s)
+    if redo:
+        return bool(bot) and bot.get("strength") == "unsure"
+    return not bot
 
 
 def _field(error: str) -> str:
@@ -59,6 +84,27 @@ def mount(app: FastAPI) -> None:
     lock = app.state.write_lock
     router = APIRouter()
     dep = [Depends(require_clean_managed)]
+    rater_lock = threading.Lock()
+    injected = app.state.rater
+
+    def get_rater():
+        """The injected rater, else one ClaudeRater built on first use."""
+        with rater_lock:
+            if app.state.rater is None:
+                app.state.rater = ClaudeRater()
+            return app.state.rater
+
+    def status_of_rater() -> dict:
+        if injected is not None:
+            return {"available": True, "model": injected.model, "reason": None}
+        return rater_status()
+
+    app.state.get_rater = get_rater
+    app.state.rater_status = status_of_rater
+
+    def learning() -> str:
+        real = (repo_root / "index" / "library.db").exists() and app.state.embedder_mode() != "fake"
+        return "look-alike" if real else "recent"
 
     def sidecar_path(id: str) -> Path | None:
         img = app.state.library_cache.image_path(id)
@@ -166,5 +212,114 @@ def mount(app: FastAPI) -> None:
             except gitops.GitError as exc:
                 return _err(500, str(exc))
         return JSONResponse({"commit": new, "ids": list(dict.fromkeys(Path(n).stem for n in names))})
+
+    def rate_job(log, redo: bool) -> dict:
+        try:
+            rater = get_rater()
+        except Exception as exc:  # noqa: BLE001 - surface any construction failure as the job error
+            raise RuntimeError(f"could not start the rater: {exc or type(exc).__name__}") from exc
+        assets = scan_library(repo_root)  # one snapshot: targets, image paths and the examples pool
+        sidecars = [{**a.sidecar, "id": a.id} for a in assets]
+        images = {a.id: a.path for a in assets}
+        targets = sorted((s for s in sidecars if is_rate_target(s, redo)), key=lambda s: s["id"])
+        vocab, guide, look_alike = load_vocabulary(repo_root), load_guide(repo_root), learning() == "look-alike"
+        rated, skipped, failed = 0, 0, {}
+        log(f"rating {len(targets)} assets with {rater.model}"
+            f"{' (redo unsure)' if redo else ''}, examples: {'look-alike' if look_alike else 'recent'}")
+
+        def rate_one(s: dict):
+            examples = rating.select_examples(repo_root, s["id"], sidecars, look_alike=look_alike)
+            return rater.rate(images[s["id"]], s, examples, vocab, guide, repo_root), [e["id"] for e in examples]
+
+        def write_chunk(batch: list[tuple[str, rating.RatingResult, list[str]]]) -> None:
+            nonlocal rated, skipped
+            changes: dict[Path, dict] = {}
+            ids: list[str] = []
+            with lock:
+                now = utc_now()
+                for id, result, example_ids in batch:
+                    path = images[id].with_suffix(".json")
+                    try:
+                        current = json.loads(path.read_text())
+                        if not isinstance(current, dict):
+                            raise ValueError("not a JSON object")
+                    except (OSError, ValueError) as exc:
+                        failed[id] = f"could not re-read sidecar: {exc}"
+                        log(f"{id}: FAILED {failed[id]}")
+                        continue
+                    if not is_rate_target(current, redo):  # human verdict, status change, or rated meanwhile
+                        skipped += 1
+                        log(f"{id}: skipped — changed during the run")
+                        continue
+                    candidate = rating.apply_bot_rating(current, result, model=result.model or rater.model,
+                                                        examples=example_ids, vocab=vocab, now=now, redo=redo)
+                    errors = validate_sidecar(candidate, vocab)
+                    if errors:
+                        failed[id] = "; ".join(errors)
+                        log(f"{id}: FAILED {failed[id]}")
+                        continue
+                    changes[path] = candidate
+                    ids.append(id)
+                if not changes:
+                    return
+                try:
+                    sha = write_sidecars(app, changes, f"rate: bot rated {len(changes)} assets")
+                except Exception as exc:  # noqa: BLE001 - lose this chunk, keep the run going
+                    msg = f"commit failed: {exc or type(exc).__name__}"
+                    log(f"chunk of {len(ids)} not saved: {msg}")
+                    for id in ids:
+                        failed[id] = msg
+                    return
+            rated += len(changes)
+            log(f"committed {sha[:8]}: {len(changes)} assets")
+
+        pool = ThreadPoolExecutor(max_workers=WORKERS)
+        try:
+            futures = [(s["id"], pool.submit(rate_one, s)) for s in targets]
+            batch: list = []
+            for id, fut in futures:  # in id order; the pool keeps WORKERS calls in flight
+                try:
+                    result, example_ids = fut.result()
+                except Exception as exc:  # noqa: BLE001 - one bad asset must not stop the run
+                    failed[id] = str(exc) or type(exc).__name__
+                    log(f"{id}: FAILED {failed[id]}")
+                    continue
+                log(f"{id}: {result.verdict} ({result.strength}) — {result.reason}")
+                batch.append((id, result, example_ids))
+                if len(batch) >= CHUNK:
+                    write_chunk(batch)
+                    batch = []
+            if batch:
+                write_chunk(batch)
+        finally:
+            pool.shutdown(wait=False, cancel_futures=True)
+        log(f"done: {rated} rated, {len(failed)} failed, {skipped} skipped")
+        return {"rated": rated, "failed": failed, "skipped": skipped}
+
+    @router.post("/api/rate", dependencies=dep)
+    def start_rate(redo: str | None = Query(None)):
+        if redo not in (None, "unsure"):
+            return _err(422, "redo must be 'unsure' (or omitted)")
+        status = status_of_rater()
+        if not status["available"]:
+            return _err(503, status["reason"])
+        job_id = app.state.jobs.start("rate", lambda log: rate_job(log, redo == "unsure"))
+        if job_id is None:
+            return _err(409, "another job is already running")
+        return {"job_id": job_id}
+
+    @router.get("/api/rate/summary")
+    def rate_summary():
+        sidecars = app.state.library_cache.assets()
+        proposed = [s for s in sidecars if s.get("status") == "proposed"]
+        return {
+            "waiting_for_bot": sum(1 for s in proposed if not _bot(s)),
+            "to_review": sum(1 for s in proposed if _bot(s) and not _human(s)),
+            "needs_details": sum(1 for s in proposed if (_human(s) or {}).get("verdict") == "yes"),
+            "parked": sum(1 for s in sidecars if s.get("status") == "parked"),
+            "agreement": rating.agreement(sidecars),
+            "rater": status_of_rater(),
+            "learning": learning(),
+        }
 
     app.include_router(router)

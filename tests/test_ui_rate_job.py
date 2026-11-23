@@ -1,0 +1,269 @@
+import json
+import sqlite3
+import threading
+
+from fastapi.testclient import TestClient
+
+from quarry.rater import FakeRater
+from quarry.rating import RatingResult
+from quarry.ui import gitops
+from quarry.ui import rate_api
+from quarry.ui.app import create_app
+
+from test_ui_jobs import _wait
+
+BOT_UNSURE = {"verdict": "maybe", "strength": "unsure", "reason": "old", "model": "m",
+              "at": "2026-01-01T00:00:00Z", "examples": [], "suggested_slugs": {}}
+BOT_STRONG = {**BOT_UNSURE, "verdict": "yes", "strength": "strong"}
+HUMAN_YES = {"verdict": "yes", "by": "T", "at": "2026-01-02T00:00:00Z"}
+
+
+def commit(repo):
+    repo.git("add", "-A")
+    repo.git("commit", "-q", "-m", "seed")
+
+
+def _sidecar(repo, id, cls="hero"):
+    return json.loads((repo.root / "library" / cls / f"{id}.json").read_text())
+
+
+def _subjects(repo, n):
+    return repo.git("log", "--format=%s", f"-{n}").splitlines()
+
+
+def test_auto_rate_writes_bot_ratings_in_chunks(git_repo):
+    for i in range(25):
+        git_repo.add_asset("hero", f"h{i:02}", status="proposed", description="")
+    commit(git_repo)
+    c = TestClient(create_app(git_repo.root, rater=FakeRater()))
+    r = c.post("/api/rate")
+    assert r.status_code == 200, r.text
+    s = _wait(c, r.json()["job_id"])
+    assert s["state"] == "done", s
+    assert s["result"] == {"rated": 25, "failed": {}, "skipped": 0}
+    assert _subjects(git_repo, 2) == ["rate: bot rated 5 assets", "rate: bot rated 20 assets"]
+    h = _sidecar(git_repo, "h00")
+    assert h["rating"]["bot"]["verdict"] == "maybe"
+    assert h["rating"]["bot"]["model"] == "fake"
+    assert h["rating"]["bot"]["at"].endswith("Z") and len(h["rating"]["bot"]["at"]) == 20
+    assert h["description"] == "Fake description."
+    assert "h00: maybe (unsure) — fake" in s["log"]
+    assert s["log"][-1] == "done: 25 rated, 0 failed, 0 skipped"
+    assert not gitops.managed_status(git_repo.root).dirty_managed
+
+
+def test_auto_rate_records_answering_model(git_repo):
+    git_repo.add_asset("hero", "h1", status="proposed")
+    commit(git_repo)
+    res = RatingResult("yes", "strong", "ok", "", {}, None, {}, model="claude-fallback")
+    c = TestClient(create_app(git_repo.root, rater=FakeRater(results={"h1": res})))
+    _wait(c, c.post("/api/rate").json()["job_id"])
+    assert _sidecar(git_repo, "h1")["rating"]["bot"]["model"] == "claude-fallback"
+
+
+def test_auto_rate_skips_assets_with_human_verdict_or_bot_rating(git_repo):
+    git_repo.add_asset("hero", "fresh", status="proposed")
+    git_repo.add_asset("hero", "botted", status="proposed", rating={"bot": BOT_UNSURE})
+    git_repo.add_asset("hero", "humaned", status="proposed", rating={"human": HUMAN_YES})
+    git_repo.add_asset("hero", "done", status="confirmed")
+    git_repo.add_asset("hero", "parked1", status="parked")
+    commit(git_repo)
+    rater = FakeRater()
+    c = TestClient(create_app(git_repo.root, rater=rater))
+    s = _wait(c, c.post("/api/rate").json()["job_id"])
+    assert s["result"] == {"rated": 1, "failed": {}, "skipped": 0}
+    assert rater.calls == ["fresh"]
+    assert _sidecar(git_repo, "botted")["rating"]["bot"] == BOT_UNSURE
+    assert "bot" not in _sidecar(git_repo, "humaned")["rating"]
+    assert _subjects(git_repo, 1) == ["rate: bot rated 1 assets"]
+
+
+def test_auto_rate_failure_is_reported_and_others_continue(git_repo):
+    git_repo.add_asset("hero", "h1", status="proposed")
+    git_repo.add_asset("hero", "h2", status="proposed")
+    commit(git_repo)
+    c = TestClient(create_app(git_repo.root, rater=FakeRater(fail={"h1"})))
+    s = _wait(c, c.post("/api/rate").json()["job_id"])
+    assert s["state"] == "done"
+    assert s["result"]["rated"] == 1 and "h1" in s["result"]["failed"]
+    assert "fake failure" in s["result"]["failed"]["h1"]
+    assert "h1: FAILED fake failure for h1" in s["log"]
+    assert "rating" not in _sidecar(git_repo, "h1")
+    assert _sidecar(git_repo, "h2")["rating"]["bot"]["verdict"] == "maybe"
+
+
+def test_auto_rate_invalid_result_is_failed_not_written(git_repo):
+    git_repo.add_asset("hero", "h1", status="proposed")
+    git_repo.add_asset("hero", "h2", status="proposed")
+    commit(git_repo)
+    bad = RatingResult("wat", "strong", "?", "", {}, None, {})
+    c = TestClient(create_app(git_repo.root, rater=FakeRater(results={"h1": bad})))
+    s = _wait(c, c.post("/api/rate").json()["job_id"])
+    assert s["result"]["rated"] == 1
+    assert "rating.bot.verdict" in s["result"]["failed"]["h1"]
+    assert any(line.startswith("h1: FAILED ") for line in s["log"])
+    assert "rating" not in _sidecar(git_repo, "h1")
+    assert _subjects(git_repo, 1) == ["rate: bot rated 1 assets"]
+
+
+def test_auto_rate_chunk_commit_failure_continues(git_repo, monkeypatch):
+    for i in range(4):
+        git_repo.add_asset("hero", f"h{i}", status="proposed")
+    commit(git_repo)
+    monkeypatch.setattr(rate_api, "CHUNK", 2)
+    real = rate_api.write_sidecars
+    calls = []
+
+    def flaky(app, changes, message):
+        calls.append(message)
+        if len(calls) == 1:
+            raise gitops.GitError("boom")
+        return real(app, changes, message)
+
+    monkeypatch.setattr(rate_api, "write_sidecars", flaky)
+    c = TestClient(create_app(git_repo.root, rater=FakeRater()))
+    s = _wait(c, c.post("/api/rate").json()["job_id"])
+    assert s["state"] == "done", s
+    assert s["result"]["rated"] == 2
+    assert set(s["result"]["failed"]) == {"h0", "h1"}
+    assert "boom" in s["result"]["failed"]["h0"]
+    assert "rating" not in _sidecar(git_repo, "h0")
+    assert "bot" in _sidecar(git_repo, "h3")["rating"]
+
+
+def test_human_verdict_during_run_wins(git_repo):
+    git_repo.add_asset("hero", "h1", status="proposed")
+    commit(git_repo)
+    entered, release = threading.Event(), threading.Event()
+
+    class Blocking(FakeRater):
+        def rate(self, image, sidecar, *a):
+            if sidecar["id"] == "h1":
+                entered.set()
+                release.wait(20)
+            return super().rate(image, sidecar, *a)
+
+    c = TestClient(create_app(git_repo.root, rater=Blocking()))
+    job = c.post("/api/rate").json()["job_id"]
+    assert entered.wait(10)
+    r = c.post("/api/assets/h1/verdict", json={"verdict": "yes"})
+    assert r.status_code == 200, r.text
+    release.set()
+    s = _wait(c, job)
+    assert s["result"] == {"rated": 0, "failed": {}, "skipped": 1}
+    h = _sidecar(git_repo, "h1")
+    assert h["status"] == "confirmed" and "bot" not in h["rating"]
+    assert _subjects(git_repo, 1) == ["rate: yes h1"]
+
+
+def test_redo_unsure_updates_only_rating_bot(git_repo):
+    git_repo.add_asset("hero", "unsure", status="proposed", description="", rating={"bot": BOT_UNSURE})
+    git_repo.add_asset("hero", "strong", status="proposed", rating={"bot": BOT_STRONG})
+    git_repo.add_asset("hero", "judged", status="proposed",
+                       rating={"bot": BOT_UNSURE, "human": HUMAN_YES})
+    git_repo.add_asset("hero", "fresh", status="proposed")
+    commit(git_repo)
+    new = RatingResult("yes", "strong", "better", "New description.", {"style": ["flat"]}, None, {})
+    rater = FakeRater(results={"unsure": new})
+    c = TestClient(create_app(git_repo.root, rater=rater))
+    s = _wait(c, c.post("/api/rate?redo=unsure").json()["job_id"])
+    assert s["result"] == {"rated": 1, "failed": {}, "skipped": 0}
+    assert rater.calls == ["unsure"]
+    u = _sidecar(git_repo, "unsure")
+    assert u["rating"]["bot"]["verdict"] == "yes" and u["rating"]["bot"]["reason"] == "better"
+    assert u["description"] == "" and u["style"] == []
+    assert _sidecar(git_repo, "strong")["rating"]["bot"] == BOT_STRONG
+    assert _sidecar(git_repo, "judged")["rating"]["bot"] == BOT_UNSURE
+    assert "rating" not in _sidecar(git_repo, "fresh")
+
+
+def test_rate_bad_redo_422_busy_409_dirty_409(git_repo):
+    git_repo.add_asset("hero", "h1", status="proposed")
+    commit(git_repo)
+    gate = threading.Event()
+
+    class Slow(FakeRater):
+        def rate(self, *a):
+            gate.wait(20)
+            return super().rate(*a)
+
+    c = TestClient(create_app(git_repo.root, rater=Slow()))
+    assert c.post("/api/rate?redo=all").status_code == 422
+    job = c.post("/api/rate").json()["job_id"]
+    assert c.post("/api/rate").status_code == 409
+    gate.set()
+    _wait(c, job)
+    (git_repo.root / "library" / "hero" / "h1.json").write_text("{}")
+    assert c.post("/api/rate").status_code == 409
+
+
+def test_rate_unavailable_returns_503(git_repo, monkeypatch):
+    monkeypatch.setattr("quarry.ui.rate_api.rater_status",
+                        lambda: {"available": False, "model": "m", "reason": "set ANTHROPIC_API_KEY"})
+    r = TestClient(create_app(git_repo.root)).post("/api/rate")
+    assert r.status_code == 503
+    assert r.json() == {"error": "set ANTHROPIC_API_KEY"}
+
+
+def test_rater_construction_failure_fails_job(git_repo, monkeypatch):
+    git_repo.add_asset("hero", "h1", status="proposed")
+    commit(git_repo)
+    monkeypatch.setattr("quarry.ui.rate_api.rater_status",
+                        lambda: {"available": True, "model": "m", "reason": None})
+
+    def broken(*a, **k):
+        raise RuntimeError("no client")
+
+    monkeypatch.setattr("quarry.ui.rate_api.ClaudeRater", broken)
+    c = TestClient(create_app(git_repo.root))
+    s = _wait(c, c.post("/api/rate").json()["job_id"])
+    assert s["state"] == "failed"
+    assert "no client" in s["error"] and "rater" in s["error"]
+
+
+def test_get_rater_and_status(git_repo, monkeypatch):
+    fake = FakeRater()
+    app = create_app(git_repo.root, rater=fake)
+    assert app.state.get_rater() is fake
+    assert app.state.rater_status() == {"available": True, "model": "fake", "reason": None}
+    monkeypatch.setattr("quarry.ui.rate_api.rater_status",
+                        lambda: {"available": False, "model": "m", "reason": "r"})
+    app2 = create_app(git_repo.root)
+    assert app2.state.rater_status()["reason"] == "r"
+    built = app2.state.get_rater()
+    assert type(built).__name__ == "ClaudeRater" and app2.state.get_rater() is built
+
+
+def test_summary_counts(git_repo):
+    git_repo.add_asset("hero", "waiting", status="proposed")
+    git_repo.add_asset("hero", "review", status="proposed", rating={"bot": BOT_UNSURE})
+    git_repo.add_asset("hero", "details", status="proposed",
+                       rating={"bot": BOT_STRONG, "human": HUMAN_YES})
+    git_repo.add_asset("hero", "parked1", status="parked")
+    git_repo.add_asset("hero", "done", status="confirmed")
+    commit(git_repo)
+    c = TestClient(create_app(git_repo.root, rater=FakeRater()))
+    r = c.get("/api/rate/summary")
+    assert r.status_code == 200
+    body = r.json()
+    assert body["waiting_for_bot"] == 1
+    assert body["to_review"] == 1
+    assert body["needs_details"] == 1
+    assert body["parked"] == 1
+    assert body["agreement"]["recent"] == {"agreed": 1, "total": 1}
+    assert body["rater"] == {"available": True, "model": "fake", "reason": None}
+    assert body["learning"] == "recent"
+
+
+def test_summary_learning_look_alike_only_with_real_index(git_repo):
+    c = TestClient(create_app(git_repo.root, rater=FakeRater()))
+    (git_repo.root / "index").mkdir()
+    conn = sqlite3.connect(git_repo.root / "index" / "library.db")
+    conn.execute("CREATE TABLE meta (key TEXT PRIMARY KEY, value TEXT)")
+    conn.execute("INSERT INTO meta VALUES ('embedder_mode', 'fake')")
+    conn.commit()
+    assert c.get("/api/rate/summary").json()["learning"] == "recent"
+    conn.execute("UPDATE meta SET value = 'hf' WHERE key = 'embedder_mode'")
+    conn.commit()
+    conn.close()
+    assert c.get("/api/rate/summary").json()["learning"] == "look-alike"
