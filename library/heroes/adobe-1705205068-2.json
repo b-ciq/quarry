@@ -4,9 +4,15 @@
   "status": "proposed",
   "class": "hero",
   "products": [],
-  "categories": [],
+  "categories": [
+    "hpc"
+  ],
   "verticals": [],
-  "concepts": [],
+  "concepts": [
+    "data-analysis",
+    "compute",
+    "infrastructure"
+  ],
   "style": [],
   "aspect": "8:3",
   "license": "adobe-stock:1705205068",
@@ -23,5 +29,32 @@
     }
   },
   "usage_restrictions": [],
-  "description": ""
+  "description": "Abstract visualization of thousands of white data points connected by flowing blue, cyan and orange light streams converging to three nodes on a deep navy background.",
+  "rating": {
+    "bot": {
+      "verdict": "yes",
+      "strength": "unsure",
+      "reason": "Polished abstract data-flow visual in brand-friendly blues with clean dark space, suited to a hero background.",
+      "model": "claude-opus-5-5",
+      "at": "2026-11-23T19:35:47Z",
+      "examples": [
+        "life-scientist-workstation",
+        "life-sysadmin-server-rack"
+      ],
+      "suggested_slugs": {
+        "products": [],
+        "categories": [],
+        "verticals": [],
+        "concepts": [
+          "networking",
+          "data-flow"
+        ],
+        "style": [
+          "abstract",
+          "dark-background",
+          "data-visualization"
+        ]
+      }
+    }
+  }
 }

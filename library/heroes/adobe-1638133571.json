@@ -3,10 +3,17 @@
   "file": "adobe-1638133571.jpg",
   "status": "proposed",
   "class": "hero",
-  "products": [],
-  "categories": [],
+  "products": [
+    "rlc-pro-ai"
+  ],
+  "categories": [
+    "hpc"
+  ],
   "verticals": [],
-  "concepts": [],
+  "concepts": [
+    "compute",
+    "infrastructure"
+  ],
   "style": [],
   "aspect": "16:9",
   "license": "adobe-stock:1638133571",
@@ -23,5 +30,32 @@
     }
   },
   "usage_restrictions": [],
-  "description": ""
+  "description": "A glossy glass sphere floating on a dark blue background, with a glowing processor chip at its center and circuit-like light streaks radiating outward.",
+  "rating": {
+    "bot": {
+      "verdict": "maybe",
+      "strength": "unsure",
+      "reason": "Polished compute-themed hero with dark negative space, but the glowing tech-sphere style is close to generic stock clich\u00e9 and needs a license check.",
+      "model": "claude-opus-5-5",
+      "at": "2026-11-23T19:35:47Z",
+      "examples": [
+        "life-scientist-workstation",
+        "life-sysadmin-server-rack"
+      ],
+      "suggested_slugs": {
+        "products": [],
+        "categories": [],
+        "verticals": [],
+        "concepts": [
+          "ai",
+          "semiconductors"
+        ],
+        "style": [
+          "3d-render",
+          "abstract",
+          "dark-background"
+        ]
+      }
+    }
+  }
 }

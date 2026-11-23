@@ -4,9 +4,14 @@
   "status": "proposed",
   "class": "hero",
   "products": [],
-  "categories": [],
+  "categories": [
+    "hpc"
+  ],
   "verticals": [],
-  "concepts": [],
+  "concepts": [
+    "compute",
+    "infrastructure"
+  ],
   "style": [],
   "aspect": "512:287",
   "license": "adobe-stock:1671908166",
@@ -23,5 +28,31 @@
     }
   },
   "usage_restrictions": [],
-  "description": ""
+  "description": "A dark, symmetrical 3D render of a circuit board with a glowing blue chip at the center, surrounded by rows of components lit with amber lights.",
+  "rating": {
+    "bot": {
+      "verdict": "yes",
+      "strength": "unsure",
+      "reason": "Polished dark abstract hardware render fits HPC/compute themes and works as a hero background, though somewhat generic stock.",
+      "model": "claude-opus-5-5",
+      "at": "2026-11-23T19:35:47Z",
+      "examples": [
+        "life-scientist-workstation",
+        "life-sysadmin-server-rack"
+      ],
+      "suggested_slugs": {
+        "products": [],
+        "categories": [],
+        "verticals": [],
+        "concepts": [
+          "hardware"
+        ],
+        "style": [
+          "abstract",
+          "3d-render",
+          "dark-background"
+        ]
+      }
+    }
+  }
 }

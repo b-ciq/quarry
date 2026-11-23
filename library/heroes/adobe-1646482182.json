@@ -23,5 +23,32 @@
     }
   },
   "usage_restrictions": [],
-  "description": ""
+  "description": "A red stage-like background with a spotlight beam from above, sparkling glitter particles and bokeh, and a glittery red floor.",
+  "rating": {
+    "bot": {
+      "verdict": "no",
+      "strength": "unsure",
+      "reason": "Generic red glitter spotlight stage stock; festive/awards mood with no connection to CIQ's technical world.",
+      "model": "claude-opus-5-5",
+      "at": "2026-11-23T19:35:47Z",
+      "examples": [
+        "life-scientist-workstation",
+        "life-sysadmin-server-rack"
+      ],
+      "suggested_slugs": {
+        "products": [],
+        "categories": [],
+        "verticals": [],
+        "concepts": [
+          "celebration",
+          "event"
+        ],
+        "style": [
+          "abstract-background",
+          "bokeh",
+          "spotlight"
+        ]
+      }
+    }
+  }
 }

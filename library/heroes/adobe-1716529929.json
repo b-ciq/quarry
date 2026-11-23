@@ -4,9 +4,14 @@
   "status": "proposed",
   "class": "hero",
   "products": [],
-  "categories": [],
+  "categories": [
+    "hpc"
+  ],
   "verticals": [],
-  "concepts": [],
+  "concepts": [
+    "compute",
+    "data-analysis"
+  ],
   "style": [],
   "aspect": "4096:1755",
   "license": "adobe-stock:1716529929",
@@ -23,5 +28,32 @@
     }
   },
   "usage_restrictions": [],
-  "description": ""
+  "description": "Abstract glowing lines form a wave that rises to a peak, shifting from cyan on the left to red on the right against a black background.",
+  "rating": {
+    "bot": {
+      "verdict": "maybe",
+      "strength": "unsure",
+      "reason": "Polished abstract hero with dark space for text, but generic and only loosely tied to CIQ subjects; the red/cyan palette needs a brand check.",
+      "model": "claude-opus-5-5",
+      "at": "2026-11-23T19:35:47Z",
+      "examples": [
+        "life-scientist-workstation",
+        "life-sysadmin-server-rack"
+      ],
+      "suggested_slugs": {
+        "products": [],
+        "categories": [],
+        "verticals": [],
+        "concepts": [
+          "abstract",
+          "data-flow"
+        ],
+        "style": [
+          "abstract-background",
+          "dark",
+          "light-lines"
+        ]
+      }
+    }
+  }
 }
