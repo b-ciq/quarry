@@ -1,7 +1,7 @@
 {
   "id": "adobe-1669215407",
   "file": "adobe-1669215407.png",
-  "status": "proposed",
+  "status": "retired",
   "class": "hero",
   "products": [],
   "categories": [
@@ -51,6 +51,11 @@
           "gradient-background"
         ]
       }
+    },
+    "human": {
+      "verdict": "no",
+      "by": "b-ciq <bkfchristensen@gmail.com>",
+      "at": "2026-11-23T19:58:51Z"
     }
   }
 }
