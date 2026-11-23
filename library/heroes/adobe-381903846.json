@@ -25,5 +25,32 @@
   "usage_restrictions": [
     "editorial-use-only"
   ],
-  "description": ""
+  "description": "A teal Volvo electric semi-truck hauling an Amazon Prime trailer drives down a highway at sunset.",
+  "rating": {
+    "bot": {
+      "verdict": "no",
+      "strength": "strong",
+      "reason": "Contains third-party branding (Amazon Prime, Volvo) and is off-topic for CIQ's products.",
+      "model": "claude-opus-5-5",
+      "at": "2026-11-23T19:36:23Z",
+      "examples": [
+        "life-scientist-workstation",
+        "life-sysadmin-server-rack"
+      ],
+      "suggested_slugs": {
+        "products": [],
+        "categories": [],
+        "verticals": [
+          "logistics"
+        ],
+        "concepts": [
+          "transportation"
+        ],
+        "style": [
+          "photo",
+          "third-party-logos"
+        ]
+      }
+    }
+  }
 }

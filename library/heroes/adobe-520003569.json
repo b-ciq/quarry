@@ -6,7 +6,10 @@
   "products": [],
   "categories": [],
   "verticals": [],
-  "concepts": [],
+  "concepts": [
+    "infrastructure",
+    "compute"
+  ],
   "style": [],
   "aspect": "4096:2341",
   "license": "adobe-stock:520003569",
@@ -23,5 +26,31 @@
     }
   },
   "usage_restrictions": [],
-  "description": ""
+  "description": "Abstract dark scene of glowing blue vertical data streams resembling a digital cityscape, split by a bright horizontal light line with heavy blur and bokeh.",
+  "rating": {
+    "bot": {
+      "verdict": "maybe",
+      "strength": "unsure",
+      "reason": "Moody abstract data visual suits a hero background, but it's a generic matrix-style clich\u00e9 with an AI-generated look and weak tie to CIQ specifics.",
+      "model": "claude-opus-5-5",
+      "at": "2026-11-23T19:36:23Z",
+      "examples": [
+        "life-scientist-workstation",
+        "life-sysadmin-server-rack"
+      ],
+      "suggested_slugs": {
+        "products": [],
+        "categories": [],
+        "verticals": [],
+        "concepts": [
+          "abstract-data"
+        ],
+        "style": [
+          "abstract",
+          "dark-background",
+          "ai-generated"
+        ]
+      }
+    }
+  }
 }

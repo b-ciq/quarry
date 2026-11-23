@@ -6,7 +6,9 @@
   "products": [],
   "categories": [],
   "verticals": [],
-  "concepts": [],
+  "concepts": [
+    "infrastructure"
+  ],
   "style": [],
   "aspect": "2048:2001",
   "license": "adobe-stock:394414917",
@@ -23,5 +25,30 @@
     }
   },
   "usage_restrictions": [],
-  "description": ""
+  "description": "Close-up of a stack of glass or metal tubes seen end-on, lit in deep blue tones that form a repeating circular pattern.",
+  "rating": {
+    "bot": {
+      "verdict": "maybe",
+      "strength": "unsure",
+      "reason": "Striking blue abstract texture with on-brand mood, but weak on subject; it works as a background more than a hero, and the dense pattern leaves little calm space for text.",
+      "model": "claude-opus-5-5",
+      "at": "2026-11-23T19:36:23Z",
+      "examples": [
+        "life-scientist-workstation",
+        "life-sysadmin-server-rack"
+      ],
+      "suggested_slugs": {
+        "products": [],
+        "categories": [],
+        "verticals": [],
+        "concepts": [
+          "abstract"
+        ],
+        "style": [
+          "abstract-texture",
+          "blue-monochrome"
+        ]
+      }
+    }
+  }
 }
