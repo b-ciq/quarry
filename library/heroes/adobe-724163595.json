@@ -1,7 +1,7 @@
 {
   "id": "adobe-724163595",
   "file": "adobe-724163595.jpg",
-  "status": "proposed",
+  "status": "retired",
   "class": "hero",
   "products": [],
   "categories": [],
@@ -48,6 +48,11 @@
           "glowing-padlock"
         ]
       }
+    },
+    "human": {
+      "verdict": "no",
+      "by": "b-ciq <bkfchristensen@gmail.com>",
+      "at": "2026-11-23T19:56:43Z"
     }
   }
 }

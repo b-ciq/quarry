@@ -1,7 +1,7 @@
 {
   "id": "adobe-576903765",
   "file": "adobe-576903765.jpg",
-  "status": "proposed",
+  "status": "retired",
   "class": "hero",
   "products": [],
   "categories": [],
@@ -50,6 +50,11 @@
           "night-photography"
         ]
       }
+    },
+    "human": {
+      "verdict": "no",
+      "by": "b-ciq <bkfchristensen@gmail.com>",
+      "at": "2026-11-23T19:56:43Z"
     }
   }
 }

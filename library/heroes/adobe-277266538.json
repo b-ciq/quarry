@@ -1,7 +1,7 @@
 {
   "id": "adobe-277266538",
   "file": "adobe-277266538.jpg",
-  "status": "proposed",
+  "status": "retired",
   "class": "hero",
   "products": [],
   "categories": [],
@@ -48,6 +48,11 @@
           "color-photo"
         ]
       }
+    },
+    "human": {
+      "verdict": "no",
+      "by": "b-ciq <bkfchristensen@gmail.com>",
+      "at": "2026-11-23T19:56:43Z"
     }
   }
 }
