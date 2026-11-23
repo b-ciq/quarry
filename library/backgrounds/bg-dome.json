@@ -1,0 +1,20 @@
+{
+  "id": "bg-dome",
+  "file": "bg-dome.png",
+  "status": "proposed",
+  "class": "background",
+  "products": [],
+  "categories": [],
+  "verticals": [],
+  "concepts": [],
+  "style": [],
+  "aspect": "1543:2048",
+  "license": "ciq-original",
+  "source": {
+    "origin": "deck-builder-seed",
+    "ingested_at": "2026-11-22T00:00:00Z",
+    "sha256": "78d2ce3135e917df8ed3602ae99c4c31d251646604db49beeccbe3c833961e86"
+  },
+  "usage_restrictions": [],
+  "description": ""
+}

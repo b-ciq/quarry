@@ -1,0 +1,20 @@
+{
+  "id": "bg-trusted",
+  "file": "bg-trusted.png",
+  "status": "proposed",
+  "class": "background",
+  "products": [],
+  "categories": [],
+  "verticals": [],
+  "concepts": [],
+  "style": [],
+  "aspect": "16:9",
+  "license": "ciq-original",
+  "source": {
+    "origin": "deck-builder-seed",
+    "ingested_at": "2026-11-22T00:00:00Z",
+    "sha256": "a6b0031d68b7dd0b88386586a212574e2cb072d8163048837af0519623e7f1bf"
+  },
+  "usage_restrictions": [],
+  "description": ""
+}

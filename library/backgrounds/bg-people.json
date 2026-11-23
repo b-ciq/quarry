@@ -1,0 +1,20 @@
+{
+  "id": "bg-people",
+  "file": "bg-people.png",
+  "status": "proposed",
+  "class": "background",
+  "products": [],
+  "categories": [],
+  "verticals": [],
+  "concepts": [],
+  "style": [],
+  "aspect": "16:9",
+  "license": "ciq-original",
+  "source": {
+    "origin": "deck-builder-seed",
+    "ingested_at": "2026-11-22T00:00:00Z",
+    "sha256": "27a27ba02dca9149df2968d43ecac512a2b4e5931e1c245d20bfebb410ad0317"
+  },
+  "usage_restrictions": [],
+  "description": ""
+}

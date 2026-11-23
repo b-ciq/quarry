@@ -1,0 +1,43 @@
+{
+  "id": "life-sysadmin-server-rack",
+  "file": "life-sysadmin-server-rack.png",
+  "status": "confirmed",
+  "class": "lifestyle",
+  "products": [
+    "rocky",
+    "rlc-pro",
+    "rlc-pro-ai",
+    "rlc-pro-hardened",
+    "rlc-plus",
+    "fuzzball",
+    "warewulf-pro",
+    "ascender-pro"
+  ],
+  "categories": [
+    "enterprise-linux",
+    "automation"
+  ],
+  "verticals": [
+    "life-sciences",
+    "financial-services",
+    "manufacturing",
+    "higher-education"
+  ],
+  "concepts": [
+    "infrastructure",
+    "datacenter",
+    "operations",
+    "sysadmin",
+    "people"
+  ],
+  "style": [],
+  "aspect": "1095:1528",
+  "license": "ciq-original",
+  "source": {
+    "origin": "deck-builder-seed",
+    "ingested_at": "2026-11-22T00:00:00Z",
+    "sha256": "3ee50ffa25846a2905115ad33b940300d461550fe7632593c25317892a3f3752"
+  },
+  "usage_restrictions": [],
+  "description": "Black-and-white portrait of a sysadmin with arms crossed beside an open server rack dense with patch cables and blinking drive bays; dark, moody datacenter lighting."
+}

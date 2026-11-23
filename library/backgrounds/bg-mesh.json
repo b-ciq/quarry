@@ -1,0 +1,20 @@
+{
+  "id": "bg-mesh",
+  "file": "bg-mesh.png",
+  "status": "proposed",
+  "class": "background",
+  "products": [],
+  "categories": [],
+  "verticals": [],
+  "concepts": [],
+  "style": [],
+  "aspect": "16:9",
+  "license": "ciq-original",
+  "source": {
+    "origin": "deck-builder-seed",
+    "ingested_at": "2026-11-22T00:00:00Z",
+    "sha256": "27876ad051505962313c7aa68e0cada24be673e163af6c7f5bc449bd45b5b26e"
+  },
+  "usage_restrictions": [],
+  "description": ""
+}

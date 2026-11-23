@@ -1,0 +1,7 @@
+{
+  "products": ["rocky", "rlc-pro", "rlc-pro-ai", "rlc-pro-hardened", "rlc-plus", "fuzzball", "warewulf-pro", "apptainer", "ascender-pro"],
+  "categories": ["enterprise-linux", "hpc", "containers", "automation"],
+  "verticals": ["government", "life-sciences", "financial-services", "manufacturing", "higher-education"],
+  "concepts": ["research", "data-analysis", "science", "compute", "people", "infrastructure", "security", "datacenter", "operations", "sysadmin"],
+  "style": []
+}

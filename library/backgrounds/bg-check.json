@@ -1,0 +1,20 @@
+{
+  "id": "bg-check",
+  "file": "bg-check.png",
+  "status": "proposed",
+  "class": "background",
+  "products": [],
+  "categories": [],
+  "verticals": [],
+  "concepts": [],
+  "style": [],
+  "aspect": "16:9",
+  "license": "ciq-original",
+  "source": {
+    "origin": "deck-builder-seed",
+    "ingested_at": "2026-11-22T00:00:00Z",
+    "sha256": "21292bafb97a0340066d167ad1ff8877b1e44cadda561d648eaf849be033c559"
+  },
+  "usage_restrictions": [],
+  "description": ""
+}

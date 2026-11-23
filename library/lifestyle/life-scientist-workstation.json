@@ -1,0 +1,35 @@
+{
+  "id": "life-scientist-workstation",
+  "file": "life-scientist-workstation.png",
+  "status": "confirmed",
+  "class": "lifestyle",
+  "products": [
+    "fuzzball",
+    "warewulf-pro",
+    "ascender-pro"
+  ],
+  "categories": [
+    "hpc"
+  ],
+  "verticals": [
+    "government",
+    "life-sciences"
+  ],
+  "concepts": [
+    "research",
+    "data-analysis",
+    "science",
+    "compute",
+    "people"
+  ],
+  "style": [],
+  "aspect": "326:259",
+  "license": "ciq-original",
+  "source": {
+    "origin": "deck-builder-seed",
+    "ingested_at": "2026-11-22T00:00:00Z",
+    "sha256": "bc3202fb9d49d8641970e96aae318077933feeca7b4e743b7f6bcbc871f578be"
+  },
+  "usage_restrictions": [],
+  "description": "Black-and-white photo of a scientist studying plots, terminals, and imagery across dual monitors in a bright lab office, server racks in the background; research-computing feel."
+}

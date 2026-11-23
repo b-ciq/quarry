@@ -1,0 +1,98 @@
+{
+  "vocab": {
+    "products": [
+      "rocky",
+      "rlc-pro",
+      "rlc-pro-ai",
+      "rlc-pro-hardened",
+      "rlc-plus",
+      "fuzzball",
+      "warewulf-pro",
+      "apptainer",
+      "ascender-pro"
+    ],
+    "categories": [
+      "enterprise-linux",
+      "hpc",
+      "containers",
+      "automation"
+    ],
+    "verticals": [
+      "government",
+      "life-sciences",
+      "financial-services",
+      "manufacturing",
+      "higher-education"
+    ]
+  },
+  "images": [
+    {
+      "id": "life-scientist-workstation",
+      "file": "life-scientist-workstation.png",
+      "status": "confirmed",
+      "kind": "lifestyle",
+      "subkind": null,
+      "role": "foreground",
+      "products": [
+        "fuzzball",
+        "warewulf-pro",
+        "ascender-pro"
+      ],
+      "categories": [
+        "hpc"
+      ],
+      "verticals": [
+        "government",
+        "life-sciences"
+      ],
+      "tone": null,
+      "aspect": "326:259",
+      "concepts": [
+        "research",
+        "data-analysis",
+        "science",
+        "compute",
+        "people"
+      ],
+      "description": "Black-and-white photo of a scientist studying plots, terminals, and imagery across dual monitors in a bright lab office, server racks in the background; research-computing feel."
+    },
+    {
+      "id": "life-sysadmin-server-rack",
+      "file": "life-sysadmin-server-rack.png",
+      "status": "confirmed",
+      "kind": "lifestyle",
+      "subkind": null,
+      "role": "foreground",
+      "products": [
+        "rocky",
+        "rlc-pro",
+        "rlc-pro-ai",
+        "rlc-pro-hardened",
+        "rlc-plus",
+        "fuzzball",
+        "warewulf-pro",
+        "ascender-pro"
+      ],
+      "categories": [
+        "enterprise-linux",
+        "automation"
+      ],
+      "verticals": [
+        "life-sciences",
+        "financial-services",
+        "manufacturing",
+        "higher-education"
+      ],
+      "tone": null,
+      "aspect": "1095:1528",
+      "concepts": [
+        "infrastructure",
+        "datacenter",
+        "operations",
+        "sysadmin",
+        "people"
+      ],
+      "description": "Black-and-white portrait of a sysadmin with arms crossed beside an open server rack dense with patch cables and blinking drive bays; dark, moody datacenter lighting."
+    }
+  ]
+}

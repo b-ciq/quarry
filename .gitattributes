@@ -1,0 +1,8 @@
+library/**/*.png filter=lfs diff=lfs merge=lfs -text
+library/**/*.jpg filter=lfs diff=lfs merge=lfs -text
+library/**/*.jpeg filter=lfs diff=lfs merge=lfs -text
+library/**/*.webp filter=lfs diff=lfs merge=lfs -text
+library/**/*.PNG filter=lfs diff=lfs merge=lfs -text
+library/**/*.JPG filter=lfs diff=lfs merge=lfs -text
+library/**/*.JPEG filter=lfs diff=lfs merge=lfs -text
+library/**/*.WEBP filter=lfs diff=lfs merge=lfs -text
