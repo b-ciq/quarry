@@ -8,17 +8,18 @@ function StatusBadge({ status }: { status: string }) {
   return <Badge size="sm" color="gray">{status}</Badge>
 }
 
-function Tile({ a, onSelect }: { a: Asset; onSelect: (id: string) => void }) {
+function Tile({ a, selected, onSelect }: { a: Asset; selected: boolean; onSelect: (id: string) => void }) {
   // Pre-index (e.g. just ingested) the thumbnail 404s: fall back to the full image, then a placeholder.
   const [src, setSrc] = useState<string | null>(a.thumb_url)
   const [trackedThumb, setTrackedThumb] = useState(a.thumb_url)
   if (trackedThumb !== a.thumb_url) { setTrackedThumb(a.thumb_url); setSrc(a.thumb_url) }
   return (
-    <li className={`tile${a.status === 'retired' ? ' tile-retired' : ''}`} data-status={a.status}>
+    <li className={`tile${a.status === 'retired' ? ' tile-retired' : ''}${selected ? ' tile-selected' : ''}`} data-status={a.status}>
       <a
         href={a.full_url}
         className="tile-thumb"
         aria-label={`Edit ${a.id}`}
+        aria-current={selected || undefined}
         onClick={(e) => { if (!(e.metaKey || e.ctrlKey || e.shiftKey)) { e.preventDefault(); onSelect(a.id) } }}
       >
         {src ? (
@@ -41,7 +42,12 @@ function Tile({ a, onSelect }: { a: Asset; onSelect: (id: string) => void }) {
   )
 }
 
-export function Grid({ assets, total, onSelect }: { assets: Asset[]; total: number; onSelect: (id: string) => void }) {
+export function Grid({ assets, total, selectedId, onSelect }: {
+  assets: Asset[]
+  total: number
+  selectedId?: string | null
+  onSelect: (id: string) => void
+}) {
   if (assets.length === 0) {
     return (
       <p className="empty">
@@ -51,7 +57,7 @@ export function Grid({ assets, total, onSelect }: { assets: Asset[]; total: numb
   }
   return (
     <ul className="grid" aria-label={`${assets.length} of ${total} assets`}>
-      {assets.map((a) => <Tile key={a.id} a={a} onSelect={onSelect} />)}
+      {assets.map((a) => <Tile key={a.id} a={a} selected={a.id === selectedId} onSelect={onSelect} />)}
     </ul>
   )
 }
