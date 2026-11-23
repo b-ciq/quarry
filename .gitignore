@@ -2,3 +2,4 @@ index/
 __pycache__/
 .venv/
 *.egg-info/
+ui/node_modules
