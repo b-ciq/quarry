@@ -6,7 +6,10 @@
   "products": [],
   "categories": [],
   "verticals": [],
-  "concepts": [],
+  "concepts": [
+    "science",
+    "data-analysis"
+  ],
   "style": [],
   "aspect": "1:1",
   "license": "midjourney",
@@ -25,10 +28,36 @@
     "product_note": "Ansible"
   },
   "usage_restrictions": [],
-  "description": "",
+  "description": "Abstract white line-art waveforms made of layered thin curves run horizontally across a textured dark navy background.",
   "generation": {
     "prompt": "abstract visualization of multiple wave forms converging into single stable state, repeating pulses settling into calm equilibrium, dark navy background, conceptual harmony visualization",
     "model": null,
     "seed": null
+  },
+  "rating": {
+    "bot": {
+      "verdict": "maybe",
+      "strength": "unsure",
+      "reason": "Clean abstract waveform on dark navy fits a tech mood, but the subject is generic and only loosely tied to CIQ's world.",
+      "model": "claude-opus-5-5",
+      "at": "2026-11-23T19:37:35Z",
+      "examples": [
+        "life-scientist-workstation",
+        "life-sysadmin-server-rack"
+      ],
+      "suggested_slugs": {
+        "products": [],
+        "categories": [],
+        "verticals": [],
+        "concepts": [
+          "signal-processing"
+        ],
+        "style": [
+          "abstract",
+          "line-art",
+          "dark-background"
+        ]
+      }
+    }
   }
 }
