@@ -118,3 +118,14 @@ export function vocabCounts(assets: Asset[], vocabulary: Record<string, string[]
   }
   return out
 }
+
+/** Resolve index-search hits to live assets (fresh sidecar data), keeping hit order and dropping unknown ids. */
+export function resolveHits(hits: { id: string }[], assets: Asset[]): Asset[] {
+  const byId = new Map(assets.map((a) => [a.id, a]))
+  return hits.flatMap((h) => { const a = byId.get(h.id); return a ? [a] : [] })
+}
+
+/** Next image source after a load error: thumbnail -> full image -> give up (null). */
+export function nextImgSrc(current: string, a: Pick<Asset, 'thumb_url' | 'full_url'>): string | null {
+  return current === a.thumb_url && a.full_url !== a.thumb_url ? a.full_url : null
+}

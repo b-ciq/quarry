@@ -109,7 +109,7 @@ export interface IngestResult {
 }
 export const ingestFiles = (form: FormData) => call<IngestResult>('POST', '/api/ingest', { form })
 
-export const syncNow = () => call<{ pulled: boolean; pushed: boolean; conflict: boolean; message: string }>('POST', '/api/sync')
+export const syncNow = () => call<{ pulled: number; pushed: number; conflict: boolean; message: string }>('POST', '/api/sync')
 export const startJob = (kind: 'reindex' | 'publish') => call<{ job_id: string }>('POST', `/api/${kind}`)
 
 export interface Job {
@@ -119,3 +119,16 @@ export interface Job {
   error: string | null
 }
 export const fetchJob = (id: string) => call<Job>('GET', `/api/jobs/${seg(id)}`)
+
+export interface SearchResult {
+  ok: boolean
+  hits: { id: string; score: number }[]
+  stale: boolean
+  /** Server message (e.g. embedder mismatch, no index) when !ok. */
+  error: string
+}
+export async function searchIndex(q: string, limit = 50): Promise<SearchResult> {
+  const r = await call<{ hits?: { id: string; score: number }[]; stale?: boolean }>(
+    'GET', `/api/search?q=${encodeURIComponent(q)}&limit=${limit}`)
+  return { ok: r.ok, hits: r.data.hits ?? [], stale: !!r.data.stale, error: r.error }
+}

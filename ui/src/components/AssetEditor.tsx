@@ -32,6 +32,7 @@ export function AssetEditor({ asset, vocabulary, onChanged, onTransition, onOpen
   const [draft, setDraft] = useState<Draft>(() => toDraft(asset))
   const [errors, setErrors] = useState<string[]>([])
   const [message, setMessage] = useState<string | null>(null)
+  const [failure, setFailure] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
   const busyRef = useRef(false)
   const [similar, setSimilar] = useState<SimilarHit[] | null>(null)
@@ -53,7 +54,7 @@ export function AssetEditor({ asset, vocabulary, onChanged, onTransition, onOpen
 
   const fail = (r: Extract<WriteResult, { ok: false }>) => {
     setErrors(r.errors)
-    setMessage(r.errors.length ? null : r.error)
+    setFailure(r.errors.length ? null : r.error)
     return false
   }
 
@@ -71,6 +72,7 @@ export function AssetEditor({ asset, vocabulary, onChanged, onTransition, onOpen
     setBusy(true)
     setErrors([])
     setMessage(null)
+    setFailure(null)
     try { return await fn() } finally { busyRef.current = false; setBusy(false) }
   }
 
@@ -120,6 +122,7 @@ export function AssetEditor({ asset, vocabulary, onChanged, onTransition, onOpen
         </div>
 
         {message && <p className="editor-message" role="status">{message}</p>}
+        {failure && <Alert type="error">{failure}</Alert>}
         {orphan.length > 0 && (
           <Alert type="error">
             {orphan.map((e) => <div key={e}>{e}</div>)}

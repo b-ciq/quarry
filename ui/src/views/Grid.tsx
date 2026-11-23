@@ -1,5 +1,6 @@
 import { Badge } from '@ctrliq/quantic-react'
-import type { Asset } from '../state'
+import { useState } from 'react'
+import { nextImgSrc, type Asset } from '../state'
 
 function StatusBadge({ status }: { status: string }) {
   if (status === 'proposed') return <Badge size="sm" color="warning">proposed</Badge>
@@ -8,6 +9,10 @@ function StatusBadge({ status }: { status: string }) {
 }
 
 function Tile({ a, onSelect }: { a: Asset; onSelect: (id: string) => void }) {
+  // Pre-index (e.g. just ingested) the thumbnail 404s: fall back to the full image, then a placeholder.
+  const [src, setSrc] = useState<string | null>(a.thumb_url)
+  const [trackedThumb, setTrackedThumb] = useState(a.thumb_url)
+  if (trackedThumb !== a.thumb_url) { setTrackedThumb(a.thumb_url); setSrc(a.thumb_url) }
   return (
     <li className={`tile${a.status === 'retired' ? ' tile-retired' : ''}`} data-status={a.status}>
       <a
@@ -16,7 +21,12 @@ function Tile({ a, onSelect }: { a: Asset; onSelect: (id: string) => void }) {
         aria-label={`Edit ${a.id}`}
         onClick={(e) => { if (!(e.metaKey || e.ctrlKey || e.shiftKey)) { e.preventDefault(); onSelect(a.id) } }}
       >
-        <img src={a.thumb_url} alt={a.description || a.id} loading="lazy" decoding="async" />
+        {src ? (
+          <img src={src} alt={a.description || a.id} loading="lazy" decoding="async"
+            onError={() => setSrc(nextImgSrc(src, a))} />
+        ) : (
+          <span className="tile-placeholder" role="img" aria-label={`No preview for ${a.id}`}>No preview</span>
+        )}
       </a>
       <div className="tile-meta">
         <span className="tile-id" title={a.id}>{a.id}</span>

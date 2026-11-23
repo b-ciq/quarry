@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { applyFilters, facetCounts, vocabCounts, type Asset } from './state'
+import { applyFilters, facetCounts, nextImgSrc, resolveHits, vocabCounts, type Asset } from './state'
 
 const mk = (o: Partial<Asset> & { id: string }): Asset => ({
   file: `${o.id}.png`,
@@ -105,5 +105,17 @@ describe('vocabCounts', () => {
   it('filters on categories/verticals/style axes', () => {
     const d = mk({ id: 'd', style: ['flat'] })
     expect(ids(applyFilters([d, A], { style: ['flat'] }, ''))).toEqual(['d'])
+  })
+})
+
+describe('resolveHits / nextImgSrc', () => {
+  it('keeps hit order and drops unknown ids', () => {
+    const a = mk({ id: 'a' }), b = mk({ id: 'b' })
+    expect(resolveHits([{ id: 'b' }, { id: 'zz' }, { id: 'a' }], [a, b])).toEqual([b, a])
+  })
+  it('falls back thumb -> full -> null', () => {
+    const a = { thumb_url: '/thumbs/x.webp', full_url: '/files/x' }
+    expect(nextImgSrc(a.thumb_url, a)).toBe('/files/x')
+    expect(nextImgSrc(a.full_url, a)).toBeNull()
   })
 })

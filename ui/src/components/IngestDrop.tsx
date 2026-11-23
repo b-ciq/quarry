@@ -1,6 +1,7 @@
 import { useRef, useState } from 'react'
 import { Alert, Button, Select, TextInput } from '@ctrliq/quantic-react'
-import { ingestFiles, type IngestResult } from '../api'
+import { ingestFiles, startJob, type IngestResult } from '../api'
+import { JobLog } from './JobLog'
 
 const CLASSES = ['hero', 'spot-illustration', 'background', 'screenshot', 'diagram', 'lifestyle']
 
@@ -22,6 +23,8 @@ export function IngestDrop({ products, onIngested, onReviewQueue }: Props) {
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [result, setResult] = useState<IngestResult | null>(null)
+  const [reindexJob, setReindexJob] = useState<string | null>(null)
+  const [reindexError, setReindexError] = useState<string | null>(null)
   const picker = useRef<HTMLInputElement>(null)
 
   const addFiles = (list: FileList | null) => {
@@ -30,10 +33,19 @@ export function IngestDrop({ products, onIngested, onReviewQueue }: Props) {
   const needProduct = cls === 'screenshot'
   const ready = files.length > 0 && cls !== '' && origin.trim() !== '' && (!needProduct || product !== '')
 
+  const reindex = async () => {
+    setReindexError(null)
+    const r = await startJob('reindex')
+    if (r.ok) setReindexJob(r.data.job_id)
+    else setReindexError(r.error)
+  }
+
   const submit = async () => {
     setBusy(true)
     setError(null)
     setResult(null)
+    setReindexJob(null)
+    setReindexError(null)
     const form = new FormData()
     files.forEach((f) => form.append('files', f))
     form.append('asset_class', cls)
@@ -123,7 +135,13 @@ export function IngestDrop({ products, onIngested, onReviewQueue }: Props) {
           {result.created.length > 0 && (
             <>
               <ul>{result.created.map((id) => <li key={id}>{id}</li>)}</ul>
-              <Button size="sm" onClick={onReviewQueue}>Open review queue</Button>
+              <p>Re-index so new assets get thumbnails and show up in search.</p>
+              <div className="ingest-actions">
+                <Button size="sm" onClick={reindex} disabled={reindexJob !== null}>Re-index now</Button>{' '}
+                <Button size="sm" variant="outline" onClick={onReviewQueue}>Open review queue</Button>
+              </div>
+              {reindexError && <Alert type="error">{reindexError}</Alert>}
+              {reindexJob && <JobLog key={reindexJob} jobId={reindexJob} name="Re-index" onFinished={() => onIngested(result)} />}
             </>
           )}
           {result.skipped.length > 0 && (
