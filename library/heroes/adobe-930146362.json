@@ -1,7 +1,7 @@
 {
   "id": "adobe-930146362",
   "file": "adobe-930146362.jpg",
-  "status": "proposed",
+  "status": "retired",
   "class": "hero",
   "products": [],
   "categories": [
@@ -53,6 +53,11 @@
           "neon-lighting"
         ]
       }
+    },
+    "human": {
+      "verdict": "no",
+      "by": "b-ciq <bkfchristensen@gmail.com>",
+      "at": "2026-11-23T20:00:41Z"
     }
   }
 }
