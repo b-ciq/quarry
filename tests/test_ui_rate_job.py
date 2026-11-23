@@ -5,7 +5,7 @@ import time
 
 from fastapi.testclient import TestClient
 
-from quarry.rater import ClaudeRater, FakeRater
+from quarry.rater import ClaudeRater, FakeRater, RaterError
 from quarry.rating import RatingResult
 from quarry.ui import gitops
 from quarry.ui import rate_api
@@ -351,3 +351,22 @@ def test_unexpected_apply_error_fails_only_that_asset(git_repo, monkeypatch):
     assert s["result"]["rated"] == 1 and "weird result" in s["result"]["failed"]["h1"]
     assert "h1: FAILED weird result" in s["log"]
     assert "rating" not in _sidecar(git_repo, "h1")
+
+
+def test_same_error_code_with_varying_messages_aborts_run(git_repo):
+    ids = [f"a{i:02}" for i in range(10)]
+    for id in ids:
+        git_repo.add_asset("hero", id, status="proposed")
+    commit(git_repo)
+    n = iter(range(1000))
+
+    class BadKey(FakeRater):
+        def rate(self, image, sidecar, *a):
+            self.calls.append(sidecar["id"])
+            raise RaterError(f"Claude API error: Error code: 401 - request_id req_{next(n)}", code="auth")
+
+    c = TestClient(create_app(git_repo.root, rater=BadKey()))
+    s = _wait(c, c.post("/api/rate").json()["job_id"])
+    assert s["state"] == "failed", s
+    assert "5 assets in a row" in s["error"] and "auth" in s["error"]
+    assert sum(line.startswith("a") and "FAILED" in line for line in s["log"]) == 5

@@ -200,3 +200,53 @@ def test_rubric_does_not_reject_licensed_stock():
     text = (Path(__file__).resolve().parent.parent / "taxonomy" / "rating-guide.md").read_text()
     assert "pulled from a stock site" not in text
     assert "Licensed stock" in text and "fine" in text
+
+
+def _status_error(status, cls=None):
+    import anthropic
+    req = httpx2.Request("POST", "https://api.anthropic.com/v1/messages")
+    resp = httpx2.Response(status, request=req, json={"error": {"type": "x"}, "request_id": "req_123"})
+    return (cls or anthropic.APIStatusError)(f"Error code: {status} - request_id req_123", response=resp, body=None)
+
+
+@pytest.mark.parametrize("make,code", [
+    (lambda: _status_error(401, __import__("anthropic").AuthenticationError), "auth"),
+    (lambda: _status_error(401), "auth"),
+    (lambda: _status_error(403), "permission"),
+    (lambda: _status_error(404), "not_found"),
+    (lambda: _status_error(400), "bad_request"),
+    (lambda: _status_error(429), "rate_limit"),
+    (lambda: _status_error(529), "overloaded"),
+    (lambda: _status_error(500), "server"),
+    (lambda: __import__("anthropic").APIConnectionError(request=httpx2.Request("POST", "http://x")), "connection"),
+])
+def test_claude_rater_api_error_codes(tmp_path, make, code):
+    img, sidecar, _ = _setup(tmp_path)
+    with pytest.raises(RaterError) as ei:
+        ClaudeRater(client=StubClient(exc=make())).rate(img, sidecar, [], VOCAB, "", tmp_path)
+    assert ei.value.code == code
+
+
+@pytest.mark.parametrize("kw,code", [
+    ({"stop_reason": "refusal"}, "refusal"),
+    ({"stop_reason": "max_tokens"}, "max_tokens"),
+    ({"text": "not json"}, "bad_output"),
+])
+def test_claude_rater_output_error_codes(tmp_path, kw, code):
+    img, sidecar, _ = _setup(tmp_path)
+    with pytest.raises(RaterError) as ei:
+        ClaudeRater(client=StubClient(**kw)).rate(img, sidecar, [], VOCAB, "", tmp_path)
+    assert ei.value.code == code
+
+
+def test_claude_rater_unreadable_image_code(tmp_path):
+    _, sidecar, _ = _setup(tmp_path)
+    with pytest.raises(RaterError) as ei:
+        ClaudeRater(client=StubClient()).rate(tmp_path / "missing.png", sidecar, [], VOCAB, "", tmp_path)
+    assert ei.value.code == "image"
+
+
+def test_fake_rater_failure_code():
+    with pytest.raises(RaterError) as ei:
+        FakeRater(fail={"bad"}).rate(Path("x"), {"id": "bad"}, [], {}, "", Path("."))
+    assert ei.value.code == "fake"

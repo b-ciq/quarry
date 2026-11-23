@@ -22,7 +22,27 @@ EXAMPLE_PX = 256
 
 
 class RaterError(Exception):
-    """Refusal, API error, or unparseable output."""
+    """Refusal, API error, or unparseable output. `code` is short and stable (no request ids), so callers
+    can tell a run-wide problem (e.g. every call "auth") from one-off failures."""
+
+    def __init__(self, message: str, code: str | None = None):
+        super().__init__(message)
+        self.code = code
+
+
+_STATUS_CODES = {400: "bad_request", 401: "auth", 403: "permission", 404: "not_found", 413: "bad_request",
+                 422: "bad_request", 429: "rate_limit", 529: "overloaded"}
+
+
+def api_error_code(exc) -> str:
+    """Stable code for an anthropic SDK exception, from its type/HTTP status."""
+    import anthropic
+    if isinstance(exc, anthropic.APIConnectionError):  # includes APITimeoutError
+        return "connection"
+    status = getattr(exc, "status_code", None)
+    if isinstance(status, int):
+        return _STATUS_CODES.get(status) or ("server" if status >= 500 else f"http_{status}")
+    return "api"
 
 
 class Rater(Protocol):
@@ -44,7 +64,7 @@ class FakeRater:
         sid = sidecar["id"]
         self.calls.append(sid)
         if sid in self.fail:
-            raise RaterError(f"fake failure for {sid}")
+            raise RaterError(f"fake failure for {sid}", code="fake")
         return self.results.get(sid) or RatingResult("maybe", "unsure", "fake", "Fake description.", {}, None, {})
 
 
@@ -173,16 +193,16 @@ class ClaudeRater:
                 messages=self._messages(image, sidecar, examples, repo_root),
             )
         except anthropic.APIError as e:
-            raise RaterError(f"Claude API error: {e}") from e
+            raise RaterError(f"Claude API error: {e}", code=api_error_code(e)) from e
         except OSError as e:
-            raise RaterError(f"could not read image: {e}") from e
+            raise RaterError(f"could not read image: {e}", code="image") from e
         if msg.stop_reason == "refusal":
-            raise RaterError("Claude refused to rate this image")
+            raise RaterError("Claude refused to rate this image", code="refusal")
         if msg.stop_reason == "max_tokens":
-            raise RaterError("Claude's answer was cut off (max tokens)")
+            raise RaterError("Claude's answer was cut off (max tokens)", code="max_tokens")
         text = next((b.text for b in msg.content if getattr(b, "type", None) == "text"), None)
         if text is None:
-            raise RaterError("Claude returned no text")
+            raise RaterError("Claude returned no text", code="bad_output")
         try:
             d = json.loads(text)
             return RatingResult(
@@ -191,4 +211,4 @@ class ClaudeRater:
                 suggested_slugs=d.get("suggested_slugs") or {},
                 model=getattr(msg, "model", None))
         except (json.JSONDecodeError, KeyError, TypeError) as e:
-            raise RaterError(f"unparseable JSON from Claude: {e}") from e
+            raise RaterError(f"unparseable JSON from Claude: {e}", code="bad_output") from e

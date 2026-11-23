@@ -306,14 +306,18 @@ def mount(app: FastAPI) -> None:
                 except Exception as exc:  # noqa: BLE001 - one bad asset must not stop the run
                     failed[id] = str(exc) or type(exc).__name__
                     log(f"{id}: FAILED {failed[id]}")
-                    same = failed[id].replace(id, "<id>")
+                    # Key on the rater's stable code (API messages carry unique request ids); else the message.
+                    code = getattr(exc, "code", None)
+                    same = f"code {code}" if code else failed[id].replace(id, "<id>")
                     streak, last = (streak + 1 if same == last else 1), same
                     if streak >= MAX_SAME_FAILURES:
+                        for _, f in pending:
+                            f.cancel()
                         pending.clear()
                         if batch:
                             write_chunk(batch)
                         log(f"stopped: {rated} rated, {len(failed)} failed, {skipped} skipped")
-                        raise RuntimeError(f"stopped after the same failure on {streak} assets in a row "
+                        raise RuntimeError(f"stopped after the same failure ({same}) on {streak} assets in a row "
                                            f"(last: {failed[id]}); already-rated assets are saved") from None
                     top_up()
                     continue
