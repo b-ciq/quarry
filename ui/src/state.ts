@@ -1,6 +1,8 @@
 // Pure filtering/faceting logic. No React, no DOM: reused by later tasks.
 
-export type Status = 'proposed' | 'confirmed' | 'retired' | string
+import type { Rating } from './rating'
+
+export type Status = 'proposed' | 'confirmed' | 'retired' | 'parked' | string
 
 export interface Asset {
   id: string
@@ -24,6 +26,7 @@ export interface Asset {
   avoid_reason?: string
   thumb_url: string
   full_url: string
+  rating?: Rating
 }
 
 export const AXES = ['use', 'class', 'status', 'product', 'tone', 'categories', 'verticals', 'concepts', 'style', 'license'] as const

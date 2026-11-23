@@ -1,4 +1,5 @@
 import type { Asset } from './state'
+import type { Agreement, Verdict } from './rating'
 
 export interface GitStatus {
   ahead: number
@@ -132,3 +133,34 @@ export async function searchIndex(q: string, limit = 50): Promise<SearchResult> 
     'GET', `/api/search?q=${encodeURIComponent(q)}&limit=${limit}`)
   return { ok: r.ok, hits: r.data.hits ?? [], stale: !!r.data.stale, error: r.error }
 }
+
+// --- Rating ---
+export interface VerdictResult {
+  asset: Asset
+  commit: string
+  needs_details: string[] | null
+}
+export interface BatchVerdictResult {
+  commit: string | null
+  applied: string[]
+  needs_details: Record<string, string[]>
+  failed: Record<string, string[]>
+}
+export interface RateSummary {
+  waiting_for_bot: number
+  to_review: number
+  needs_details: number
+  parked: number
+  agreement: Agreement
+  rater: { available: boolean; model: string; reason: string | null }
+  learning: 'look-alike' | 'recent'
+}
+
+export const postVerdict = (id: string, verdict: Verdict, reason?: string) =>
+  call<VerdictResult>('POST', `/api/assets/${seg(id)}/verdict`, { json: reason === undefined ? { verdict } : { verdict, reason } })
+export const postVerdicts = (verdict: Verdict, ids: string[]) =>
+  call<BatchVerdictResult>('POST', '/api/verdicts', { json: { verdict, ids } })
+export const postUndo = (commit: string) => call<{ commit: string; ids: string[] }>('POST', '/api/undo', { json: { commit } })
+export const startAutoRate = (redo?: 'unsure') =>
+  call<{ job_id: string }>('POST', `/api/rate${redo ? `?redo=${redo}` : ''}`)
+export const fetchRateSummary = () => call<RateSummary>('GET', '/api/rate/summary')
