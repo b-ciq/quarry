@@ -4,9 +4,14 @@
   "status": "proposed",
   "class": "hero",
   "products": [],
-  "categories": [],
+  "categories": [
+    "hpc"
+  ],
   "verticals": [],
-  "concepts": [],
+  "concepts": [
+    "infrastructure",
+    "compute"
+  ],
   "style": [],
   "aspect": "16:9",
   "license": "adobe-stock:1299317033",
@@ -23,5 +28,31 @@
     }
   },
   "usage_restrictions": [],
-  "description": ""
+  "description": "Abstract dark blue background with glowing network lines radiating from a central illuminated node, with orange and blue bokeh particles. Shallow depth of field leaves open dark space at the top.",
+  "rating": {
+    "bot": {
+      "verdict": "maybe",
+      "strength": "unsure",
+      "reason": "Clean abstract network hero with good text space, but generic glowing-node stock look and weak tie to CIQ subjects.",
+      "model": "claude-opus-5-5",
+      "at": "2026-11-23T19:35:30Z",
+      "examples": [
+        "life-scientist-workstation",
+        "life-sysadmin-server-rack"
+      ],
+      "suggested_slugs": {
+        "products": [],
+        "categories": [],
+        "verticals": [],
+        "concepts": [
+          "networking"
+        ],
+        "style": [
+          "abstract",
+          "dark-background",
+          "bokeh"
+        ]
+      }
+    }
+  }
 }

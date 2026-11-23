@@ -6,7 +6,9 @@
   "products": [],
   "categories": [],
   "verticals": [],
-  "concepts": [],
+  "concepts": [
+    "security"
+  ],
   "style": [],
   "aspect": "1:1",
   "license": "adobe-stock:159258769",
@@ -23,5 +25,31 @@
     }
   },
   "usage_restrictions": [],
-  "description": ""
+  "description": "A glowing blue low-poly wireframe chain with a broken link on the right side of a dark navy background, leaving open space on the left.",
+  "rating": {
+    "bot": {
+      "verdict": "no",
+      "strength": "unsure",
+      "reason": "Generic low-poly glowing chain stock cliche; weak tie to CIQ subjects, though dark blue with negative space suits hero use.",
+      "model": "claude-opus-5-5",
+      "at": "2026-11-23T19:35:30Z",
+      "examples": [
+        "life-scientist-workstation",
+        "life-sysadmin-server-rack"
+      ],
+      "suggested_slugs": {
+        "products": [],
+        "categories": [],
+        "verticals": [],
+        "concepts": [
+          "supply-chain",
+          "freedom-from-lock-in"
+        ],
+        "style": [
+          "low-poly-wireframe",
+          "dark-blue-gradient"
+        ]
+      }
+    }
+  }
 }
