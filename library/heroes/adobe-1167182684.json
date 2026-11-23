@@ -1,7 +1,7 @@
 {
   "id": "adobe-1167182684",
   "file": "adobe-1167182684.jpg",
-  "status": "proposed",
+  "status": "retired",
   "class": "hero",
   "products": [
     "rlc-pro-hardened"
@@ -52,6 +52,11 @@
           "3d-render"
         ]
       }
+    },
+    "human": {
+      "verdict": "no",
+      "by": "b-ciq <bkfchristensen@gmail.com>",
+      "at": "2026-11-23T19:57:37Z"
     }
   }
 }
