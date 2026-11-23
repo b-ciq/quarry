@@ -95,7 +95,7 @@ def mount(app: FastAPI) -> None:
         return {"version": res.version, "indexed": res.indexed, "exported": res.exported,
                 "bundled": res.bundled}
 
-    @router.post("/api/reindex", dependencies=[Depends(require_clean_managed)])
+    @router.post("/api/reindex")
     def reindex():
         return launch("reindex", reindex_job)
 

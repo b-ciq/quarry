@@ -126,7 +126,14 @@ def test_publish_requires_clean_managed(git_repo):
     git_repo.add_asset("hero", "h1")  # untracked managed file
     c = TestClient(create_app(git_repo.root, fake_embedder=True))
     assert c.post("/api/publish").status_code == 409
-    assert c.post("/api/reindex").status_code == 409
+
+
+def test_reindex_allowed_with_dirty_managed(git_repo):
+    git_repo.add_asset("hero", "h1")  # untracked managed file; reindex commits nothing
+    c = TestClient(create_app(git_repo.root, fake_embedder=True))
+    r = c.post("/api/reindex")
+    assert r.status_code == 200
+    assert _wait(c, r.json()["job_id"])["state"] == "done"
 
 
 def test_embedder_cached(git_repo):
