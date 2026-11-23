@@ -2,6 +2,7 @@ import { Checkbox } from '@ctrliq/quantic-react'
 import { AXES, applyFilters, facetCounts, type Asset, type Axis, type Filters } from '../state'
 
 const LABELS: Record<Axis, string> = {
+  use: 'Use',
   class: 'Class',
   status: 'Status',
   product: 'Product',

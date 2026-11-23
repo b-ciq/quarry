@@ -37,6 +37,14 @@ quarry index --fake-embedder
 
 Other tabs: Library (grid, facets, search), Vocabulary, Ingest (drop images, pick class and source; screenshots need a product).
 
+### Anti-examples (what not to do)
+
+Some images are kept to show styles CIQ avoids. Tick **Anti-example** in the editor and write **Why to avoid it** (required before confirming; a license is not). On the Ingest tab, tick **These are anti-examples** to mark a whole drop.
+
+- Anti-examples never appear in normal search, the deck-builder export, or `get_asset`. They show a red **avoid** badge in the grid; filter with **Use: anti-example**.
+- Agents read them through `search_anti_examples`, `get_anti_example`, and `check_against_anti_examples` (compares any image's visual style to the set). CLI: `quarry search --anti`, `quarry check-image PATH`.
+- Write the reason so an agent can act on it: name the trait to avoid and what to do instead.
+
 ## 5. How saving works (git sync)
 
 - Every edit you save is its own git commit under your git identity, touching only `library/`, `taxonomy/`, or `exports/`.

@@ -9,6 +9,8 @@ export interface Draft {
   product_version: string
   captured_at: string
   usage_restrictions: string
+  anti_example: boolean
+  avoid_reason: string
 }
 
 export const toDraft = (a: Asset): Draft => ({
@@ -18,6 +20,8 @@ export const toDraft = (a: Asset): Draft => ({
   product_version: a.product_version ?? '',
   captured_at: a.captured_at ?? '',
   usage_restrictions: (a.usage_restrictions ?? []).join(', '),
+  anti_example: !!a.anti_example,
+  avoid_reason: a.avoid_reason ?? '',
 })
 
 const sameList = (a: string[], b: string[]) => a.length === b.length && a.every((v, i) => v === b[i])
@@ -34,6 +38,10 @@ export function diffDraft(a: Asset, d: Draft): Record<string, unknown> {
   }
   const ur = d.usage_restrictions.split(',').map((s) => s.trim()).filter(Boolean)
   if (!sameList(ur, a.usage_restrictions ?? [])) out.usage_restrictions = ur
+  // Turning anti-example off drops the reason server-side; turning it on sends the reason with it.
+  if (d.anti_example !== !!a.anti_example) out.anti_example = d.anti_example
+  if (d.anti_example && (out.anti_example !== undefined || d.avoid_reason !== (a.avoid_reason ?? '')))
+    out.avoid_reason = d.avoid_reason
   return out
 }
 

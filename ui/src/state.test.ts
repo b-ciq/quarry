@@ -119,3 +119,16 @@ describe('resolveHits / nextImgSrc', () => {
     expect(nextImgSrc(a.full_url, a)).toBeNull()
   })
 })
+
+describe('use facet (anti-examples)', () => {
+  const assets = [mk({ id: 'good' }), mk({ id: 'bad', anti_example: true, avoid_reason: 'lens flare' })]
+  it('splits example vs anti-example', () => {
+    expect(facetCounts(assets, 'use')).toEqual([
+      { value: 'anti-example', count: 1 }, { value: 'example', count: 1 },
+    ])
+    expect(applyFilters(assets, { use: ['anti-example'] }, '').map((a) => a.id)).toEqual(['bad'])
+  })
+  it('free-text search matches the avoid reason', () => {
+    expect(applyFilters(assets, {}, 'flare').map((a) => a.id)).toEqual(['bad'])
+  })
+})

@@ -25,5 +25,6 @@ Run from the quarry repo root. You propose; the curator decides.
 - `screenshot`: `product_version` and `captured_at` are required. Ask the curator if you cannot read them from the image.
 - Midjourney-sourced assets need `generation` with `prompt`, `model`, `seed`. Ask the curator; never guess.
 - `usage_restrictions` non-empty means the asset is never served, even when confirmed. Do not edit it.
+- Anti-examples (`"anti_example": true`) show what NOT to do. Confirmed ones need `avoid_reason`: the trait to avoid and what to do instead. They need no `license` and are never served. Mark or unmark an asset as an anti-example only on curator instruction. Tag their `style` honestly; that is how agents learn which styles to avoid.
 - Retire with `"status": "retired"`. Never delete an asset or sidecar.
 - Keep ids kebab-case and the file named `<id><ext>`; do not rename.

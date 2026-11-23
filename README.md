@@ -17,9 +17,10 @@ Library images use git LFS (`git lfs install`).
 
 - `quarry validate [--repo] [--check-stale]`
 - `quarry seed-deck-builder [--skill-dir]`
-- `quarry ingest DIR --class CLS --source ORIGIN [--license LIC] [--license-id ID] [--product P]`
+- `quarry ingest DIR --class CLS --source ORIGIN [--license LIC] [--license-id ID] [--product P] [--anti-example]`
 - `quarry index [--fake-embedder]`
-- `quarry search QUERY [--class] [--product] [--tone] [--all-statuses] [--limit] [--fake-embedder]`
+- `quarry search QUERY [--class] [--product] [--tone] [--all-statuses] [--anti] [--limit] [--fake-embedder]`
+- `quarry check-image PATH [--limit] [--fake-embedder]`
 - `quarry export [--out]`
 - `quarry publish [--skill-dir] [--fake-embedder]`
 - `quarry ui [--repo] [--port] [--fake-embedder]`
@@ -27,6 +28,10 @@ Library images use git LFS (`git lfs install`).
 ## Workbench
 
 `quarry ui` serves the local curation workbench (127.0.0.1 only; default port 8787): library grid and facets, keyboard review queue, asset editor, vocabulary panel, ingest dropzone, re-index/publish, and git Sync. Needs the `ui` extra. Backend: `src/quarry/ui/` (FastAPI). Frontend source: `ui/` (Vite + React + Quantic); the build is committed in `src/quarry/ui/static/`, so running the UI needs no Node. After changing `ui/`, run `npm ci --prefix ui && npm run build --prefix ui` and commit `src/quarry/ui/static/` (CI fails on drift). Tests: `npm test --prefix ui`. Onboarding: `docs/onboarding.md`.
+
+## Anti-examples
+
+An asset with `"anti_example": true` shows a style to avoid. Confirmed anti-examples need `avoid_reason` (no license required). They are never servable: excluded from search, `get_asset`, `more_like` and the deck export. They are reachable only via `quarry search --anti`, `quarry check-image`, and the MCP tools `search_anti_examples`, `get_anti_example`, `check_against_anti_examples`.
 
 MCP server: `server/quarry_mcp.py` (env `QUARRY_REPO`, `QUARRY_FAKE_EMBEDDER`).
 
