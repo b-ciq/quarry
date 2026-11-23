@@ -7,10 +7,15 @@ function StatusBadge({ status }: { status: string }) {
   return <Badge size="sm" color="gray">{status}</Badge>
 }
 
-function Tile({ a }: { a: Asset }) {
+function Tile({ a, onSelect }: { a: Asset; onSelect: (id: string) => void }) {
   return (
     <li className={`tile${a.status === 'retired' ? ' tile-retired' : ''}`} data-status={a.status}>
-      <a href={a.full_url} target="_blank" rel="noreferrer" className="tile-thumb">
+      <a
+        href={a.full_url}
+        className="tile-thumb"
+        aria-label={`Edit ${a.id}`}
+        onClick={(e) => { if (!(e.metaKey || e.ctrlKey || e.shiftKey)) { e.preventDefault(); onSelect(a.id) } }}
+      >
         <img src={a.thumb_url} alt={a.description || a.id} loading="lazy" decoding="async" />
       </a>
       <div className="tile-meta">
@@ -26,7 +31,7 @@ function Tile({ a }: { a: Asset }) {
   )
 }
 
-export function Grid({ assets, total }: { assets: Asset[]; total: number }) {
+export function Grid({ assets, total, onSelect }: { assets: Asset[]; total: number; onSelect: (id: string) => void }) {
   if (assets.length === 0) {
     return (
       <p className="empty">
@@ -36,7 +41,7 @@ export function Grid({ assets, total }: { assets: Asset[]; total: number }) {
   }
   return (
     <ul className="grid" aria-label={`${assets.length} of ${total} assets`}>
-      {assets.map((a) => <Tile key={a.id} a={a} />)}
+      {assets.map((a) => <Tile key={a.id} a={a} onSelect={onSelect} />)}
     </ul>
   )
 }

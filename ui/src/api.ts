@@ -23,3 +23,49 @@ async function getJson<T>(url: string): Promise<T> {
 export const fetchAssets = () => getJson<Asset[]>('/api/assets')
 export const fetchStatus = () => getJson<Status>('/api/status')
 export const fetchVocabulary = () => getJson<Record<string, string[]>>('/api/vocabulary')
+
+export type WriteResult =
+  | { ok: true; asset: Asset }
+  | { ok: false; status: number; error: string; errors: string[] }
+
+async function send(method: string, url: string, body?: unknown): Promise<WriteResult> {
+  try {
+    const res = await fetch(url, {
+      method,
+      headers: body === undefined ? undefined : { 'Content-Type': 'application/json' },
+      body: body === undefined ? undefined : JSON.stringify(body),
+    })
+    const data = (await res.json().catch(() => ({}))) as { asset?: Asset; error?: string; errors?: string[] }
+    if (res.ok && data.asset) {
+      const id = data.asset.id
+      return { ok: true, asset: { ...data.asset, thumb_url: `/thumbs/${id}.webp`, full_url: `/files/${id}` } }
+    }
+    return { ok: false, status: res.status, error: data.error ?? `HTTP ${res.status}`, errors: data.errors ?? [] }
+  } catch (e) {
+    return { ok: false, status: 0, error: (e as Error).message, errors: [] }
+  }
+}
+
+export const patchAsset = (id: string, fields: Record<string, unknown>) =>
+  send('PATCH', `/api/assets/${encodeURIComponent(id)}`, fields)
+export const confirmAsset = (id: string) => send('POST', `/api/assets/${encodeURIComponent(id)}/confirm`)
+export const retireAsset = (id: string) => send('POST', `/api/assets/${encodeURIComponent(id)}/retire`)
+export const restoreAsset = (id: string) => send('POST', `/api/assets/${encodeURIComponent(id)}/restore`)
+
+export interface SimilarHit extends Asset {
+  score: number
+}
+export const fetchSimilar = (id: string, limit = 8) =>
+  getJson<SimilarHit[]>(`/api/assets/${encodeURIComponent(id)}/similar?limit=${limit}`)
+
+/** Validator strings look like "tone: required ..."; group them by the leading field name. */
+export function splitErrors(errors: string[]): { byField: Record<string, string[]>; general: string[] } {
+  const byField: Record<string, string[]> = {}
+  const general: string[] = []
+  for (const e of errors) {
+    const m = /^([a-z_]+)(?:\.[a-z_]+)?:/.exec(e)
+    if (m) (byField[m[1]] ??= []).push(e)
+    else general.push(e)
+  }
+  return { byField, general }
+}

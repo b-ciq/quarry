@@ -15,6 +15,8 @@ export interface Asset {
   aspect: string
   license: string
   tone?: string
+  product_version?: string
+  captured_at?: string
   source: { origin: string; ingested_at: string; sha256: string }
   usage_restrictions: string[]
   description: string

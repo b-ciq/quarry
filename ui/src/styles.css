@@ -172,3 +172,144 @@ body {
 .empty {
   color: var(--quantic-text-tertiary);
 }
+
+/* Editor (drawer and review queue) */
+.editor {
+  display: flex;
+  flex-direction: column;
+  gap: var(--quantic-spacing-3);
+  padding: var(--quantic-spacing-4);
+}
+
+.editor-image {
+  display: block;
+  max-height: var(--quantic-spacing-96);
+  overflow: hidden;
+  border-radius: var(--quantic-radius-md);
+  background: var(--quantic-bg-tertiary);
+}
+
+.editor-image img {
+  display: block;
+  width: 100%;
+  max-height: var(--quantic-spacing-96);
+  object-fit: contain;
+}
+
+.editor-form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--quantic-spacing-3);
+}
+
+.editor-head {
+  display: flex;
+  align-items: center;
+  gap: var(--quantic-spacing-3);
+}
+
+.editor-head h2 {
+  margin: 0;
+  font-size: var(--quantic-font-size-body-md);
+}
+
+.editor-meta,
+.review-keys {
+  color: var(--quantic-text-tertiary);
+  font-size: var(--quantic-font-size-body-xs);
+}
+
+.editor-message {
+  margin: 0;
+  color: var(--quantic-text-tertiary);
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--quantic-spacing-1);
+}
+
+.field-label {
+  color: var(--quantic-text-tertiary);
+  font-size: var(--quantic-font-size-body-xs);
+  text-transform: uppercase;
+}
+
+.chips {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--quantic-spacing-2);
+}
+
+.field-hint,
+.field-error {
+  margin: 0;
+  font-size: var(--quantic-font-size-body-sm);
+}
+
+.field-hint {
+  color: var(--quantic-text-tertiary);
+}
+
+.field-error {
+  color: var(--quantic-text-error-primary);
+}
+
+.editor-actions {
+  display: flex;
+  gap: var(--quantic-spacing-2);
+}
+
+.similar h3 {
+  margin: 0 0 var(--quantic-spacing-2);
+  font-size: var(--quantic-font-size-body-sm);
+}
+
+.similar-strip {
+  display: flex;
+  gap: var(--quantic-spacing-2);
+  margin: 0;
+  padding: 0;
+  overflow-x: auto;
+  list-style: none;
+}
+
+.similar-strip img {
+  display: block;
+  width: var(--quantic-spacing-24);
+  aspect-ratio: 4 / 3;
+  object-fit: cover;
+  border-radius: var(--quantic-radius-sm);
+}
+
+.review-bar {
+  display: flex;
+  align-items: center;
+  gap: var(--quantic-spacing-3);
+  padding-bottom: var(--quantic-spacing-2);
+  border-bottom: 1px solid var(--quantic-border-secondary);
+}
+
+.review-position {
+  font-variant-numeric: tabular-nums;
+}
+
+.review .editor {
+  flex-direction: row;
+  align-items: flex-start;
+}
+
+.review .editor-image {
+  flex: 1;
+  max-height: none;
+}
+
+.review .editor-image img {
+  max-height: 80vh;
+}
+
+.review .editor-form {
+  flex: 1;
+}
