@@ -1,5 +1,8 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { Alert, Button, ButtonBar, ButtonBarItem, Drawer, TextInput } from '@ctrliq/quantic-react'
+import {
+  Alert, Button, ButtonBar, ButtonBarItem, LucideIconPanelLeftClose, LucideIconPanelLeftOpen, LucideIconX,
+  SplitterGroup, SplitterPane, TextInput,
+} from '@ctrliq/quantic-react'
 import { fetchAssets, fetchStatus, fetchVocabulary, searchIndex, type Status } from './api'
 import { IngestDrop } from './components/IngestDrop'
 import { VocabPanel } from './views/VocabPanel'
@@ -10,6 +13,8 @@ import { canDiscard } from './editing'
 import { AssetEditor } from './components/AssetEditor'
 import { Grid } from './views/Grid'
 import { ReviewQueue } from './views/ReviewQueue'
+
+const RAIL_KEY = 'quarry.filters'
 
 export function App() {
   const [assets, setAssets] = useState<Asset[]>([])
@@ -24,6 +29,8 @@ export function App() {
   const [queueIds, setQueueIds] = useState<string[] | null>(null)
 
   const [page, setPage] = useState<'library' | 'vocab' | 'ingest'>('library')
+  const [railOpen, setRailOpen] = useState(() => localStorage.getItem(RAIL_KEY) !== 'closed')
+  const toggleRail = () => setRailOpen((o) => { localStorage.setItem(RAIL_KEY, o ? 'closed' : 'open'); return !o })
 
   const [indexSearch, setIndexSearch] = useState<{ q: string; ids: { id: string }[]; stale: boolean } | null>(null)
   const [searchError, setSearchError] = useState<string | null>(null)
@@ -81,6 +88,8 @@ export function App() {
   const exitQueue = useCallback(() => setQueueIds(null), [])
   const proposedCount = useMemo(() => assets.filter((a) => a.status === 'proposed').length, [assets])
   const selected = assets.find((a) => a.id === selectedId)
+  const closeDetail = () => { if (confirmDiscard()) setSelectedId(null) }
+  const libraryView = queueIds === null && page === 'library'
 
   const goPage = (p: 'library' | 'vocab' | 'ingest') => {
     if (queueIds === null && page === p) return
@@ -99,6 +108,12 @@ export function App() {
   return (
     <div className="app">
       <header className="topbar">
+        {libraryView && (
+          <Button icon size="sm" variant="ghost" onClick={toggleRail}>
+            {railOpen ? <LucideIconPanelLeftClose size="xs" /> : <LucideIconPanelLeftOpen size="xs" />}
+            <span className="sr-only">{railOpen ? 'Hide filters' : 'Show filters'}</span>
+          </Button>
+        )}
         <h1>Quarry</h1>
         <ButtonBar size="sm" aria-label="View">
           <ButtonBarItem active={queueIds === null && page === 'library'} onClick={() => goPage('library')}>Library</ButtonBarItem>
@@ -165,55 +180,67 @@ export function App() {
         </main>
       ) : (
         <div className="body">
-          <FacetRail assets={assets} filters={filters} q={q} onToggle={toggle} />
-          <main className="main">
-            {(searching || indexSearch || searchError) && (
-              <div className="search-banner" role="region" aria-label="Index search">
-                {searching && <p className="empty">Searching index...</p>}
-                {searchError && (
-                  <Alert type="error">
-                    Index search failed: {searchError}{' '}
-                    {/mismatch|embedder/i.test(searchError) ? 'Re-index with the matching embedder (or restart the workbench with the right embedder option), then try again.' : ''}
-                  </Alert>
-                )}
-                {indexSearch && (
-                  <>
-                    <div className="search-banner-row">
-                      <strong>Index search: &ldquo;{indexSearch.q}&rdquo;</strong>
-                      <span>{visible.length} result{visible.length === 1 ? '' : 's'}, best match first</span>
-                      <Button size="sm" variant="outline" onClick={clearSearch}>Clear</Button>
-                    </div>
-                    {indexSearch.stale && <Alert type="warning">The index is stale; results may miss recent edits. Re-index to refresh.</Alert>}
-                  </>
-                )}
-                {searchError && <div><Button size="sm" variant="outline" onClick={clearSearch}>Clear</Button></div>}
-              </div>
-            )}
-            {error ? <p className="empty" role="alert">Could not load assets: {error}</p>
-              : loaded ? <Grid assets={visible} total={assets.length} onSelect={(id) => { if (id === selectedId || confirmDiscard()) setSelectedId(id) }} /> : <p className="empty">Loading...</p>}
-          </main>
+          {/* Outer split: filters | content. Nested so the rail keeps its width when the detail pane opens. */}
+          <SplitterGroup resizable split="18% 82%">
+            <SplitterPane variant="solid" collapsed={!railOpen} minSize={12} maxSize={35}>
+              <FacetRail assets={assets} filters={filters} q={q} onToggle={toggle} />
+            </SplitterPane>
+            <SplitterPane minSize={50} maxSize={100}>
+              <SplitterGroup resizable split="58% 42%" collapseBelow="560px">
+                <SplitterPane minSize={30}>
+                  <main className="main" aria-label="Gallery">
+                    {(searching || indexSearch || searchError) && (
+                      <div className="search-banner" role="region" aria-label="Index search">
+                        {searching && <p className="empty">Searching index...</p>}
+                        {searchError && (
+                          <Alert type="error">
+                            Index search failed: {searchError}{' '}
+                            {/mismatch|embedder/i.test(searchError) ? 'Re-index with the matching embedder (or restart the workbench with the right embedder option), then try again.' : ''}
+                          </Alert>
+                        )}
+                        {indexSearch && (
+                          <>
+                            <div className="search-banner-row">
+                              <strong>Index search: &ldquo;{indexSearch.q}&rdquo;</strong>
+                              <span>{visible.length} result{visible.length === 1 ? '' : 's'}, best match first</span>
+                              <Button size="sm" variant="outline" onClick={clearSearch}>Clear</Button>
+                            </div>
+                            {indexSearch.stale && <Alert type="warning">The index is stale; results may miss recent edits. Re-index to refresh.</Alert>}
+                          </>
+                        )}
+                        {searchError && <div><Button size="sm" variant="outline" onClick={clearSearch}>Clear</Button></div>}
+                      </div>
+                    )}
+                    {error ? <p className="empty" role="alert">Could not load assets: {error}</p>
+                      : loaded ? <Grid assets={visible} total={assets.length} selectedId={selectedId} onSelect={(id) => { if (id === selectedId || confirmDiscard()) setSelectedId(id) }} /> : <p className="empty">Loading...</p>}
+                  </main>
+                </SplitterPane>
+                <SplitterPane collapsed={!selected} minSize={25} maxSize={70}>
+                  {selected && (
+                    <aside className="detail" aria-label="Asset details">
+                      <div className="detail-bar">
+                        <span className="detail-title">Details</span>
+                        <Button icon size="sm" variant="ghost" onClick={closeDetail}>
+                          <LucideIconX size="xs" />
+                          <span className="sr-only">Close details</span>
+                        </Button>
+                      </div>
+                      <AssetEditor
+                        key={selected.id}
+                        asset={selected}
+                        vocabulary={vocabulary}
+                        onChanged={onChanged}
+                        onDirtyChange={onDirtyChange}
+                        onOpenSimilar={(id) => { if (assets.some((a) => a.id === id) && confirmDiscard()) setSelectedId(id) }}
+                      />
+                    </aside>
+                  )}
+                </SplitterPane>
+              </SplitterGroup>
+            </SplitterPane>
+          </SplitterGroup>
         </div>
       )}
-      <Drawer
-        open={queueIds === null && !!selected}
-        placement="right"
-        size="lg"
-        resizable
-        aria-label="Asset editor"
-        onBeforeClose={(e) => { if (!confirmDiscard()) e.preventDefault() }}
-        onOpenChanged={(e) => { if (!e.detail.open) setSelectedId(null) }}
-      >
-        {selected && (
-          <AssetEditor
-            key={selected.id}
-            asset={selected}
-            vocabulary={vocabulary}
-            onChanged={onChanged}
-            onDirtyChange={onDirtyChange}
-            onOpenSimilar={(id) => { if (assets.some((a) => a.id === id) && confirmDiscard()) setSelectedId(id) }}
-          />
-        )}
-      </Drawer>
     </div>
   )
 }
