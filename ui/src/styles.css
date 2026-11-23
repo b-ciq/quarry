@@ -57,18 +57,32 @@ body {
 }
 
 .body {
-  display: flex;
   flex: 1;
   min-height: 0;
 }
 
+/* Lives in a solid splitter pane, which supplies the background, divider and scrolling. */
 .facet-rail {
-  flex: none;
-  width: var(--quantic-spacing-64);
-  overflow-y: auto;
   padding: var(--quantic-spacing-3) var(--quantic-spacing-4);
-  border-right: 1px solid var(--quantic-border-secondary);
-  background: var(--quantic-bg-secondary);
+}
+
+/* Detail pane (library view): sticky close bar above the editor. */
+.detail-bar {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--quantic-spacing-1) var(--quantic-spacing-2) var(--quantic-spacing-1) var(--quantic-spacing-4);
+  border-bottom: 1px solid var(--quantic-border-secondary);
+  background: var(--quantic-bg-primary);
+}
+
+.detail-title {
+  color: var(--quantic-text-tertiary);
+  font-size: var(--quantic-font-size-body-xs);
+  text-transform: uppercase;
 }
 
 .facet-group {
@@ -128,6 +142,11 @@ body {
   contain-intrinsic-size: auto var(--quantic-spacing-56);
 }
 
+.tile-selected {
+  border-color: var(--quantic-border-brand);
+  box-shadow: 0 0 0 1px var(--quantic-border-brand);
+}
+
 .tile-retired {
   opacity: 0.45;
 }
@@ -135,6 +154,10 @@ body {
 /* Anti-examples: a "don't" border so they never read as usable picks. */
 .tile-anti {
   box-shadow: inset 0 0 0 2px var(--quantic-border-error);
+}
+
+.tile-anti.tile-selected {
+  box-shadow: 0 0 0 1px var(--quantic-border-brand), inset 0 0 0 2px var(--quantic-border-error);
 }
 
 .tile-badges {
@@ -190,7 +213,7 @@ body {
   color: var(--quantic-text-tertiary);
 }
 
-/* Editor (drawer and review queue) */
+/* Editor (detail pane and review queue) */
 .editor {
   display: flex;
   flex-direction: column;
