@@ -23,5 +23,31 @@
     }
   },
   "usage_restrictions": [],
-  "description": ""
+  "description": "Close-up of a red glitter Christmas ornament hanging from a snowy fir branch, with bokeh lights and falling snow on a dark teal background.",
+  "rating": {
+    "bot": {
+      "verdict": "no",
+      "strength": "unsure",
+      "reason": "Generic seasonal holiday stock with no connection to CIQ's products or audiences; usable only for a one-off holiday post at most.",
+      "model": "claude-opus-5-5",
+      "at": "2026-11-23T19:36:41Z",
+      "examples": [
+        "life-scientist-workstation",
+        "life-sysadmin-server-rack"
+      ],
+      "suggested_slugs": {
+        "products": [],
+        "categories": [],
+        "verticals": [],
+        "concepts": [
+          "holiday",
+          "seasonal"
+        ],
+        "style": [
+          "stock-photo",
+          "bokeh"
+        ]
+      }
+    }
+  }
 }

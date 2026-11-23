@@ -3,10 +3,24 @@
   "file": "adobe-601374967.jpg",
   "status": "proposed",
   "class": "hero",
-  "products": [],
-  "categories": [],
-  "verticals": [],
-  "concepts": [],
+  "products": [
+    "rocky",
+    "warewulf-pro",
+    "apptainer"
+  ],
+  "categories": [
+    "hpc",
+    "enterprise-linux"
+  ],
+  "verticals": [
+    "higher-education"
+  ],
+  "concepts": [
+    "research",
+    "people",
+    "compute",
+    "science"
+  ],
   "style": [],
   "aspect": "16:9",
   "license": "adobe-stock:601374967",
@@ -23,5 +37,31 @@
     }
   },
   "usage_restrictions": [],
-  "description": ""
+  "description": "A presenter stands at the front of a dim university lecture hall between two large screens showing code, with students on laptops in the foreground.",
+  "rating": {
+    "bot": {
+      "verdict": "yes",
+      "strength": "unsure",
+      "reason": "Polished, moody lecture-hall scene with code on screens; fits higher-ed research and computing audiences, usable as a hero.",
+      "model": "claude-opus-5-5",
+      "at": "2026-11-23T19:36:41Z",
+      "examples": [
+        "life-scientist-workstation",
+        "life-sysadmin-server-rack"
+      ],
+      "suggested_slugs": {
+        "products": [],
+        "categories": [],
+        "verticals": [],
+        "concepts": [
+          "education",
+          "training"
+        ],
+        "style": [
+          "dark-moody",
+          "photography"
+        ]
+      }
+    }
+  }
 }

@@ -6,7 +6,9 @@
   "products": [],
   "categories": [],
   "verticals": [],
-  "concepts": [],
+  "concepts": [
+    "compute"
+  ],
   "style": [],
   "aspect": "16:9",
   "license": "adobe-stock:611988367",
@@ -23,5 +25,28 @@
     }
   },
   "usage_restrictions": [],
-  "description": ""
+  "description": "Motion-blurred highway at dusk with orange light trails streaking toward a bright sun on the horizon, in cool blue tones.",
+  "rating": {
+    "bot": {
+      "verdict": "maybe",
+      "strength": "unsure",
+      "reason": "Polished speed/motion stock hero with room for text, but generic and only metaphorically tied to CIQ's world.",
+      "model": "claude-opus-5-5",
+      "at": "2026-11-23T19:36:41Z",
+      "examples": [
+        "life-scientist-workstation",
+        "life-sysadmin-server-rack"
+      ],
+      "suggested_slugs": {
+        "products": [],
+        "categories": [],
+        "verticals": [],
+        "concepts": [
+          "performance",
+          "speed"
+        ],
+        "style": []
+      }
+    }
+  }
 }

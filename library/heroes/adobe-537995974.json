@@ -6,7 +6,10 @@
   "products": [],
   "categories": [],
   "verticals": [],
-  "concepts": [],
+  "concepts": [
+    "people",
+    "data-analysis"
+  ],
   "style": [],
   "aspect": "4096:1965",
   "license": "adobe-stock:537995974",
@@ -23,5 +26,30 @@
     }
   },
   "usage_restrictions": [],
-  "description": ""
+  "description": "Three women lean over a laptop in a dark room, overlaid with glowing blue holographic icons, data squares, and scrolling code text.",
+  "rating": {
+    "bot": {
+      "verdict": "no",
+      "strength": "unsure",
+      "reason": "Generic stock clich\u00e9: people around a laptop with glowing holographic icons and code overlays; busy, with little room for text.",
+      "model": "claude-opus-5-5",
+      "at": "2026-11-23T19:36:41Z",
+      "examples": [
+        "life-scientist-workstation",
+        "life-sysadmin-server-rack"
+      ],
+      "suggested_slugs": {
+        "products": [],
+        "categories": [],
+        "verticals": [],
+        "concepts": [
+          "collaboration"
+        ],
+        "style": [
+          "stock-photo",
+          "holographic-overlay"
+        ]
+      }
+    }
+  }
 }

@@ -4,9 +4,14 @@
   "status": "proposed",
   "class": "hero",
   "products": [],
-  "categories": [],
+  "categories": [
+    "hpc"
+  ],
   "verticals": [],
-  "concepts": [],
+  "concepts": [
+    "data-analysis",
+    "compute"
+  ],
   "style": [],
   "aspect": "4096:2295",
   "license": "adobe-stock:621943361",
@@ -23,5 +28,31 @@
     }
   },
   "usage_restrictions": [],
-  "description": ""
+  "description": "Abstract glowing wireframe landscape of flowing lines in blue, orange and pink with bokeh light points against a dark starry background.",
+  "rating": {
+    "bot": {
+      "verdict": "yes",
+      "strength": "unsure",
+      "reason": "Polished abstract data-wave hero with ample dark negative space for text; fits data/compute theme without cliches.",
+      "model": "claude-opus-5-5",
+      "at": "2026-11-23T19:36:41Z",
+      "examples": [
+        "life-scientist-workstation",
+        "life-sysadmin-server-rack"
+      ],
+      "suggested_slugs": {
+        "products": [],
+        "categories": [],
+        "verticals": [],
+        "concepts": [
+          "data-visualization"
+        ],
+        "style": [
+          "abstract",
+          "dark-background",
+          "gradient-glow"
+        ]
+      }
+    }
+  }
 }
