@@ -4,9 +4,15 @@
   "status": "proposed",
   "class": "hero",
   "products": [],
-  "categories": [],
+  "categories": [
+    "hpc"
+  ],
   "verticals": [],
-  "concepts": [],
+  "concepts": [
+    "compute",
+    "data-analysis",
+    "infrastructure"
+  ],
   "style": [],
   "aspect": "2:1",
   "license": "adobe-stock:287118717",
@@ -23,5 +29,32 @@
     }
   },
   "usage_restrictions": [],
-  "description": ""
+  "description": "Abstract digital highway of cyan and orange light streaks curving through towers of glowing binary code on a dark background.",
+  "rating": {
+    "bot": {
+      "verdict": "maybe",
+      "strength": "unsure",
+      "reason": "Polished data-speed hero with text room, but binary-code light streaks are a common generic stock tech cliche.",
+      "model": "claude-opus-5-5",
+      "at": "2026-11-23T19:36:05Z",
+      "examples": [
+        "life-scientist-workstation",
+        "life-sysadmin-server-rack"
+      ],
+      "suggested_slugs": {
+        "products": [],
+        "categories": [],
+        "verticals": [],
+        "concepts": [
+          "speed",
+          "performance"
+        ],
+        "style": [
+          "abstract",
+          "light-streaks",
+          "dark-background"
+        ]
+      }
+    }
+  }
 }
