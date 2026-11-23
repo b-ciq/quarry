@@ -6,6 +6,7 @@ from fastapi import FastAPI
 from fastapi.responses import FileResponse
 
 from quarry.publish import check_stale
+from quarry.ui import read_api
 
 STATIC_DIR = Path(__file__).parent / "static"
 
@@ -31,17 +32,21 @@ def create_app(repo_root: Path, fake_embedder: bool = False) -> FastAPI:
     app.state.repo_root = repo_root
     app.state.fake_embedder = fake_embedder
 
+    def index_stale() -> bool:
+        # v1: the index records no sidecar digest, so approximate with export staleness.
+        return (not (repo_root / "index" / "library.db").exists()) or check_stale(repo_root)
+
     @app.get("/api/status")
     def status():
         exports_stale = check_stale(repo_root)
-        index_exists = (repo_root / "index" / "library.db").exists()
-        # v1: the index records no sidecar digest, so approximate with export staleness.
         return {
-            "index_stale": (not index_exists) or exports_stale,
+            "index_stale": index_stale(),
             "exports_stale": exports_stale,
             "embedder_mode": _embedder_mode(repo_root),
             "git": None,
         }
+
+    read_api.mount(app, index_stale)
 
     @app.get("/")
     def root():
