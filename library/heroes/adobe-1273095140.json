@@ -53,5 +53,7 @@
       "by": "b-ciq <bkfchristensen@gmail.com>",
       "at": "2026-11-23T19:55:45Z"
     }
-  }
+  },
+  "anti_example": true,
+  "avoid_reason": "generic stock image concept"
 }
