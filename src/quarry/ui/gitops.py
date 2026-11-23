@@ -1,4 +1,5 @@
 """Scoped git operations for the workbench. Never stages anything outside the given paths."""
+import os
 import subprocess
 import time
 from dataclasses import dataclass, field
@@ -28,8 +29,15 @@ class SyncResult:
     message: str = ""
 
 
+# Read-only queries (status above all) must not take index.lock to refresh stat info: the curator's
+# /api/status polling would otherwise race a chunk's add+commit and fail it with "index.lock exists".
+# GIT_OPTIONAL_LOCKS=0 only drops those optional locks; writes still lock as usual.
+def _env() -> dict:
+    return {**os.environ, "GIT_OPTIONAL_LOCKS": "0"}
+
+
 def _git(repo, *args, check=True) -> subprocess.CompletedProcess:
-    p = subprocess.run(["git", "-C", str(repo), *args], capture_output=True, text=True)
+    p = subprocess.run(["git", "-C", str(repo), *args], capture_output=True, text=True, env=_env())
     if check and p.returncode != 0:
         raise GitError(f"git {' '.join(args)} failed: {(p.stderr or p.stdout).strip()}")
     return p
@@ -46,7 +54,7 @@ def identity(repo) -> str:
 
 def show_bytes(repo, rev: str, path: str) -> bytes | None:
     """Exact bytes of `path` (relative to `repo`) at `rev`, or None if it doesn't exist there."""
-    p = subprocess.run(["git", "-C", str(repo), "show", f"{rev}:./{path}"], capture_output=True)
+    p = subprocess.run(["git", "-C", str(repo), "show", f"{rev}:./{path}"], capture_output=True, env=_env())
     return p.stdout if p.returncode == 0 else None
 
 
@@ -90,7 +98,7 @@ def fetch_if_stale(repo, max_age: float | None = None) -> bool:
     _last_attempt[key] = now
     try:
         p = subprocess.run(["git", "-C", str(repo), "fetch", "--quiet"], capture_output=True,
-                           text=True, timeout=FETCH_TIMEOUT)
+                           text=True, timeout=FETCH_TIMEOUT, env=_env())
     except (subprocess.TimeoutExpired, OSError):
         return False
     return p.returncode == 0

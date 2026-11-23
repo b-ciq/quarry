@@ -7,9 +7,11 @@ from fastapi.testclient import TestClient
 
 from quarry.rater import ClaudeRater, FakeRater, RaterError
 from quarry.rating import RatingResult
+from quarry.schema import validate_sidecar
 from quarry.ui import gitops
 from quarry.ui import rate_api
 from quarry.ui.app import create_app
+from quarry.vocabulary import load_vocabulary
 
 from test_ui_jobs import _wait
 
@@ -117,11 +119,12 @@ def test_auto_rate_chunk_commit_failure_continues(git_repo, monkeypatch):
 
     def flaky(app, changes, message):
         calls.append(message)
-        if len(calls) == 1:
+        if len(calls) <= 2:  # the first chunk fails its commit and its one retry
             raise gitops.GitError("boom")
         return real(app, changes, message)
 
     monkeypatch.setattr(rate_api, "write_sidecars", flaky)
+    monkeypatch.setattr(rate_api, "COMMIT_RETRY_DELAY", 0)
     c = TestClient(create_app(git_repo.root, rater=FakeRater()))
     s = _wait(c, c.post("/api/rate").json()["job_id"])
     assert s["state"] == "done", s
@@ -130,6 +133,57 @@ def test_auto_rate_chunk_commit_failure_continues(git_repo, monkeypatch):
     assert "boom" in s["result"]["failed"]["h0"]
     assert "rating" not in _sidecar(git_repo, "h0")
     assert "bot" in _sidecar(git_repo, "h3")["rating"]
+    assert not gitops.managed_status(git_repo.root).dirty_managed
+
+
+def test_auto_rate_chunk_commit_retried_once(git_repo, monkeypatch):
+    for i in range(2):
+        git_repo.add_asset("hero", f"h{i}", status="proposed")
+    commit(git_repo)
+    real = rate_api.write_sidecars
+    calls = []
+
+    def flaky(app, changes, message):
+        calls.append(message)
+        if len(calls) == 1:
+            raise gitops.GitError("index.lock exists")
+        return real(app, changes, message)
+
+    monkeypatch.setattr(rate_api, "write_sidecars", flaky)
+    monkeypatch.setattr(rate_api, "COMMIT_RETRY_DELAY", 0)
+    c = TestClient(create_app(git_repo.root, rater=FakeRater()))
+    s = _wait(c, c.post("/api/rate").json()["job_id"])
+    assert s["result"] == {"rated": 2, "failed": {}, "skipped": 0}, s
+    assert len(calls) == 2
+    assert any("retrying once" in line for line in s["log"])
+    assert _subjects(git_repo, 1) == ["rate: bot rated 2 assets"]
+    assert "bot" in _sidecar(git_repo, "h0")["rating"]
+    assert not gitops.managed_status(git_repo.root).dirty_managed
+
+
+def test_chunk_uses_vocabulary_current_at_write_time(git_repo):
+    git_repo.add_asset("hero", "h1", status="proposed")
+    commit(git_repo)
+    entered, release = threading.Event(), threading.Event()
+    res = RatingResult("yes", "unsure", "ok", "", {"products": ["fuzzball", "rocky"]}, None, {})
+
+    class Blocking(FakeRater):
+        def rate(self, image, sidecar, *a):
+            entered.set()
+            release.wait(20)
+            return super().rate(image, sidecar, *a)
+
+    c = TestClient(create_app(git_repo.root, rater=Blocking(results={"h1": res})))
+    job = c.post("/api/rate").json()["job_id"]
+    assert entered.wait(10)
+    r = c.post("/api/vocabulary/products/fuzzball/rename", json={"new": "fuzzball-x"})
+    assert r.status_code == 200, r.text
+    release.set()
+    s = _wait(c, job)
+    assert s["result"] == {"rated": 1, "failed": {}, "skipped": 0}, s
+    h = _sidecar(git_repo, "h1")
+    assert h["products"] == ["rocky"]  # the renamed-away slug is not written
+    assert validate_sidecar(h, load_vocabulary(git_repo.root)) == []
 
 
 def test_human_verdict_during_run_wins(git_repo):

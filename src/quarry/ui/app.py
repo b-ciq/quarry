@@ -13,6 +13,7 @@ from quarry.rater import Rater
 from quarry.ui import gitops, ingest_api, jobs, rate_api, read_api, vocab_api, write_api
 
 STATIC_DIR = Path(__file__).parent / "static"
+SYNC_LOCK_WAIT = 5.0  # seconds /api/sync waits for an in-progress write before answering 409
 
 
 def _index_meta(repo_root: Path, key: str) -> str | None:
@@ -84,10 +85,16 @@ def create_app(repo_root: Path, fake_embedder: bool = False, skill_dir: Path | N
 
     @app.post("/api/sync")
     def sync():
+        # pull --rebase --autostash rewrites the working tree: never under a write (e.g. an Auto-rate chunk).
+        lock = app.state.write_lock
+        if not lock.acquire(timeout=SYNC_LOCK_WAIT):
+            return JSONResponse({"error": "busy saving changes; try again in a moment"}, status_code=409)
         try:
             r = gitops.sync(repo_root)
         except gitops.GitError as exc:
             return JSONResponse({"error": str(exc)}, status_code=500)
+        finally:
+            lock.release()
         body = {"pulled": r.pulled, "pushed": r.pushed, "conflict": r.conflict, "message": r.message}
         return JSONResponse(body, status_code=409 if r.conflict else 200)
 

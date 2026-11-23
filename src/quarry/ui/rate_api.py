@@ -3,6 +3,7 @@ All writes go through write_api.write_sidecars."""
 import json
 import re
 import threading
+import time
 from collections import deque
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
@@ -32,6 +33,7 @@ CHUNK = 20  # bot results written per commit
 WORKERS = 4  # concurrent rater calls
 IN_FLIGHT = 2 * WORKERS  # rater calls submitted but not yet consumed; bounds what a shutdown waits for
 MAX_SAME_FAILURES = 5  # consecutive identical per-asset failures that stop the run
+COMMIT_RETRY_DELAY = 0.5  # seconds before the one retry of a failed chunk commit (e.g. a stray index.lock)
 
 
 def _bot(s: dict) -> dict | None:
@@ -230,6 +232,8 @@ def mount(app: FastAPI) -> None:
         sidecars = [{**a.sidecar, "id": a.id} for a in assets]
         images = {a.id: a.path for a in assets}
         targets = sorted((s for s in sidecars if is_rate_target(s, redo)), key=lambda s: s["id"])
+        # The prompt uses this snapshot; each chunk re-reads the vocabulary before writing (a slug may be
+        # renamed or deleted mid-run).
         vocab, guide, look_alike = load_vocabulary(repo_root), load_guide(repo_root), learning() == "look-alike"
         rated, skipped, failed = 0, 0, {}
         log(f"rating {len(targets)} assets with {rater.model}"
@@ -244,7 +248,7 @@ def mount(app: FastAPI) -> None:
             changes: dict[Path, dict] = {}
             ids: list[str] = []
             with lock:
-                now = utc_now()
+                now, vocab_now = utc_now(), load_vocabulary(repo_root)
                 for id, result, example_ids in batch:
                     path = images[id].with_suffix(".json")
                     try:
@@ -261,8 +265,9 @@ def mount(app: FastAPI) -> None:
                         continue
                     try:
                         candidate = rating.apply_bot_rating(current, result, model=result.model or rater.model,
-                                                            examples=example_ids, vocab=vocab, now=now, redo=redo)
-                        errors = validate_sidecar(candidate, vocab)
+                                                            examples=example_ids, vocab=vocab_now, now=now,
+                                                            redo=redo)
+                        errors = validate_sidecar(candidate, vocab_now)
                     except Exception as exc:  # noqa: BLE001 - an odd result fails this asset only
                         errors = [str(exc) or type(exc).__name__]
                     if errors:
@@ -273,8 +278,14 @@ def mount(app: FastAPI) -> None:
                     ids.append(id)
                 if not changes:
                     return
+                message = f"rate: bot rated {len(changes)} assets"
                 try:
-                    sha = write_sidecars(app, changes, f"rate: bot rated {len(changes)} assets")
+                    try:
+                        sha = write_sidecars(app, changes, message)
+                    except Exception as exc:  # noqa: BLE001 - write_sidecars rolled back; retry once
+                        log(f"commit failed ({exc or type(exc).__name__}); retrying once")
+                        time.sleep(COMMIT_RETRY_DELAY)
+                        sha = write_sidecars(app, changes, message)
                 except Exception as exc:  # noqa: BLE001 - lose this chunk, keep the run going
                     msg = f"commit failed: {exc or type(exc).__name__}"
                     log(f"chunk of {len(ids)} not saved: {msg}")

@@ -214,3 +214,45 @@ def test_commit_paths_never_starts_auto_gc(sandbox, monkeypatch):
     commit = next(c for c in calls if "commit" in c)
     i = commit.index("commit")
     assert "gc.auto=0" in commit[:i] and "maintenance.auto=false" in commit[:i]
+
+
+def test_git_calls_skip_optional_locks(git_repo, monkeypatch):
+    """status must not take index.lock (it races the workbench's own add+commit)."""
+    seen = []
+    real = subprocess.run
+
+    def spy(cmd, *a, **kw):
+        seen.append((cmd, (kw.get("env") or {}).get("GIT_OPTIONAL_LOCKS")))
+        return real(cmd, *a, **kw)
+
+    monkeypatch.setattr(gitops.subprocess, "run", spy)
+    gitops.managed_status(git_repo.root)
+    assert any("status" in cmd for cmd, _ in seen)
+    assert all(flag == "0" for _, flag in seen)
+
+
+def test_api_sync_waits_for_the_write_lock_then_409s(sandbox, monkeypatch):
+    import threading
+    import time
+    from quarry.ui import app as app_mod
+    a, _ = sandbox
+    monkeypatch.setattr(app_mod, "SYNC_LOCK_WAIT", 0.3)
+    app = create_app(a)
+    client = TestClient(app)
+    called = []
+    monkeypatch.setattr(gitops, "sync", lambda repo: called.append(repo) or gitops.SyncResult(message="synced"))
+    app.state.write_lock.acquire()
+    try:
+        t0 = time.monotonic()
+        r = client.post("/api/sync")
+        assert time.monotonic() - t0 >= 0.3
+        assert r.status_code == 409 and "try again" in r.json()["error"]
+        assert called == []
+        # Released while waiting: the sync runs.
+        threading.Timer(0.1, app.state.write_lock.release).start()
+        r = client.post("/api/sync")
+        assert r.status_code == 200 and called == [a]
+    finally:
+        if app.state.write_lock.locked():
+            app.state.write_lock.release()
+    assert not app.state.write_lock.locked()  # released after the sync
