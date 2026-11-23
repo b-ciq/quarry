@@ -205,9 +205,9 @@ def test_bad_bodies_still_422(git_repo):
     _commit(git_repo)
     c = _client(git_repo)
     for url in ("/api/assets/h1/verdict", "/api/verdicts", "/api/undo"):
-        assert c.post(url, json=[1]).status_code == 422
-        assert c.post(url, content=b"not json", headers={"content-type": "application/json"}).status_code == 422
-        assert c.post(url).status_code == 422
+        for kw in ({"json": [1]}, {"content": b"not json", "headers": {"content-type": "application/json"}}, {}):
+            r = c.post(url, **kw)
+            assert r.status_code == 422 and "error" in r.json(), (url, kw)
 
 
 def test_undo_refuses_commit_touching_non_sidecar_files(git_repo):
@@ -229,7 +229,6 @@ def test_undo_refuses_invalid_previous_content(git_repo):
     git_repo.git("add", "-A")
     git_repo.git("commit", "-q", "-m", "seed bad")
     c = _client(git_repo)
-    sha = None
     good = {**bad, "status": "proposed"}
     path.write_text(json.dumps(good, indent=2))
     git_repo.git("add", "-A")

@@ -1,16 +1,15 @@
 """Human verdict endpoints: single, batch and undo. All writes go through write_api.write_sidecars."""
 import json
 import re
-from typing import Any
 from pathlib import Path
 
-from fastapi import APIRouter, Body, Depends, FastAPI
+from fastapi import APIRouter, Depends, FastAPI
 from fastapi.responses import JSONResponse
 
 from quarry import rating
 from quarry.schema import validate_sidecar
 from quarry.ui import gitops
-from quarry.ui.write_api import _err, require_clean_managed, utc_now, write_sidecars
+from quarry.ui.write_api import _err, json_body, require_clean_managed, utc_now, write_sidecars
 from quarry.vocabulary import load_vocabulary
 
 VERDICT_STATUS = {"yes": "confirmed", "no": "retired", "maybe": "parked"}
@@ -66,7 +65,7 @@ def mount(app: FastAPI) -> None:
         return img.with_suffix(".json") if img else None
 
     @router.post("/api/assets/{id}/verdict", dependencies=dep)
-    def verdict_one(id: str, body: Any = Body(None)):
+    def verdict_one(id: str, body=Depends(json_body)):
         if not isinstance(body, dict) or body.get("verdict") not in VERDICT_STATUS:
             return _err(422, "body must be {verdict: yes|no|maybe, reason?: string}")
         reason = body.get("reason")
@@ -93,7 +92,7 @@ def mount(app: FastAPI) -> None:
                              "needs_details": errors if outcome == "needs_details" else None})
 
     @router.post("/api/verdicts", dependencies=dep)
-    def verdict_batch(body: Any = Body(None)):
+    def verdict_batch(body=Depends(json_body)):
         ids = body.get("ids") if isinstance(body, dict) else None
         if (not isinstance(body, dict) or body.get("verdict") not in VERDICT_STATUS or not isinstance(ids, list)
                 or not all(isinstance(i, str) for i in ids)):
@@ -129,7 +128,7 @@ def mount(app: FastAPI) -> None:
         return JSONResponse({"commit": sha, "applied": applied, "needs_details": needs, "failed": failed})
 
     @router.post("/api/undo", dependencies=dep)
-    def undo(body: Any = Body(None)):
+    def undo(body=Depends(json_body)):
         sha = body.get("commit") if isinstance(body, dict) else None
         if not isinstance(sha, str):
             return _err(422, "body must be {commit: sha}")
