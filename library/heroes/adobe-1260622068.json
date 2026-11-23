@@ -1,7 +1,7 @@
 {
   "id": "adobe-1260622068",
   "file": "adobe-1260622068.jpg",
-  "status": "proposed",
+  "status": "retired",
   "class": "hero",
   "products": [],
   "categories": [
@@ -54,6 +54,11 @@
           "neon-glow"
         ]
       }
+    },
+    "human": {
+      "verdict": "no",
+      "by": "b-ciq <bkfchristensen@gmail.com>",
+      "at": "2026-11-23T19:57:47Z"
     }
   }
 }
