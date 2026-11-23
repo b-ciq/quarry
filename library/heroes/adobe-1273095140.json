@@ -1,7 +1,7 @@
 {
   "id": "adobe-1273095140",
   "file": "adobe-1273095140.jpg",
-  "status": "proposed",
+  "status": "retired",
   "class": "hero",
   "products": [],
   "categories": [],
@@ -47,6 +47,11 @@
           "close-up"
         ]
       }
+    },
+    "human": {
+      "verdict": "no",
+      "by": "b-ciq <bkfchristensen@gmail.com>",
+      "at": "2026-11-23T19:55:45Z"
     }
   }
 }
