@@ -51,6 +51,8 @@ export function RateCard({
 }: Props) {
   const bot = asset.rating?.bot
   const proposed = botProposed(asset)
+  /** Slugs the bot wanted but the vocabulary lacks: shown for the curator, never written anywhere. */
+  const suggested = Object.entries(bot?.suggested_slugs ?? {}).flatMap(([axis, slugs]) => (slugs ?? []).map((s) => `${s} (${axis})`))
   const [ask, setAsk] = useState<Verdict | null>(null)
   const [reason, setReason] = useState('')
   const [desc, setDesc] = useState(asset.description ?? '')
@@ -159,6 +161,9 @@ export function RateCard({
               <span className="bot-strength">{bot.strength}</span>
             </span>
             {bot.reason && <p className="bot-reason">&ldquo;{bot.reason}&rdquo;</p>}
+            {suggested.length > 0 && (
+              <p className="editor-meta bot-suggests">Bot suggests new tags: {suggested.join(', ')}</p>
+            )}
           </div>
         )}
         {asset.rating?.human && (
@@ -250,7 +255,7 @@ export function RateCard({
 
           {asset.class === 'screenshot' && (
             <>
-              <dt className="field-label">Version <BotMark show={proposed && !!(asset.product_version || asset.captured_at)} /></dt>
+              <dt className="field-label">Version</dt>
               <dd>{asset.product_version || '—'} · captured {asset.captured_at || '—'} <span className="editor-meta">(fix in the editor)</span></dd>
             </>
           )}

@@ -137,3 +137,36 @@ export function resolveHits(hits: { id: string }[], assets: Asset[]): Asset[] {
 export function nextImgSrc(current: string, a: Pick<Asset, 'thumb_url' | 'full_url'>): string | null {
   return current === a.thumb_url && a.full_url !== a.thumb_url ? a.full_url : null
 }
+
+/**
+ * Asset-list reloads race local saves: a reload that started before a save landed carries the old
+ * sidecar and would bring a decided card back. Each reload takes a ticket from `begin()`. `accept()`
+ * drops a result older than one already applied; `merge()` keeps the local copy of any asset saved
+ * after that reload started.
+ */
+export class ReloadGuard {
+  private seq = 0
+  private applied = 0
+  private savedAt = new Map<string, number>()
+
+  begin(): number {
+    return ++this.seq
+  }
+
+  /** A write for `id` landed and its result is already in local state. */
+  saved(id: string): void {
+    this.savedAt.set(id, this.seq)
+  }
+
+  accept(ticket: number): boolean {
+    if (ticket < this.applied) return false
+    this.applied = ticket
+    for (const [id, at] of this.savedAt) if (at < ticket) this.savedAt.delete(id) // fresh data covers it
+    return true
+  }
+
+  merge(ticket: number, fresh: Asset[], current: Asset[]): Asset[] {
+    const local = new Map(current.map((a) => [a.id, a]))
+    return fresh.map((a) => ((this.savedAt.get(a.id) ?? -1) >= ticket ? (local.get(a.id) ?? a) : a))
+  }
+}

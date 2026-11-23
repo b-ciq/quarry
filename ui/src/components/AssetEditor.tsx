@@ -273,7 +273,7 @@ export function AssetEditor({ asset, vocabulary, onChanged, onTransition, onOpen
 
         <div className="editor-actions">
           <Button size="sm" disabled={busy || !dirty} onClick={doSave}>Save</Button>
-          {asset.status === 'proposed' && (
+          {(asset.status === 'proposed' || asset.status === 'parked') && (
             <Button size="sm" variant="outline" disabled={busy} onClick={doConfirm}>Confirm</Button>
           )}
           {asset.status === 'retired' ? (

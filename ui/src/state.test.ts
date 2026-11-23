@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { applyFilters, facetCounts, nextImgSrc, resolveHits, vocabCounts, type Asset } from './state'
+import { applyFilters, facetCounts, nextImgSrc, ReloadGuard, resolveHits, vocabCounts, type Asset } from './state'
 
 const mk = (o: Partial<Asset> & { id: string }): Asset => ({
   file: `${o.id}.png`,
@@ -130,5 +130,41 @@ describe('use facet (anti-examples)', () => {
   })
   it('free-text search matches the avoid reason', () => {
     expect(applyFilters(assets, {}, 'flare').map((a) => a.id)).toEqual(['bad'])
+  })
+})
+
+describe('ReloadGuard', () => {
+  const v = (id: string, description: string) => mk({ id, description })
+  it('keeps an asset saved after the reload started', () => {
+    const g = new ReloadGuard()
+    const t = g.begin()
+    g.saved('a') // verdict landed while the reload was in flight
+    expect(g.accept(t)).toBe(true)
+    const out = g.merge(t, [v('a', 'stale'), v('b', 'fresh')], [v('a', 'saved'), v('b', 'old')])
+    expect(out.map((a) => a.description)).toEqual(['saved', 'fresh'])
+  })
+  it('takes the reload for an asset saved before it started', () => {
+    const g = new ReloadGuard()
+    g.saved('a')
+    const t = g.begin()
+    expect(g.accept(t)).toBe(true)
+    expect(g.merge(t, [v('a', 'server')], [v('a', 'local')])[0].description).toBe('server')
+  })
+  it('drops a reload that finishes after a newer one was applied', () => {
+    const g = new ReloadGuard()
+    const older = g.begin()
+    const newer = g.begin()
+    expect(g.accept(newer)).toBe(true)
+    expect(g.accept(older)).toBe(false)
+  })
+  it('a later reload no longer protects a save it already includes', () => {
+    const g = new ReloadGuard()
+    const t1 = g.begin()
+    g.saved('a')
+    const t2 = g.begin()
+    expect(g.accept(t1)).toBe(true)
+    expect(g.merge(t1, [v('a', 'stale')], [v('a', 'saved')])[0].description).toBe('saved')
+    expect(g.accept(t2)).toBe(true)
+    expect(g.merge(t2, [v('a', 'server')], [v('a', 'saved')])[0].description).toBe('server')
   })
 })

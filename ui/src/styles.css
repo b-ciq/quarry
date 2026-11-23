@@ -767,6 +767,10 @@ body {
   color: var(--quantic-text-secondary);
 }
 
+.bot-suggests {
+  margin: 0;
+}
+
 .bot-mark {
   margin-left: var(--quantic-spacing-1);
   text-transform: none;

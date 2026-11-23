@@ -1,4 +1,4 @@
-// Pure rating logic: grid/card lanes, one-card-at-a-time reducer, agreement text.
+// Pure rating logic: grid/card lanes, card cursor, grid screens, agreement text.
 import type { Asset } from './state'
 
 export type Verdict = 'yes' | 'no' | 'maybe'
@@ -51,42 +51,7 @@ export function lanes(
   return { strong, unsure: [...wrongIds.sort(byId), ...unsureIds.sort(byId)] }
 }
 
-export interface CardState {
-  queue: string[]
-  index: number
-  /** Commit shas, newest last. */
-  undo: string[]
-}
-export type CardAction =
-  | { type: 'decided'; id: string; commit: string }
-  | { type: 'undone'; id: string }
-  | { type: 'next' }
-  | { type: 'prev' }
-
 const clamp = (i: number, len: number) => Math.max(0, Math.min(i, len - 1))
-
-export function cardReducer(s: CardState, a: CardAction): CardState {
-  switch (a.type) {
-    case 'decided': {
-      const undo = [...s.undo, a.commit]
-      if (!s.queue.includes(a.id)) return { ...s, undo }
-      const queue = s.queue.filter((id) => id !== a.id)
-      return { queue, index: clamp(s.index, queue.length), undo }
-    }
-    case 'undone': {
-      if (s.undo.length === 0) return s
-      const undo = s.undo.slice(0, -1)
-      if (s.queue.includes(a.id)) return { ...s, undo }
-      const at = Math.max(0, Math.min(s.index, s.queue.length))
-      const queue = [...s.queue.slice(0, at), a.id, ...s.queue.slice(at)]
-      return { queue, index: at, undo }
-    }
-    case 'next':
-      return { ...s, index: clamp(s.index + 1, s.queue.length) }
-    case 'prev':
-      return { ...s, index: clamp(s.index - 1, s.queue.length) }
-  }
-}
 
 export interface AgreementCount {
   agreed: number
@@ -98,11 +63,14 @@ export interface Agreement {
   unsure: AgreementCount
 }
 
+const pct = (c: AgreementCount) => `${Math.round((100 * c.agreed) / c.total)}%`
+
 export function agreementText(a: Agreement): string {
   if (a.recent.total === 0) return 'No verdicts yet'
-  const head = `Bot agreed with you on ${a.recent.agreed} of ${a.recent.total} recent calls`
-  if (a.strong.total === 0) return head
-  return `${head} · strong calls ${Math.round((100 * a.strong.agreed) / a.strong.total)}%`
+  const parts = [`Bot agreed with you on ${a.recent.agreed} of ${a.recent.total} recent calls`]
+  if (a.strong.total > 0) parts.push(`strong calls ${pct(a.strong)}`)
+  if (a.unsure.total > 0) parts.push(`unsure ${pct(a.unsure)}`)
+  return parts.join(' · ')
 }
 
 export const VERDICT_LABEL: Record<Verdict, string> = { yes: 'Yes', no: 'No', maybe: 'Maybe-yes' }
@@ -137,6 +105,10 @@ export interface Screen {
  * The grid screen to show. A screen stays put (minus ids that left the lane) so background bot commits
  * never reshuffle tiles under the curator; once it empties, the next strong screen takes over.
  */
+/** Whether `next` is `prev` minus some ids (the same screen), rather than a new one. */
+export const sameScreen = (prev: Screen | null, next: Screen | null): boolean =>
+  !!prev && !!next && prev.verdict === next.verdict && next.ids.some((id) => prev.ids.includes(id))
+
 export function pickScreen(prev: Screen | null, strong: Screen[]): Screen | null {
   if (prev) {
     const live = new Set(strong.flatMap((s) => (s.verdict === prev.verdict ? s.ids : [])))

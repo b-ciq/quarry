@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import {
-  agreementText, botProposed, cardReducer, cursorIndex, differsFromBot, lanes, needsDetails, pickScreen, VERDICT_KEYS, type Rating,
+  agreementText, botProposed, cursorIndex, differsFromBot, lanes, needsDetails, pickScreen, sameScreen, VERDICT_KEYS, type Rating,
 } from './rating'
 import type { Asset } from './state'
 
@@ -42,35 +42,19 @@ describe('lanes', () => {
   })
 })
 
-describe('cardReducer', () => {
-  const s0 = { queue: ['a', 'b', 'c'], index: 1, undo: [] as string[] }
-  it('decided then undone restores queue and index', () => {
-    const d = cardReducer(s0, { type: 'decided', id: 'b', commit: 'sha1' })
-    expect(d).toEqual({ queue: ['a', 'c'], index: 1, undo: ['sha1'] })
-    expect(cardReducer(d, { type: 'undone', id: 'b' })).toEqual(s0)
-  })
-  it('decided of an id not in queue only pushes the commit', () => {
-    expect(cardReducer(s0, { type: 'decided', id: 'zz', commit: 'k' })).toEqual({ ...s0, undo: ['k'] })
-  })
-  it('decided at the end clamps the index', () => {
-    const d = cardReducer({ ...s0, index: 2 }, { type: 'decided', id: 'c', commit: 'k' })
-    expect(d.index).toBe(1)
-  })
-  it('undone with empty undo stack is a no-op', () => {
-    expect(cardReducer(s0, { type: 'undone', id: 'b' })).toBe(s0)
-  })
-  it('next and prev clamp to bounds', () => {
-    expect(cardReducer({ ...s0, index: 2 }, { type: 'next' }).index).toBe(2)
-    expect(cardReducer({ ...s0, index: 0 }, { type: 'prev' }).index).toBe(0)
-    expect(cardReducer(s0, { type: 'next' }).index).toBe(2)
-  })
-})
-
 describe('agreementText', () => {
   const z = { agreed: 0, total: 0 }
   it('shows recent and strong', () => {
     expect(agreementText({ recent: { agreed: 41, total: 50 }, strong: { agreed: 24, total: 25 }, unsure: z })).toBe(
       'Bot agreed with you on 41 of 50 recent calls · strong calls 96%',
+    )
+  })
+  it('adds the unsure lane when it has verdicts', () => {
+    expect(agreementText({ recent: { agreed: 41, total: 50 }, strong: { agreed: 24, total: 25 }, unsure: { agreed: 7, total: 10 } })).toBe(
+      'Bot agreed with you on 41 of 50 recent calls · strong calls 96% · unsure 70%',
+    )
+    expect(agreementText({ recent: { agreed: 1, total: 2 }, strong: z, unsure: { agreed: 1, total: 2 } })).toBe(
+      'Bot agreed with you on 1 of 2 recent calls · unsure 50%',
     )
   })
   it('omits strong when none', () => {
@@ -107,6 +91,16 @@ describe('card helpers', () => {
     expect(cursorIndex(['a', 'c'], { id: 'b', index: 1 })).toBe(1)
     expect(cursorIndex(['a'], { id: 'z', index: 5 })).toBe(0)
     expect(cursorIndex([], { id: null, index: 3 })).toBe(0)
+  })
+})
+
+describe('sameScreen', () => {
+  it('is the same screen while some of its ids remain, same verdict', () => {
+    expect(sameScreen({ verdict: 'yes', ids: ['a', 'b'] }, { verdict: 'yes', ids: ['b'] })).toBe(true)
+    expect(sameScreen({ verdict: 'yes', ids: ['a'] }, { verdict: 'yes', ids: ['c'] })).toBe(false)
+    expect(sameScreen({ verdict: 'yes', ids: ['a'] }, { verdict: 'no', ids: ['a'] })).toBe(false)
+    expect(sameScreen(null, { verdict: 'yes', ids: ['a'] })).toBe(false)
+    expect(sameScreen({ verdict: 'yes', ids: ['a'] }, null)).toBe(false)
   })
 })
 

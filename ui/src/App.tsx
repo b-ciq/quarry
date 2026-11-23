@@ -11,7 +11,7 @@ import { IngestDrop } from './components/IngestDrop'
 import { VocabPanel } from './views/VocabPanel'
 import { FacetRail } from './components/FacetRail'
 import { OpsBar } from './components/OpsBar'
-import { applyFilters, resolveHits, type Asset, type Axis, type Filters } from './state'
+import { applyFilters, ReloadGuard, resolveHits, type Asset, type Axis, type Filters } from './state'
 import { canDiscard } from './editing'
 import { AssetEditor } from './components/AssetEditor'
 import { Grid } from './views/Grid'
@@ -55,10 +55,18 @@ export function App() {
     })
   }, [])
 
-  const reloadAssets = useCallback(
-    () => fetchAssets().then((a) => { setAssets(a); setError(null) }).catch((e: Error) => setError(e.message)).finally(() => setLoaded(true)),
-    [],
-  )
+  // A reload in flight when a verdict lands must not bring the decided card back.
+  const [reloads] = useState(() => new ReloadGuard())
+  const reloadAssets = useCallback(() => {
+    const ticket = reloads.begin()
+    return fetchAssets()
+      .then((a) => {
+        if (reloads.accept(ticket)) setAssets((cur) => reloads.merge(ticket, a, cur))
+        setError(null)
+      })
+      .catch((e: Error) => setError(e.message))
+      .finally(() => setLoaded(true))
+  }, [reloads])
 
   const refresh = useCallback(() => {
     void reloadAssets()
@@ -80,9 +88,9 @@ export function App() {
     return () => clearInterval(t)
   }, [rateJob?.running, reloadAssets, refreshSummary])
 
-  const startRate = useCallback(async () => {
+  const startRate = useCallback(async (redo?: 'unsure') => {
     setRateError(null)
-    const r = await startAutoRate()
+    const r = await startAutoRate(redo)
     if (r.ok) setRateJob({ id: r.data.job_id, running: true })
     else setRateError(`Auto-rate did not start: ${r.error}`)
   }, [])
@@ -96,12 +104,11 @@ export function App() {
     [assets, filters, q, indexSearch],
   )
 
-  const onChanged = useCallback(
-    (a: Asset) => { setAssets((xs) => xs.map((x) => (x.id === a.id ? a : x))); refreshStatus() },
-    [refreshStatus],
-  )
-
-  const onAssetSaved = useCallback((a: Asset) => setAssets((xs) => xs.map((x) => (x.id === a.id ? a : x))), [])
+  const onAssetSaved = useCallback((a: Asset) => {
+    reloads.saved(a.id)
+    setAssets((xs) => xs.map((x) => (x.id === a.id ? a : x)))
+  }, [reloads])
+  const onChanged = useCallback((a: Asset) => { onAssetSaved(a); refreshStatus() }, [onAssetSaved, refreshStatus])
 
   const runSearch = async () => {
     const term = q.trim()
@@ -241,7 +248,7 @@ export function App() {
             rater={summary?.rater ?? null}
             waiting={summary?.waiting_for_bot ?? 0}
             rateJob={rateJob}
-            onAutoRate={startRate}
+            onAutoRate={() => void startRate()}
             rateError={rateError}
             onReviewQueue={() => {
               const ids = assets.filter((a) => a.status === 'proposed').map((a) => a.id)

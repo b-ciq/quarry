@@ -11,7 +11,7 @@ import { RateCard } from '../components/RateCard'
 import { StrongGrid } from '../components/StrongGrid'
 import { useViewKeys } from '../keys'
 import {
-  agreementText, cursorIndex, lanes, needsDetails, pickScreen, VERDICT_LABEL,
+  agreementText, cursorIndex, lanes, needsDetails, pickScreen, sameScreen, VERDICT_LABEL,
   type Cursor, type Screen, type Verdict,
 } from '../rating'
 import type { Asset } from '../state'
@@ -41,7 +41,8 @@ interface Props {
   summary: RateSummary | null
   summaryError: string | null
   rateJob: RateJob | null
-  onStartRate: () => void
+  /** Start Auto-rate on unrated images, or (redo 'unsure') re-rate the bot's unsure calls. */
+  onStartRate: (redo?: 'unsure') => void
   onRateJobFinished: (job: Job) => void
   onDismissRateJob: () => void
   rateError: string | null
@@ -102,6 +103,8 @@ export function RateView({
   const expectedRef = useRef(expected) // read by handlers that run before the next render
   const editsInFlight = useRef<Record<string, number>>({})
   const [screen, setScreen] = useState<Screen | null>(null)
+  /** Bumped only for a new grid screen, so a screen losing a tile keeps its "bot is wrong" toggles. */
+  const [screenKey, setScreenKey] = useState(0)
   const [cursor, setCursor] = useState<Cursor>({ id: null, index: 0 })
   const [parkedCursor, setParkedCursor] = useState<Cursor>({ id: null, index: 0 })
   const [notice, setNotice] = useState<Notice | null>(null)
@@ -153,7 +156,10 @@ export function RateView({
 
   // Keep the shown grid screen stable (see pickScreen); adjust during render, no effect round-trip.
   const shown = pickScreen(screen, strong)
-  if (shown !== screen) setScreen(shown)
+  if (shown !== screen) {
+    if (!sameScreen(screen, shown)) setScreenKey((k) => k + 1)
+    setScreen(shown)
+  }
   const lane = shown === null ? 'unsure' : unsure.length === 0 ? 'sure' : (laneChoice ?? 'sure')
 
   const cardIdx = cursorIndex(unsure, cursor)
@@ -281,7 +287,7 @@ export function RateView({
       setCardErrors((m) => { const n = { ...m }; top.ids.forEach((id) => { if (n[id]) n[id] = { ...n[id], verdict: [] } }); return n })
       const first = top.ids[0] ?? null
       if (top.from === 'grid') {
-        setTab('review'); setLaneChoice('sure'); setScreen({ verdict: top.verdict, ids: top.ids })
+        setTab('review'); setLaneChoice('sure'); setScreen({ verdict: top.verdict, ids: top.ids }); setScreenKey((k) => k + 1)
       } else if (top.from === 'parked') {
         setTab('parked'); setParkedCursor({ id: first, index: 0 })
       } else {
@@ -336,6 +342,11 @@ export function RateView({
   const waiting = summary?.waiting_for_bot ?? 0
   const rater = summary?.rater
   const running = !!rateJob?.running
+  /** Bot-unsure calls nobody has judged yet: what "Re-rate unsure" would send back to the bot. */
+  const unsureBot = useMemo(
+    () => assets.filter((a) => a.status === 'proposed' && a.rating?.bot?.strength === 'unsure' && !a.rating.human).length,
+    [assets],
+  )
   const editing = editorId ? byId.get(editorId) : undefined
   const keysOn = active && !editing
 
@@ -372,7 +383,7 @@ export function RateView({
       <>
         {lane === 'sure' && shown ? (
           <StrongGrid
-            key={`${shown.verdict}:${shown.ids[0]}`}
+            key={`${shown.verdict}:${screenKey}`}
             screen={shown}
             assets={byId}
             total={strongTotal(shown.verdict)}
@@ -494,7 +505,16 @@ export function RateView({
           </span>
         )}
         <span className="rate-waiting">{plural(waiting, 'image')} waiting for the bot</span>
-        <Button size="sm" disabled={!rater?.available || running || waiting === 0} onClick={onStartRate}>
+        <Button
+          size="sm"
+          variant="outline"
+          disabled={!rater?.available || running || unsureBot === 0}
+          title="Ask the bot again about its unsure calls that nobody has judged yet"
+          onClick={() => onStartRate('unsure')}
+        >
+          Re-rate unsure ({unsureBot})
+        </Button>
+        <Button size="sm" disabled={!rater?.available || running || waiting === 0} onClick={() => onStartRate()}>
           {running ? 'Auto-rating...' : 'Auto-rate'}
         </Button>
         {rater && !rater.available && <span className="editor-meta rate-off">{rater.reason}</span>}
