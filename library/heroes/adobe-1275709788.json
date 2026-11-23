@@ -23,5 +23,7 @@
     }
   },
   "usage_restrictions": [],
-  "description": ""
+  "description": "",
+  "anti_example": true,
+  "avoid_reason": "it features glossy purple and blue science fiction aesthetic "
 }
