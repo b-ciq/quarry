@@ -5,6 +5,7 @@ the pinned sqlite-vec), so no rowid mapping is needed. All statuses are indexed;
 serving-time filtering belongs to the search layer.
 """
 
+import hashlib
 import json
 import os
 import sqlite3
@@ -69,6 +70,15 @@ def validate_assets(repo_root: Path, assets: list) -> list[str]:
     return errors
 
 
+def sidecar_digest(repo_root: Path) -> str:
+    repo_root = Path(repo_root)
+    h = hashlib.sha256()
+    for sc in sorted((repo_root / "library").rglob("*.json")):
+        h.update(sc.relative_to(repo_root).as_posix().encode() + b"\0")
+        h.update(sc.read_bytes() + b"\0")
+    return h.hexdigest()
+
+
 def build_index(repo_root: Path, embedder: Embedder, db_path: Path | None = None) -> IndexStats:
     repo_root = Path(repo_root)
     index_dir = repo_root / "index"
@@ -97,6 +107,7 @@ def build_index(repo_root: Path, embedder: Embedder, db_path: Path | None = None
             conn.executemany("INSERT INTO meta VALUES (?, ?)", [
                 ("embedder_mode", getattr(embedder, "mode", "unknown")),
                 ("dims", f"{rdim},{sdim}"),
+                ("sidecar_digest", sidecar_digest(repo_root)),
             ])
             conn.execute("CREATE VIRTUAL TABLE assets_fts USING fts5(id, description, tags)")
             conn.execute(f"CREATE VIRTUAL TABLE vec_retrieval USING vec0(id TEXT PRIMARY KEY, v float[{rdim}])")

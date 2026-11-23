@@ -1,3 +1,5 @@
+import json
+
 from fastapi.testclient import TestClient
 
 from quarry.cli import main
@@ -26,6 +28,23 @@ def test_status_reports_staleness(repo, tmp_path):
     repo.add_asset("hero", "a2")
     s = client.get("/api/status").json()
     assert s["exports_stale"] is True and s["index_stale"] is True
+
+
+def test_index_stale_follows_index_not_exports(repo):
+    repo.add_asset("hero", "a1")
+    client = TestClient(create_app(repo.root, fake_embedder=True))
+    assert client.get("/api/status").json()["index_stale"] is True  # no db
+    build_index(repo.root, FakeEmbedder())
+    s = client.get("/api/status").json()
+    assert s["index_stale"] is False and s["exports_stale"] is True  # reindex alone does not publish
+    p = repo.root / "library" / "hero" / "a1.json"
+    d = json.loads(p.read_text()); d["description"] = "edited"
+    p.write_text(json.dumps(d, indent=2))
+    assert client.get("/api/status").json()["index_stale"] is True
+    assert client.get("/api/search", params={"q": "x"}).json()["stale"] is True
+    build_index(repo.root, FakeEmbedder())
+    assert client.get("/api/status").json()["index_stale"] is False
+    assert client.get("/api/search", params={"q": "x"}).json()["stale"] is False
 
 
 def test_status_reports_embedder_mode_from_index_meta(repo):

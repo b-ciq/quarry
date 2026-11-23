@@ -8,25 +8,29 @@ from fastapi import FastAPI
 from fastapi.responses import FileResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 
-from quarry.publish import check_stale
+from quarry.publish import check_stale, sidecar_digest
 from quarry.ui import gitops, ingest_api, jobs, read_api, vocab_api, write_api
 
 STATIC_DIR = Path(__file__).parent / "static"
 
 
-def _embedder_mode(repo_root: Path) -> str | None:
+def _index_meta(repo_root: Path, key: str) -> str | None:
     db = repo_root / "index" / "library.db"
     if not db.exists():
         return None
     try:
         conn = sqlite3.connect(f"file:{db}?mode=ro", uri=True)
         try:
-            row = conn.execute("SELECT value FROM meta WHERE key = 'embedder_mode'").fetchone()
+            row = conn.execute("SELECT value FROM meta WHERE key = ?", (key,)).fetchone()
         finally:
             conn.close()
     except sqlite3.Error:
         return None
     return row[0] if row else None
+
+
+def _embedder_mode(repo_root: Path) -> str | None:
+    return _index_meta(repo_root, "embedder_mode")
 
 
 def create_app(repo_root: Path, fake_embedder: bool = False, skill_dir: Path | None = None) -> FastAPI:
@@ -53,12 +57,13 @@ def create_app(repo_root: Path, fake_embedder: bool = False, skill_dir: Path | N
     app.state.get_embedder = get_embedder
 
     def index_stale() -> bool:
-        # v1: the index records no sidecar digest, so approximate with export staleness.
-        return (not (repo_root / "index" / "library.db").exists()) or check_stale(repo_root)
+        # The index records the sidecar digest it was built from (meta table).
+        return _index_meta(repo_root, "sidecar_digest") != sidecar_digest(repo_root)
 
     def git_block():
         if not gitops.is_git_repo(repo_root):
             return None
+        gitops.fetch_if_stale(repo_root)
         s = gitops.managed_status(repo_root)
         return {"ahead": s.ahead, "behind": s.behind,
                 "dirty_managed": s.dirty_managed, "dirty_other": s.dirty_other}
