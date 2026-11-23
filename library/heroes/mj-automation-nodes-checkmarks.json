@@ -6,9 +6,13 @@
   "products": [
     "ascender-pro"
   ],
-  "categories": [],
+  "categories": [
+    "automation"
+  ],
   "verticals": [],
-  "concepts": [],
+  "concepts": [
+    "operations"
+  ],
   "style": [],
   "aspect": "1:1",
   "license": "midjourney",
@@ -27,10 +31,37 @@
     "product_note": "Ascender Pro"
   },
   "usage_restrictions": [],
-  "description": "",
+  "description": "An abstract hero background of flowing teal and green dotted mesh waves on a near-black field, with three small bright green checkmarks floating above the curve.",
   "generation": {
     "prompt": "abstract futuristic visualization of automation, glowing interconnected nodes, flowing lines representing data and processes, green check marks appearing at nodes, dynamic movement, vibrant neon highlights on dark background, concept of automated IT compliance, clean tech style, high detail, modern illustration",
     "model": null,
     "seed": null
+  },
+  "rating": {
+    "bot": {
+      "verdict": "maybe",
+      "strength": "unsure",
+      "reason": "Clean dark-teal abstract wave with lots of text room, but the floating checkmarks feel arbitrary and the subject only loosely ties to automation.",
+      "model": "claude-opus-5-5",
+      "at": "2026-11-23T19:37:31Z",
+      "examples": [
+        "life-scientist-workstation",
+        "life-sysadmin-server-rack"
+      ],
+      "suggested_slugs": {
+        "products": [],
+        "categories": [],
+        "verticals": [],
+        "concepts": [
+          "compliance"
+        ],
+        "style": [
+          "abstract",
+          "dark-background",
+          "wave",
+          "hero-background"
+        ]
+      }
+    }
   }
 }

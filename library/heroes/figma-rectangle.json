@@ -6,7 +6,10 @@
   "products": [],
   "categories": [],
   "verticals": [],
-  "concepts": [],
+  "concepts": [
+    "data-analysis",
+    "compute"
+  ],
   "style": [],
   "aspect": "1:1",
   "license": "",
@@ -23,5 +26,33 @@
     }
   },
   "usage_restrictions": [],
-  "description": ""
+  "description": "An abstract dark slate background with a flowing wave of glowing particles curving from lower left to upper right, surrounded by soft bokeh lights. Large empty space on the left suits overlaid text.",
+  "rating": {
+    "bot": {
+      "verdict": "maybe",
+      "strength": "unsure",
+      "reason": "Clean, moody abstract with lots of text room, but generic 'particle wave' stock look and weak tie to CIQ subjects.",
+      "model": "claude-opus-5-5",
+      "at": "2026-11-23T19:37:31Z",
+      "examples": [
+        "life-scientist-workstation",
+        "life-sysadmin-server-rack"
+      ],
+      "suggested_slugs": {
+        "products": [],
+        "categories": [],
+        "verticals": [],
+        "concepts": [
+          "abstract",
+          "data-flow"
+        ],
+        "style": [
+          "abstract-background",
+          "particles",
+          "bokeh",
+          "dark"
+        ]
+      }
+    }
+  }
 }

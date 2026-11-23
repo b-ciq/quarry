@@ -27,10 +27,36 @@
     "product_note": "Ascender Pro"
   },
   "usage_restrictions": [],
-  "description": "",
+  "description": "An abstract flowing wave of teal and green dotted particle mesh sweeps across a near-black dark teal background, leaving large empty space above.",
   "generation": {
     "prompt": "abstract futuristic visualization of automation, glowing interconnected nodes, flowing lines representing data and processes, green check marks appearing at nodes, dynamic movement, vibrant neon highlights on dark background, concept of automated IT compliance, clean tech style, high detail, modern illustration",
     "model": null,
     "seed": null
+  },
+  "rating": {
+    "bot": {
+      "verdict": "maybe",
+      "strength": "unsure",
+      "reason": "Clean dark teal wave with ample text space suits a hero background, but it is generic abstract imagery with no clear tie to CIQ's subject matter.",
+      "model": "claude-opus-5-5",
+      "at": "2026-11-23T19:37:31Z",
+      "examples": [
+        "life-scientist-workstation",
+        "life-sysadmin-server-rack"
+      ],
+      "suggested_slugs": {
+        "products": [],
+        "categories": [],
+        "verticals": [],
+        "concepts": [
+          "abstract"
+        ],
+        "style": [
+          "abstract-background",
+          "dark-gradient",
+          "particle-wave"
+        ]
+      }
+    }
   }
 }
