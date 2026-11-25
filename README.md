@@ -18,6 +18,7 @@ Library images use git LFS (`git lfs install`).
 - `quarry validate [--repo] [--check-stale]`
 - `quarry seed-deck-builder [--skill-dir]`
 - `quarry ingest DIR --class CLS --source ORIGIN [--license LIC] [--license-id ID] [--product P] [--anti-example]`
+- `quarry import-instagram EXPORT [--repo]` (Instagram saves → `inspiration/instagram/`, metadata only)
 - `quarry index [--fake-embedder]`
 - `quarry search QUERY [--class] [--product] [--tone] [--all-statuses] [--anti] [--limit] [--fake-embedder]`
 - `quarry check-image PATH [--limit] [--fake-embedder]`

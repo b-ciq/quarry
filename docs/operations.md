@@ -25,6 +25,16 @@ Ingest creates `status=proposed` sidecars. Then curate in the workbench review q
 - Midjourney: use the archive export. `--source midjourney`. Record prompt, model and seed in the sidecar's `generation` block; this is required before a midjourney asset can be confirmed.
 - Screenshots: add `--product <slug>`; they nest under `screenshots/<product>/`. Set `product_version` and `captured_at` during curation.
 
+## Instagram saves (inspiration, reference only)
+
+`quarry import-instagram EXPORT.zip`
+
+1. In Instagram, open Accounts Center → Download your information. Choose only Saved, date range All time, format JSON.
+2. Run the command on the zip (or the unzipped folder). Each save becomes `inspiration/instagram/ig-<shortcode>.json`, holding the link, owner, caption, hashtags, collections and save time.
+3. Re-run it on every new export. It skips saves it already has and only adds new ones, plus newly listed collections. It never overwrites curator fields (`status`, `saved_because`, `style`, `concepts`, `description`).
+
+The export has no images of other people's posts, so sidecars start with `"file": null, "image_status": "pending"`. Nothing that serves assets reads `inspiration/`. Image files there are gitignored so they stay off the shared remote. No bot logs in to Instagram: collection is a manual export, which keeps the account clear of Instagram's automation rules.
+
 ## Per-release screenshot checklist
 
 1. `quarry search --class screenshot --product <product> --all-statuses --limit 100 -v`
@@ -59,5 +69,5 @@ The `spot` kind patch lives in `~/.claude/skills/quantic-deck-builder/src/image_
 
 ## Risks and open items
 
-- Single curator: ingest and curation freeze if Brett is unavailable. Trigger: train a second operator before phase 1.5 exit.
+- Single curator: ingest and curation freeze if Brian is unavailable. Trigger: train a second operator before phase 1.5 exit.
 - Hosted-server auth: the conversation with CIQ IT (who may connect; SSO vs shared key) starts now, during phase 1, so it does not stall phase 1.5.
