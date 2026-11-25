@@ -30,25 +30,26 @@
     "bot": {
       "verdict": "maybe",
       "strength": "unsure",
-      "reason": "Clean, generic abstract tech-wave stock with good text space; on-brand mood but weak on CIQ-specific subject.",
+      "reason": "Clean hero with ample text space and on-palette blue, but generic abstract tech-mesh stock similar to rejected examples.",
       "model": "claude-opus-5-5",
-      "at": "2026-11-23T19:35:47Z",
+      "at": "2026-11-25T05:47:48Z",
       "examples": [
-        "life-scientist-workstation",
-        "life-sysadmin-server-rack"
+        "adobe-829377199",
+        "adobe-930146362",
+        "adobe-466214125",
+        "adobe-36041755",
+        "adobe-1843776305-2",
+        "life-scientist-workstation"
       ],
       "suggested_slugs": {
         "products": [],
         "categories": [],
         "verticals": [],
-        "concepts": [
-          "abstract",
-          "network"
-        ],
+        "concepts": [],
         "style": [
-          "abstract-background",
-          "particle-wave",
-          "blue-gradient"
+          "abstract",
+          "background",
+          "particle-mesh"
         ]
       }
     }

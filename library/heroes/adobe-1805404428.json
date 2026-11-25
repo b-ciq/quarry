@@ -38,25 +38,28 @@
     "bot": {
       "verdict": "maybe",
       "strength": "unsure",
-      "reason": "Strong operations-center mood and hero composition, but it reads as generic AI stock with illegible fake dashboard UI; it needs a curator check.",
+      "reason": "Relevant ops-center mood with people at work, but generic stock/AI-looking command-center cliche and screens may hold garbled detail.",
       "model": "claude-opus-5-5",
-      "at": "2026-11-23T19:36:05Z",
+      "at": "2026-11-25T05:47:48Z",
       "examples": [
-        "life-scientist-workstation",
-        "life-sysadmin-server-rack"
+        "adobe-829377199",
+        "adobe-930146362",
+        "adobe-466214125",
+        "adobe-36041755",
+        "adobe-1843776305-2",
+        "life-scientist-workstation"
       ],
       "suggested_slugs": {
         "products": [],
         "categories": [],
         "verticals": [],
         "concepts": [
-          "monitoring",
-          "command-center"
+          "monitoring"
         ],
         "style": [
-          "dark-teal",
-          "ai-generated",
-          "silhouette"
+          "dark",
+          "teal",
+          "stock-photo"
         ]
       }
     }

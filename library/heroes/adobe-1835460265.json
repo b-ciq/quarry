@@ -29,26 +29,27 @@
   "description": "Close-up of hands typing on a laptop in a dark room while streams of glowing blue, orange, and pink binary digits flow out of the screen in curving lines.",
   "rating": {
     "bot": {
-      "verdict": "maybe",
-      "strength": "unsure",
-      "reason": "Polished stock with data-flow visual fits the tech theme, but the glowing-binary-from-laptop look is a generic stock cliche and weak on CIQ-specific subject.",
+      "verdict": "no",
+      "strength": "strong",
+      "reason": "Generic stock clich\u00e9 of glowing binary streams from a laptop; curators rejected similar abstract tech-glow stock.",
       "model": "claude-opus-5-5",
-      "at": "2026-11-23T19:36:05Z",
+      "at": "2026-11-25T05:47:48Z",
       "examples": [
-        "life-scientist-workstation",
-        "life-sysadmin-server-rack"
+        "adobe-829377199",
+        "adobe-930146362",
+        "adobe-466214125",
+        "adobe-36041755",
+        "adobe-1843776305-2",
+        "life-scientist-workstation"
       ],
       "suggested_slugs": {
         "products": [],
         "categories": [],
         "verticals": [],
-        "concepts": [
-          "data-flow"
-        ],
+        "concepts": [],
         "style": [
-          "stock-photo",
-          "digital-overlay",
-          "dark-background"
+          "stock-cliche",
+          "glowing-data"
         ]
       }
     }

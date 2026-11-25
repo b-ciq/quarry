@@ -30,27 +30,28 @@
   "description": "Close-up of a dark speedometer gauge with teal glowing tick marks and an orange needle, shallow depth of field on a dark background.",
   "rating": {
     "bot": {
-      "verdict": "maybe",
+      "verdict": "no",
       "strength": "unsure",
-      "reason": "Polished speedometer metaphor for performance with dark mood and text room, but generic stock subject not specific to CIQ's world.",
+      "reason": "Generic performance-metaphor stock (speedometer); polished but cliched and not specific to CIQ's world, similar to rejected generic tech stock.",
       "model": "claude-opus-5-5",
-      "at": "2026-11-23T19:36:05Z",
+      "at": "2026-11-25T05:47:48Z",
       "examples": [
-        "life-scientist-workstation",
-        "life-sysadmin-server-rack"
+        "adobe-829377199",
+        "adobe-930146362",
+        "adobe-466214125",
+        "adobe-36041755",
+        "adobe-1843776305-2",
+        "life-scientist-workstation"
       ],
       "suggested_slugs": {
         "products": [],
         "categories": [],
         "verticals": [],
         "concepts": [
-          "performance",
-          "speed"
+          "performance"
         ],
         "style": [
-          "metaphor",
-          "dark-background",
-          "close-up"
+          "stock-metaphor"
         ]
       }
     }

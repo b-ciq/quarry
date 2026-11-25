@@ -31,27 +31,29 @@
   "description": "Abstract dark blue and purple scene of glowing particle streams falling vertically and spreading into branching light networks across a plane. Evokes data flow or network connectivity.",
   "rating": {
     "bot": {
-      "verdict": "maybe",
+      "verdict": "no",
       "strength": "unsure",
-      "reason": "Polished abstract purple/blue data-flow visual with text room, but generic and weak on specific CIQ subject; possibly AI-generated, needs license check.",
+      "reason": "Generic abstract glowing-network stock; curators have rejected similar sci-fi data-flow imagery.",
       "model": "claude-opus-5-5",
-      "at": "2026-11-23T19:36:05Z",
+      "at": "2026-11-25T05:47:48Z",
       "examples": [
-        "life-scientist-workstation",
-        "life-sysadmin-server-rack"
+        "adobe-829377199",
+        "adobe-930146362",
+        "adobe-466214125",
+        "adobe-36041755",
+        "adobe-1843776305-2",
+        "life-scientist-workstation"
       ],
       "suggested_slugs": {
         "products": [],
         "categories": [],
         "verticals": [],
         "concepts": [
-          "networking",
           "data-flow"
         ],
         "style": [
           "abstract",
-          "particles",
-          "dark-background"
+          "glowing-particles"
         ]
       }
     }
