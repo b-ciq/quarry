@@ -281,10 +281,11 @@ def test_cli_requires_a_root(tmp_path, monkeypatch, capsys):
 - Consumes: from Task 1, `Store`, `store_lock`, `atomic_move`, `capture_downloads_dir`.
 - Produces, in `quarry.media_probe`:
   - `class MediaError(ValueError)`;
-  - `@dataclass VideoInfo(width: int, height: int, duration_s: float, has_audio: bool)`;
+  - `@dataclass VideoInfo(width: int, height: int, duration_s: float, has_audio: bool, codec: str)`;
   - `image_size(p: Path) -> tuple[int, int]`, which verifies with Pillow;
   - `probe_video(p: Path) -> VideoInfo`, which parses the stderr of `imageio_ffmpeg.get_ffmpeg_exe() -i p`;
-  - `make_poster(video: Path, dest: Path) -> None`, which takes the first frame as a JPEG.
+  - `make_poster(video: Path, dest: Path) -> None`, which takes the first frame as a JPEG;
+  - `assemble_mp4(video: Path, audio: Path | None, dest: Path) -> None`. It writes an MP4 with H.264 video (stream copy when the input is already H.264, otherwise `libx264 -crf 18 -pix_fmt yuv420p`) and AAC audio when audio is given, plus `-movflags +faststart`. *(Spike ruling: Instagram's 1080p DASH video is VP9, which Finder and QuickLook may not play.)*
 - Produces, in `quarry.capture_sweep`:
   - `@dataclass SweepResult`: `filed: list[str]` (ids) and `failed: list[tuple[str, str]]` (folder name, reason);
   - `is_finished(folder: Path) -> bool`;
@@ -297,10 +298,16 @@ def test_cli_requires_a_root(tmp_path, monkeypatch, capsys):
  "kind": "post", "slides_expected": 3, "owner": {"username": "u", "name": "U"}, "caption": "…",
  "captured_at": "2026-11-26T18:02:11Z",
  "items": [{"slide": 1, "media_id": "m1", "type": "image", "file": "01.jpg", "method": "page-data"},
-           {"slide": 2, "media_id": "m2", "type": "video", "file": "02.mp4", "poster": "02-poster.jpg", "method": "page-data"}]}
+           {"slide": 2, "media_id": "m2", "type": "video", "parts": {"video": "02.video.mp4", "audio": "02.audio.mp4"},
+            "poster": "02-poster.jpg", "method": "page-data"}]}
 ```
 
-  `slides_expected` may be `null`. `method` is `page-data`, `recording` or `manual`.
+  - `slides_expected` may be `null`. `method` is `page-data`, `recording` or `manual`.
+  - **A video item carries exactly one of these:**
+    - `file`: a single progressive MP4, such as `"02.mp4"`;
+    - `parts`: the separate DASH video track, plus the audio track or `null` for a silent video.
+
+    The sweep turns either one into the final `NN.mp4` with `assemble_mp4`. A `file` that is already H.264 is moved as is. Part files exist only in the downloads folder; the store only ever holds `NN.mp4`.
 
 - [ ] **Step 1: Write the failing tests.** The test module makes media with Pillow (JPEG) and with ffmpeg: `-f lavfi -i testsrc=size=320x240:duration=1 -f lavfi -i sine=duration=1 -shortest out.mp4`. Its `capture_folder(downloads, shortcode, items, slides_expected)` helper writes the media, then `capture.json`. `img(n, color=...)` and `vid(n)` build item specs, `pixel()` reads the centre pixel, and `make_mp4` wraps the ffmpeg command, all as module helpers.
 
@@ -341,6 +348,18 @@ def test_recapture_replaces_slides_and_keeps_others(store, downloads):
     assert [i["slide"] for i in items] == [1, 2, 3] and store.read("ig-fakecar1")["capture"]["status"] == "captured"
     assert pixel(store.dir / "ig-fakecar1" / "01.jpg") == BLUE
 
+def test_dash_parts_are_joined_into_h264_mp4(store, downloads):
+    # parts: a VP9-only video track (ffmpeg -c:v libvpx-vp9) and an AAC-only audio track
+    capture_folder(downloads, "FAKEreel1", [vid_parts(1, audio=True)], slides_expected=1); sweep(downloads, store)
+    item = store.read("ig-fakereel1")["capture"]["items"][0]
+    info = probe_video(store.dir / "ig-fakereel1" / "01.mp4")
+    assert item["file"] == "01.mp4" and info.codec == "h264" and info.has_audio is True
+    assert not list((store.dir / "ig-fakereel1").glob("*.video.mp4"))
+
+def test_silent_dash_video_has_no_audio(store, downloads):
+    capture_folder(downloads, "FAKEcar1", [vid_parts(1, audio=False)], slides_expected=1); sweep(downloads, store)
+    assert store.read("ig-fakecar1")["capture"]["items"][0]["has_audio"] is False
+
 def test_bad_media_goes_to_failed_with_reason(store, downloads):
     f = capture_folder(downloads, "FAKEreel1", [vid(1)], slides_expected=1); (f / "01.mp4").write_bytes(b"junk")
     res = sweep(downloads, store)
@@ -358,7 +377,7 @@ def test_cli_import_captures(tmp_path, monkeypatch, capsys): ...  # prints "file
 
 - [ ] **Step 2: Run the tests.** `.venv/bin/pip install -e ".[dev]" && .venv/bin/python -m pytest tests/test_capture_sweep.py -q`. Expected: FAIL, with an ImportError.
 - [ ] **Step 3: Implement.**
-  - `is_finished`: `capture.json` parses, every listed `file` and `poster` exists, and no `*.crdownload` file is present.
+  - `is_finished`: `capture.json` parses, every listed `file`, `parts.video`, `parts.audio` and `poster` exists, and no `*.crdownload` file is present.
   - `sweep` works on finished folders, oldest first, each under `store_lock()`:
     1. Validate every file: images with `image_size`, videos with `probe_video`. On the first failure, move the folder to `_failed/<name>/` and write `reason.txt` as `<file>: <error>`.
     2. Find the record by shortcode, or create one with `new_id`.
@@ -491,7 +510,13 @@ def test_start_sweeper_files_a_capture(app, downloads, store): ...  # interval=0
   - `findPost(jsonTexts: string[], shortcode: string) -> Post | null`. `Post` is `{shortcode, owner: {username, name}, caption, slides: [{media_id, type, image: {url, width, height}, video: {url, width, height, has_audio} | null}]}`. It returns null unless the post object's own shortcode equals the argument.
   - `planCapture(post: Post, {kind, pageUrl, now: Date}) -> {folder, files: [{url, filename}], manifest}`.
     - `folder` is `` `${shortcode}__${yyyymmddThhmmss}` `` in UTC.
-    - For each slide, the files are the largest image, or for a video slide the best video with `has_audio` (falling back to the best video) plus the slide's image as `NN-poster.jpg`.
+    - For each image slide, take the largest `image_versions2` candidate as `NN.jpg`.
+    - For each video slide, parse `video_dash_manifest` (spike notes).
+      - Take the video Representation with the greatest `height` (ties broken by `bandwidth`) as `NN.video.mp4`, and the audio Representation, if any, as `NN.audio.mp4`. The item gets `parts`.
+      - Never choose by bandwidth alone: on real carousels, 1080p has a lower bandwidth than 720p.
+      - If there is no manifest or no video Representation, take the largest `video_versions` entry as `NN.mp4`, and the item gets `file`.
+      - Either way, take the slide's largest image as `NN-poster.jpg`.
+    - Slides come from `carousel_media` in order. A non-carousel post is one slide.
     - `manifest` follows the `capture.json` contract, with `slides_expected = post.slides.length`.
   - `badgeFor(state) -> {text, title}`. It covers `saving n/m`, `done`, `mismatch`, `not-a-post` and `error`. The mismatch title is exactly `Reload the page (⌘R) and press again.`
 
@@ -510,14 +535,19 @@ test('findPost verifies the shortcode', () => {
 test('planCapture picks largest image, audio video, posters, ordered names', () => {
   const p = planCapture(findPost(load('carousel-mixed.json'), 'FAKEcar1'), {kind: 'post', pageUrl: 'https://www.instagram.com/p/FAKEcar1/', now: new Date('2026-11-26T18:02:11Z')})
   assert.equal(p.folder, 'FAKEcar1__20261126T180211')
-  assert.deepEqual(p.files.map(f => f.filename), ['01.jpg', '02.mp4', '02-poster.jpg', '03.jpg'])
+  assert.deepEqual(p.files.map(f => f.filename), ['01.jpg', '02.video.mp4', '02.audio.mp4', '02-poster.jpg', '03.jpg'])
+  assert.match(p.files[1].url, /car1-s2-1080p/)   // highest resolution, despite lower bandwidth
   assert.equal(p.manifest.slides_expected, 3)
   assert.deepEqual(p.manifest.items.map(i => i.type), ['image', 'video', 'image'])
 })
 test('mismatch badge copy', () => assert.equal(badgeFor({kind: 'mismatch'}).title, 'Reload the page (⌘R) and press again.'))
 ```
 
-  Also add a test that the image-post and reel fixtures each plan exactly one slide.
+  Also add tests that:
+  - the image-post and reel fixtures each plan exactly one slide;
+  - the reel picks `dash-reel1-1080p` and its audio;
+  - `findPost(load('reel.json'), 'OTHERreel9')` resolves only to the decoy, never to `FAKEreel1`'s media;
+  - a post with no `video_dash_manifest` falls back to the largest `video_versions` entry as `NN.mp4`.
 - [ ] **Step 2: Run the tests.** `node --test extension/test/`. Expected: FAIL.
 - [ ] **Step 3: Implement.**
   - **`manifest.json`:** MV3, `name: "Quarry button"`.
@@ -576,7 +606,7 @@ test('mismatch badge copy', () => assert.equal(badgeFor({kind: 'mismatch'}).titl
 
 ---
 
-### Task 8 (conditional): Player-recording fallback
+### Task 8 (conditional, skipped per spike): Player-recording fallback
 
 **Build this only if** Task 0 found a spike reel without a video file that has audio, or later if more than 5% of captured reels have no video file. Otherwise skip the task and note the decision in the spike notes.
 
