@@ -3,5 +3,12 @@
   "categories": ["enterprise-linux", "hpc", "containers", "automation"],
   "verticals": ["government", "life-sciences", "financial-services", "manufacturing", "higher-education"],
   "concepts": ["research", "data-analysis", "science", "compute", "people", "infrastructure", "security", "datacenter", "operations", "sysadmin"],
-  "style": []
+  "style": [
+    "medium-photo", "medium-3d-render", "medium-flat-illustration", "medium-line-art",
+    "light-dark-field", "light-soft-studio", "light-backlit", "light-high-key",
+    "color-blue-teal", "color-neon-accent", "color-duotone", "color-monochrome", "color-muted-natural", "color-warm-orange",
+    "form-particle-field", "form-wireframe-mesh", "form-glass-translucent", "form-circuit-trace",
+    "form-light-trails", "form-wave-flow", "form-geometric-grid", "form-bokeh-depth",
+    "comp-negative-space", "comp-centered-subject", "comp-macro-detail", "comp-wide-environment"
+  ]
 }
