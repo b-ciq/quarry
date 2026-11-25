@@ -101,14 +101,15 @@
     }
     if (slide.type === 'video') {
       const dash = parseDash(m.video_dash_manifest)
-      if (dash && dash.video) {
+      const prog = largest(m.video_versions)
+      // A video Instagram says has sound but whose manifest lists no audio track would save
+      // silent; the progressive file carries the sound, so it wins then (at a lower resolution).
+      const dashLosesAudio = dash && dash.video && !dash.audio && m.has_audio === true && prog
+      if (dash && dash.video && !dashLosesAudio) {
         slide.video = {...dash.video, has_audio: Boolean(dash.audio), audio_url: dash.audio ? dash.audio.url : null, source: 'dash'}
-      } else {
-        const prog = largest(m.video_versions)
-        if (prog) {
-          slide.video = {url: prog.url, width: Number(prog.width) || 0, height: Number(prog.height) || 0,
-            has_audio: typeof m.has_audio === 'boolean' ? m.has_audio : null, audio_url: null, source: 'progressive'}
-        }
+      } else if (prog) {
+        slide.video = {url: prog.url, width: Number(prog.width) || 0, height: Number(prog.height) || 0,
+          has_audio: typeof m.has_audio === 'boolean' ? m.has_audio : null, audio_url: null, source: 'progressive'}
       }
     }
     return slide

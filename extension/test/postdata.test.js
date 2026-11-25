@@ -227,3 +227,16 @@ test('non-https image and video_versions URLs are never used', () => {
     image_versions2: {candidates: [{width: 10, height: 10, url: 'https://a/p.jpg'}]}}), 'H3')
   assert.equal(vid.slides[0].video.url, 'https://a/ok.mp4')
 })
+
+test('a video with audio whose DASH manifest has no audio track falls back to the progressive file', () => {
+  const mpd = '<MPD><Period><AdaptationSet contentType="video"><Representation id="a" bandwidth="5" width="1080" height="1080"><BaseURL>https://a/v1080.mp4</BaseURL></Representation></AdaptationSet></Period></MPD>'
+  const media = {code: 'S2', pk: '9', media_type: 2, has_audio: true, video_dash_manifest: mpd,
+    video_versions: [{type: 101, width: 720, height: 720, url: 'https://a/prog720.mp4'}],
+    image_versions2: {candidates: [{width: 720, height: 720, url: 'https://a/p.jpg'}]}}
+  const p = planCapture(findPost(block(media), 'S2'), {kind: 'reel', pageUrl: 'u', now: NOW})
+  assert.deepEqual(p.files, [{url: 'https://a/prog720.mp4', filename: '01.mp4'}, {url: 'https://a/p.jpg', filename: '01-poster.jpg'}])
+  assert.equal(p.manifest.items[0].file, '01.mp4')
+  // No progressive file to fall back to: the silent DASH video is still better than nothing.
+  const noProg = planCapture(findPost(block({...media, video_versions: []}), 'S2'), {kind: 'reel', pageUrl: 'u', now: NOW})
+  assert.deepEqual(noProg.manifest.items[0].parts, {video: '01.video.mp4', audio: null})
+})
