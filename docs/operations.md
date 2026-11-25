@@ -57,7 +57,7 @@ Inspiration lives outside the repo, in a synced Drive folder, so images stay off
 2. Click **Open next**. It opens the next pending post in Instagram.
 3. Click the Quarry button (or Option+Shift+Q). Wait for the checkmark badge.
 4. Repeat. The page sweeps `~/Downloads/quarry/` into the store as you go.
-5. The cap is 40 posts a day, to keep the account looking normal. Change it with `capture_daily_cap`.
+5. After 40 posts opened in a day, Open next turns off until tomorrow. Change the number with `capture_daily_cap`.
 
 To sweep without the UI: `quarry import-captures [--inspiration-dir DIR] [--downloads DIR]`.
 
