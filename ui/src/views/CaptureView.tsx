@@ -5,7 +5,7 @@ import {
 } from '@ctrliq/quantic-react'
 import { addCaptureFile, fetchCapture, markOpened, markUnavailable, removeAll, removeSlide, type CaptureResult } from '../api'
 import {
-  CAP_MESSAGE, capReached, FILTERS, filterItems, NOTHING_LEFT, nextPending, savedDate, sortItems, statusLabel,
+  CAP_MESSAGE, capReached, FILTERS, filterItems, NOTHING_LEFT, nextPending, openTitle, savedDate, sortItems, statusLabel,
   type CaptureFilter, type CaptureItem, type CaptureList,
 } from '../capture'
 
@@ -196,6 +196,15 @@ export function CaptureView() {
               <TableCell>{statusLabel(item)}</TableCell>
               <TableCell>
                 <div className="capture-actions">
+                  {atCap ? (
+                    <span title={openTitle(item, today)}>
+                      <Button size="xs" variant="outline" disabled aria-label={`Open ${item.id} on Instagram`}>Open</Button>
+                    </span>
+                  ) : (
+                    <Button size="xs" variant="outline" as="a" href={item.source_url} target="quarry-capture"
+                      title={openTitle(item, today)} aria-label={`Open ${item.id} on Instagram`}
+                      onClick={() => opened(item)} onAuxClick={(e) => { if (e.button === 1) opened(item) }}>Open</Button>
+                  )}
                   <Button size="xs" variant="outline" disabled={busy !== null || item.status === 'unavailable'}
                     aria-label={`Mark ${item.id} unavailable`}
                     onClick={() => void act(item.shortcode, () => markUnavailable(item.shortcode))}>Unavailable</Button>

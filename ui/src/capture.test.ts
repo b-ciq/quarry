@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { capReached, filterItems, nextPending, savedDate, sortItems, statusLabel, type CaptureItem } from './capture'
+import { CAP_MESSAGE, capReached, filterItems, nextPending, openTitle, savedDate, sortItems, statusLabel, type CaptureItem } from './capture'
 
 const mk = (shortcode: string, extra: Partial<CaptureItem> = {}): CaptureItem => ({
   id: `ig-${shortcode.toLowerCase()}`,
@@ -86,4 +86,13 @@ describe('filterItems', () => {
 describe('savedDate', () => {
   it('shows the date part of saved_at', () => expect(savedDate(mk('a', { saved_at: '2026-11-23T08:15:00Z' }))).toBe('2026-11-23'))
   it('is blank without saved_at', () => expect(savedDate(mk('a'))).toBe(''))
+})
+
+describe('openTitle', () => {
+  it('names the post while under the cap', () => {
+    expect(openTitle(mk('AbC_1'), { opened: 3, cap: 40 })).toBe('Open AbC_1 on Instagram')
+  })
+  it('gives the cap copy once the cap is reached', () => {
+    expect(openTitle(mk('AbC_1'), { opened: 40, cap: 40 })).toBe(CAP_MESSAGE)
+  })
 })

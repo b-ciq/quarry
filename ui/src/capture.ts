@@ -77,3 +77,7 @@ export const filterItems = (items: CaptureItem[], filter: CaptureFilter): Captur
 
 /** The date part of saved_at (records store ISO timestamps), or '' when unknown. */
 export const savedDate = (item: CaptureItem): string => (item.saved_at ?? '').slice(0, 10)
+
+/** Tooltip for a row's Open link: the cap copy once today's cap is reached (the link is then off). */
+export const openTitle = (item: CaptureItem, today: CaptureToday): string =>
+  capReached(today) ? CAP_MESSAGE : `Open ${item.shortcode} on Instagram`
