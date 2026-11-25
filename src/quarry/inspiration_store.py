@@ -204,6 +204,12 @@ class Store:
             raise ValueError(f"invalid id: {id!r}")
         return json.loads((self.dir / id / "save.json").read_text())
 
+    def read_cached(self, id: str) -> dict:
+        """Like `read`, but reuses the parse `scan()` cached while save.json is unchanged. Do not mutate it."""
+        if not INSPIRATION_ID_RE.match(id):
+            raise ValueError(f"invalid id: {id!r}")
+        return self._parse(self.dir / id / "save.json")
+
     def write(self, record: dict) -> Path:
         errors = validate_inspiration_record(record)
         if errors:

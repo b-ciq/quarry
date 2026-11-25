@@ -217,6 +217,16 @@ def _new_record(cap: dict, id_: str) -> dict:
     }
 
 
+def capture_status(capture: dict) -> str:
+    """pending with no items; captured when slides 1..slides_expected are all present; else partial."""
+    slides = {it.get("slide") for it in capture.get("items") or [] if isinstance(it, dict)}
+    if not slides:
+        return "pending"
+    expected = capture.get("slides_expected")
+    complete = type(expected) is int and all(n in slides for n in range(1, expected + 1))
+    return "captured" if complete else "partial"
+
+
 def _media_names(item: dict) -> set[str]:
     return {item[k] for k in ("file", "poster") if isinstance(item.get(k), str)}
 
@@ -244,10 +254,8 @@ def _file(prep: _Prepared, store: Store) -> str:
             published.append(dest)
         if cap.get("slides_expected") is not None:
             capture["slides_expected"] = cap["slides_expected"]
-        expected = capture.get("slides_expected")
-        complete = type(expected) is int and all(n in by_slide for n in range(1, expected + 1))
-        capture["status"] = "captured" if complete else "partial"
         capture["items"] = [by_slide[n] for n in sorted(by_slide)]
+        capture["status"] = capture_status(capture)
         capture.setdefault("note", "")
         store.write(record)
     except BaseException:
