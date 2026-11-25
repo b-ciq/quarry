@@ -26,26 +26,27 @@
   "description": "Abstract dark green background with glittering bokeh particles and soft light flares concentrated toward the top.",
   "rating": {
     "bot": {
-      "verdict": "maybe",
+      "verdict": "no",
       "strength": "unsure",
-      "reason": "Clean green bokeh background with room for text, but generic stock-like and weak on CIQ subject matter.",
+      "reason": "Generic glitter bokeh stock with no connection to CIQ's subject matter; reads festive rather than technical.",
       "model": "claude-opus-5-5",
-      "at": "2026-11-23T19:36:41Z",
+      "at": "2026-11-25T05:48:27Z",
       "examples": [
-        "life-scientist-workstation",
-        "life-sysadmin-server-rack"
+        "adobe-829377199",
+        "adobe-930146362",
+        "adobe-466214125",
+        "adobe-36041755",
+        "adobe-1843776305-2",
+        "life-scientist-workstation"
       ],
       "suggested_slugs": {
         "products": [],
         "categories": [],
         "verticals": [],
-        "concepts": [
-          "abstract-background"
-        ],
+        "concepts": [],
         "style": [
-          "bokeh",
-          "abstract",
-          "dark-green"
+          "abstract-background",
+          "bokeh"
         ]
       }
     }

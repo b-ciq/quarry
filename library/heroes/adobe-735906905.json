@@ -26,25 +26,28 @@
   "description": "An abstract blue background with light streaks and a bright horizontal glow converging toward a vanishing point. No people, objects, or text.",
   "rating": {
     "bot": {
-      "verdict": "maybe",
+      "verdict": "no",
       "strength": "unsure",
-      "reason": "Clean abstract blue background with text room, but generic tech-stock look with no clear CIQ subject.",
+      "reason": "Generic abstract blue light-streak stock background with no CIQ-specific subject; curators have rejected similar generic tech abstracts.",
       "model": "claude-opus-5-5",
-      "at": "2026-11-23T19:36:58Z",
+      "at": "2026-11-25T05:48:27Z",
       "examples": [
-        "life-scientist-workstation",
-        "life-sysadmin-server-rack"
+        "adobe-829377199",
+        "adobe-930146362",
+        "adobe-466214125",
+        "adobe-36041755",
+        "adobe-1843776305-2",
+        "life-scientist-workstation"
       ],
       "suggested_slugs": {
         "products": [],
         "categories": [],
         "verticals": [],
-        "concepts": [
-          "abstract"
-        ],
+        "concepts": [],
         "style": [
-          "abstract-background",
-          "gradient"
+          "abstract",
+          "background",
+          "light-streaks"
         ]
       }
     }

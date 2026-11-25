@@ -29,22 +29,28 @@
   "rating": {
     "bot": {
       "verdict": "no",
-      "strength": "unsure",
-      "reason": "Generic glowing-security stock cliche (glowing key on circuit board), akin to the glowing padlock trope.",
+      "strength": "strong",
+      "reason": "Generic glowing-key-on-circuit-board security cliche, same family as the rejected glowing padlock and hooded-hacker stock.",
       "model": "claude-opus-5-5",
-      "at": "2026-11-23T19:36:58Z",
+      "at": "2026-11-25T05:48:27Z",
       "examples": [
-        "life-scientist-workstation",
-        "life-sysadmin-server-rack"
+        "adobe-829377199",
+        "adobe-930146362",
+        "adobe-466214125",
+        "adobe-36041755",
+        "adobe-1843776305-2",
+        "life-scientist-workstation"
       ],
       "suggested_slugs": {
         "products": [],
         "categories": [],
         "verticals": [],
-        "concepts": [],
+        "concepts": [
+          "encryption"
+        ],
         "style": [
           "stock-cliche",
-          "glowing-tech"
+          "glowing-circuit"
         ]
       }
     }

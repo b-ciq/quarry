@@ -28,21 +28,24 @@
   "description": "Abstract green light streaks radiate toward a bright vanishing point on a black background, suggesting speed and data flow.",
   "rating": {
     "bot": {
-      "verdict": "maybe",
+      "verdict": "no",
       "strength": "unsure",
-      "reason": "Abstract green light-speed streaks give a clean hero mood with dark space for text, but the subject is generic and the bright green may lean toward another brand's palette.",
+      "reason": "Generic abstract speed-of-light stock; humans have rejected similar abstract tech glow imagery and it carries no CIQ-specific subject.",
       "model": "claude-opus-5-5",
-      "at": "2026-11-23T19:36:41Z",
+      "at": "2026-11-25T05:48:27Z",
       "examples": [
-        "life-scientist-workstation",
-        "life-sysadmin-server-rack"
+        "adobe-829377199",
+        "adobe-930146362",
+        "adobe-466214125",
+        "adobe-36041755",
+        "adobe-1843776305-2",
+        "life-scientist-workstation"
       ],
       "suggested_slugs": {
         "products": [],
         "categories": [],
         "verticals": [],
         "concepts": [
-          "speed",
           "performance"
         ],
         "style": [

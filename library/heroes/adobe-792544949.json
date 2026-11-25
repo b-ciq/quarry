@@ -33,14 +33,18 @@
   "description": "Close-up angled view of server rack units with green and teal glowing lights and bokeh particles fading into a dark blurred background.",
   "rating": {
     "bot": {
-      "verdict": "maybe",
-      "strength": "unsure",
-      "reason": "On-topic datacenter hero with a moody green/teal palette, but it's a generic stock-style server bokeh shot that looks AI-generated and needs a license/provenance check.",
+      "verdict": "no",
+      "strength": "strong",
+      "reason": "Generic glowing server-rack stock cliche, nearly identical to previously rejected server-rack images; looks AI-generated.",
       "model": "claude-opus-5-5",
-      "at": "2026-11-23T19:36:58Z",
+      "at": "2026-11-25T05:48:27Z",
       "examples": [
-        "life-scientist-workstation",
-        "life-sysadmin-server-rack"
+        "adobe-829377199",
+        "adobe-930146362",
+        "adobe-466214125",
+        "adobe-36041755",
+        "adobe-1843776305-2",
+        "life-scientist-workstation"
       ],
       "suggested_slugs": {
         "products": [],
@@ -48,9 +52,8 @@
         "verticals": [],
         "concepts": [],
         "style": [
-          "ai-generated",
-          "bokeh",
-          "dark-background"
+          "generic-stock",
+          "glowing-servers"
         ]
       }
     }

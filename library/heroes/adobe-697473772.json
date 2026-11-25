@@ -31,26 +31,30 @@
   "description": "Abstract glowing wireframe mountain-like data waves in blue, pink, and orange gradients with particle dots, set against a black background with a reflective floor. The upper half is open dark space suitable for text.",
   "rating": {
     "bot": {
-      "verdict": "maybe",
+      "verdict": "no",
       "strength": "unsure",
-      "reason": "Polished abstract hero with ample text space, but generic data-wave stock look and weak tie to CIQ subjects; needs license/brand check.",
+      "reason": "Generic abstract glowing data-wave stock; curators rejected similar neon abstract tech imagery, and it lacks a clear tie to CIQ subjects.",
       "model": "claude-opus-5-5",
-      "at": "2026-11-23T19:36:41Z",
+      "at": "2026-11-25T05:48:27Z",
       "examples": [
-        "life-scientist-workstation",
-        "life-sysadmin-server-rack"
+        "adobe-829377199",
+        "adobe-930146362",
+        "adobe-466214125",
+        "adobe-36041755",
+        "adobe-1843776305-2",
+        "life-scientist-workstation"
       ],
       "suggested_slugs": {
         "products": [],
         "categories": [],
         "verticals": [],
         "concepts": [
-          "abstract"
+          "abstract-data"
         ],
         "style": [
-          "abstract-background",
-          "gradient",
-          "dark"
+          "abstract",
+          "neon-gradient",
+          "dark-background"
         ]
       }
     }

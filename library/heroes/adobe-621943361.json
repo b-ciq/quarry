@@ -31,26 +31,28 @@
   "description": "Abstract glowing wireframe landscape of flowing lines in blue, orange and pink with bokeh light points against a dark starry background.",
   "rating": {
     "bot": {
-      "verdict": "yes",
+      "verdict": "no",
       "strength": "unsure",
-      "reason": "Polished abstract data-wave hero with ample dark negative space for text; fits data/compute theme without cliches.",
+      "reason": "Generic glowing abstract data-wave stock, similar to other abstract tech stock the curators rejected; weak tie to CIQ subjects.",
       "model": "claude-opus-5-5",
-      "at": "2026-11-23T19:36:41Z",
+      "at": "2026-11-25T05:48:27Z",
       "examples": [
-        "life-scientist-workstation",
-        "life-sysadmin-server-rack"
+        "adobe-829377199",
+        "adobe-930146362",
+        "adobe-466214125",
+        "adobe-36041755",
+        "adobe-1843776305-2",
+        "life-scientist-workstation"
       ],
       "suggested_slugs": {
         "products": [],
         "categories": [],
         "verticals": [],
-        "concepts": [
-          "data-visualization"
-        ],
+        "concepts": [],
         "style": [
           "abstract",
-          "dark-background",
-          "gradient-glow"
+          "data-visualization",
+          "dark-background"
         ]
       }
     }

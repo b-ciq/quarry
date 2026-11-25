@@ -33,31 +33,32 @@
   "description": "A dark sedan drives on a highway at dusk, overlaid with glowing blue sensor rings and grid lines suggesting autonomous-driving detection. Other cars and streetlights recede into the background.",
   "rating": {
     "bot": {
-      "verdict": "maybe",
-      "strength": "unsure",
-      "reason": "Polished autonomous-vehicle stock that fits AI/edge compute and manufacturing stories, but it is off-core for CIQ and the Tesla-like car styling needs a brand and license check.",
+      "verdict": "no",
+      "strength": "strong",
+      "reason": "Generic autonomous-driving stock clich\u00e9 with glowing HUD overlays; off-topic for CIQ's core products and resembles Tesla-styled imagery.",
       "model": "claude-opus-5-5",
-      "at": "2026-11-23T19:36:41Z",
+      "at": "2026-11-25T05:48:27Z",
       "examples": [
-        "life-scientist-workstation",
-        "life-sysadmin-server-rack"
+        "adobe-829377199",
+        "adobe-930146362",
+        "adobe-466214125",
+        "adobe-36041755",
+        "adobe-1843776305-2",
+        "life-scientist-workstation"
       ],
       "suggested_slugs": {
         "products": [],
-        "categories": [
-          "ai-ml",
-          "edge"
-        ],
+        "categories": [],
         "verticals": [
           "automotive"
         ],
         "concepts": [
-          "autonomous-vehicles"
+          "autonomous-vehicles",
+          "ai"
         ],
         "style": [
           "stock-photo",
-          "tech-overlay",
-          "dusk"
+          "hud-overlay"
         ]
       }
     }
