@@ -4,12 +4,14 @@ import os
 import sys
 from pathlib import Path
 
+from quarry.capture_sweep import sweep
 from quarry.export_deck import write_export
 from quarry.indexer import IndexBuildError, build_index, validate_assets
 from quarry.ingest import ingest_dir
-from quarry.inspiration_store import NoInspirationRoot, inspiration_root
+from quarry.inspiration_store import NoInspirationRoot, Store, capture_downloads_dir, inspiration_root
 from quarry.instagram import ExportError, import_instagram
 from quarry.library import LibraryError, scan_library
+from quarry.media_probe import FfmpegMissing
 from quarry.publish import check_stale, publish
 from quarry.seed import seed_from_deck_builder
 from quarry.search import EmbedderMismatch, EmbedderUnavailable, nearest_anti_examples, search
@@ -86,6 +88,12 @@ def main(argv=None) -> int:
     im.add_argument("export", type=Path, help="the export .zip, or the unzipped folder")
     im.add_argument("--inspiration-dir", default=None, type=Path,
                     help="inspiration folder (default: QUARRY_INSPIRATION_DIR or config.toml)")
+    ic = sub.add_parser("import-captures",
+                        help="file finished browser captures from the downloads folder into the inspiration store")
+    ic.add_argument("--inspiration-dir", default=None, type=Path,
+                    help="inspiration folder (default: QUARRY_INSPIRATION_DIR or config.toml)")
+    ic.add_argument("--downloads", default=None, type=Path,
+                    help="capture downloads folder (default: capture_downloads_dir or ~/Downloads/quarry)")
     ix = sub.add_parser("index", help="build the search index (FTS5, vectors, thumbnails)")
     ix.add_argument("--repo", default=".", type=Path)
     ix.add_argument("--fake-embedder", action="store_true", help="deterministic fake embeddings (no models)")
@@ -176,6 +184,17 @@ def main(argv=None) -> int:
             print(f"warning: {w}", file=sys.stderr)
         print(f"created {len(res.created)}, updated {len(res.updated)}, unchanged {len(res.unchanged)}")
         print(f"images pending: the export has links only; files are in {root}/instagram/")
+        return 0
+    if args.command == "import-captures":
+        try:
+            store = Store(inspiration_root(args.inspiration_dir))
+            res = sweep(args.downloads or capture_downloads_dir(), store)
+        except (NoInspirationRoot, FfmpegMissing) as exc:
+            print(f"error: {exc}", file=sys.stderr)
+            return 2
+        for name, reason in res.failed:
+            print(f"failed {name}: {reason}", file=sys.stderr)
+        print(f"filed {len(res.filed)}, failed {len(res.failed)}")
         return 0
     if args.command == "index":
         if args.fake_embedder:
