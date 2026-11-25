@@ -34,14 +34,18 @@
   "description": "A dark metallic sci-fi panel with a circular vault-like door at center, outlined by glowing red rings and a horizontal red laser line.",
   "rating": {
     "bot": {
-      "verdict": "maybe",
+      "verdict": "no",
       "strength": "unsure",
-      "reason": "Moody, polished security-themed hero with strong red accent, but leans toward vault/lock cliche and likely AI-generated; needs curator check.",
+      "reason": "Generic sci-fi vault/laser security cliche, close kin to the glowing-padlock trope; curators rejected similar glowy stock-style tech imagery.",
       "model": "claude-opus-5-5",
-      "at": "2026-11-23T19:36:58Z",
+      "at": "2026-11-25T05:48:48Z",
       "examples": [
-        "life-scientist-workstation",
-        "life-sysadmin-server-rack"
+        "adobe-829377199",
+        "adobe-930146362",
+        "adobe-466214125",
+        "adobe-36041755",
+        "adobe-1843776305-2",
+        "life-scientist-workstation"
       ],
       "suggested_slugs": {
         "products": [],
@@ -49,10 +53,8 @@
         "verticals": [],
         "concepts": [],
         "style": [
-          "abstract",
-          "dark-background",
-          "red-accent",
-          "ai-generated"
+          "sci-fi",
+          "dark-red-glow"
         ]
       }
     }

@@ -26,14 +26,18 @@
   "description": "Dark, moody close-up of evergreen fir branches dotted with small red berries, filling the frame as a textured background.",
   "rating": {
     "bot": {
-      "verdict": "maybe",
+      "verdict": "no",
       "strength": "unsure",
-      "reason": "Polished, dark seasonal background with text room, but off-topic for CIQ products; only useful for holiday campaigns.",
+      "reason": "Seasonal holiday texture with no connection to CIQ's technical subject matter; off-topic beyond possible one-off holiday use.",
       "model": "claude-opus-5-5",
-      "at": "2026-11-23T19:36:58Z",
+      "at": "2026-11-25T05:48:48Z",
       "examples": [
-        "life-scientist-workstation",
-        "life-sysadmin-server-rack"
+        "adobe-829377199",
+        "adobe-930146362",
+        "adobe-466214125",
+        "adobe-36041755",
+        "adobe-1843776305-2",
+        "life-scientist-workstation"
       ],
       "suggested_slugs": {
         "products": [],
@@ -44,9 +48,8 @@
           "seasonal"
         ],
         "style": [
-          "dark-background",
-          "texture",
-          "nature"
+          "texture-background",
+          "dark-moody"
         ]
       }
     }

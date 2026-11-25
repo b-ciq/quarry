@@ -25,14 +25,18 @@
   "tone": "dark",
   "rating": {
     "bot": {
-      "verdict": "yes",
+      "verdict": "maybe",
       "strength": "unsure",
-      "reason": "Polished dark tech background with a glowing processor chip and ample negative space for text; fits compute/HPC themes.",
+      "reason": "Clean dark background with ample text space and relevant compute subject, but the glowing chip is a common stock trope similar to rejected examples.",
       "model": "claude-opus-5-5",
-      "at": "2026-11-23T19:37:15Z",
+      "at": "2026-11-25T05:48:48Z",
       "examples": [
-        "life-scientist-workstation",
-        "life-sysadmin-server-rack"
+        "adobe-829377199",
+        "adobe-930146362",
+        "adobe-466214125",
+        "adobe-36041755",
+        "adobe-1843776305-2",
+        "life-scientist-workstation"
       ],
       "suggested_slugs": {
         "products": [],
@@ -42,8 +46,8 @@
           "hardware"
         ],
         "style": [
-          "glow",
-          "negative-space"
+          "glowing-tech",
+          "copy-space"
         ]
       }
     }

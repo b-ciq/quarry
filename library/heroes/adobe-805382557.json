@@ -33,14 +33,18 @@
   "description": "Abstract stylized server racks in a datacenter aisle, overlaid with glowing blue and orange data streams and bokeh lights.",
   "rating": {
     "bot": {
-      "verdict": "maybe",
-      "strength": "unsure",
-      "reason": "Relevant datacenter subject with a polished hero mood, but it is a generic glowing stock-style render, likely AI-generated, and needs a license check.",
+      "verdict": "no",
+      "strength": "strong",
+      "reason": "Generic glowing server-rack stock cliche with bokeh; matches previously rejected datacenter stock imagery.",
       "model": "claude-opus-5-5",
-      "at": "2026-11-23T19:36:58Z",
+      "at": "2026-11-25T05:48:48Z",
       "examples": [
-        "life-scientist-workstation",
-        "life-sysadmin-server-rack"
+        "adobe-829377199",
+        "adobe-930146362",
+        "adobe-466214125",
+        "adobe-36041755",
+        "adobe-1843776305-2",
+        "life-scientist-workstation"
       ],
       "suggested_slugs": {
         "products": [],
@@ -48,9 +52,8 @@
         "verticals": [],
         "concepts": [],
         "style": [
-          "abstract-tech",
-          "bokeh",
-          "ai-generated"
+          "generic-stock",
+          "glowing-data"
         ]
       }
     }
