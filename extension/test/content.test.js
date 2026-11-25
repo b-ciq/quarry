@@ -58,3 +58,17 @@ test('injecting both scripts twice into the same page works', () => {
   assert.equal(r.status, 'ok')
   assert.equal(r.plan.manifest.kind, 'reel')
 })
+
+test('content.js returns not-a-post off www.instagram.com, even with planted page data', () => {
+  for (const href of ['https://evil.example/?u=instagram.com/p/FAKEcar1', 'https://evil.example/p/FAKEcar1/',
+    'http://www.instagram.com/p/FAKEcar1/']) {
+    assert.deepEqual(inject(page(href, load('carousel-mixed.json'))), {status: 'not-a-post', plan: null}, href)
+  }
+})
+
+test('content.js reports an error when the carousel has no slide list', () => {
+  const blocks = [JSON.stringify({x: {code: 'C9', pk: '1', media_type: 8, carousel_media: null}})]
+  const r = inject(page('https://www.instagram.com/p/C9/', blocks))
+  assert.equal(r.status, 'error')
+  assert.match(r.message, /slide list/)
+})

@@ -5,8 +5,9 @@
 ;(function () {
   'use strict'
 
-  // Same forms as the importer's POST_URL_RE (src/quarry/instagram.py).
-  const POST_URL_RE = /instagram\.com\/(?:[A-Za-z0-9._]+\/)?(p|reels?|tv)\/([A-Za-z0-9_-]+)/
+  // The importer's POST_URL_RE forms (src/quarry/instagram.py), anchored to the real site so
+  // a URL on another host that merely mentions instagram.com is not a post.
+  const POST_URL_RE = /^https:\/\/www\.instagram\.com\/(?:[A-Za-z0-9._]+\/)?(p|reels?|tv)\/([A-Za-z0-9_-]+)/
   const KINDS = {p: 'post', reel: 'reel', reels: 'reel', tv: 'video'}
   const MISMATCH_TITLE = 'Reload the page (⌘R) and press again.'
 
@@ -19,21 +20,21 @@
     return v !== null && typeof v === 'object' && !Array.isArray(v)
   }
 
-  // Depth-first, in document order: the first object whose own `code` is the shortcode
-  // and that has a `media_type` key. Other posts on the page (feeds, grids) are ignored.
-  function findPostObject(value, shortcode) {
+  // Depth-first, in document order: every object whose own `code` is the shortcode and that
+  // has a `media_type` key. Other posts on the page (feeds, grids) are ignored.
+  function findPostObjects(value, shortcode, out) {
     const stack = [value]
     while (stack.length) {
       const v = stack.pop()
       if (Array.isArray(v)) {
         for (let i = v.length - 1; i >= 0; i--) stack.push(v[i])
       } else if (isObject(v)) {
-        if (v.code === shortcode && 'media_type' in v) return v
+        if (v.code === shortcode && 'media_type' in v) out.push(v)
         const vals = Object.values(v)
         for (let i = vals.length - 1; i >= 0; i--) stack.push(vals[i])
       }
     }
-    return null
+    return out
   }
 
   function area(c) {
@@ -43,7 +44,7 @@
   function largest(list) {
     let best = null
     for (const c of Array.isArray(list) ? list : []) {
-      if (isObject(c) && typeof c.url === 'string' && c.url && (!best || area(c) > area(best))) best = c
+      if (isObject(c) && typeof c.url === 'string' && /^https:\/\//.test(c.url) && (!best || area(c) > area(best))) best = c
     }
     return best
   }
@@ -89,7 +90,8 @@
     return {video: v ? {url: v.url, width: v.width, height: v.height} : null, audio: audios[0] ? {url: audios[0].url} : null}
   }
 
-  function readSlide(m) {
+  function readSlide(m, n) {
+    if (m.media_type !== 1 && m.media_type !== 2) throw new Error(`slide ${n}: unsupported media_type ${m.media_type}`)
     const img = largest(m.image_versions2 && m.image_versions2.candidates)
     const slide = {
       media_id: m.pk != null ? String(m.pk) : null,
@@ -112,26 +114,44 @@
     return slide
   }
 
-  // Post: {shortcode, owner: {username, name}, caption, slides: [{media_id, type, image, video}]}.
+  // The post's slide objects, or a reason this copy of the post can't be used.
+  function slideObjects(m) {
+    if (m.media_type === 8) {
+      const list = Array.isArray(m.carousel_media) ? m.carousel_media.filter(isObject) : []
+      return list.length ? list : 'the carousel has no slide list in the page data'
+    }
+    if (m.media_type === 1 || m.media_type === 2) return [m]
+    return `unsupported media_type ${m.media_type}`
+  }
+
+  // Post: {shortcode, owner: {username, name}, caption, slides_expected, slides: [{media_id, type, image, video}]}.
   // slide.video adds `audio_url` and `source` ('dash' or 'progressive') to {url, width, height, has_audio}.
+  // Returns null when the page holds no copy of the post (a mismatch). The post can appear
+  // more than once; a copy without its slide list is skipped for a later one, and if no copy
+  // is usable this throws rather than save part of the post as if it were whole.
   function findPost(jsonTexts, shortcode) {
     if (!shortcode) return null
+    const copies = []
     for (const text of jsonTexts || []) {
       let data
       try { data = JSON.parse(text) } catch { continue }
-      const m = findPostObject(data, shortcode)
-      if (!m) continue
-      const user = isObject(m.user) ? m.user : {}
-      const carousel = Array.isArray(m.carousel_media) && m.carousel_media.length ? m.carousel_media : null
-      return {
-        shortcode: m.code,
-        owner: {username: typeof user.username === 'string' ? user.username : '',
-          name: typeof user.full_name === 'string' ? user.full_name : ''},
-        caption: isObject(m.caption) && typeof m.caption.text === 'string' ? m.caption.text : '',
-        slides: (carousel || [m]).filter(isObject).map(readSlide),
-      }
+      findPostObjects(data, shortcode, copies)
     }
-    return null
+    if (!copies.length) return null
+    const m = copies.find(c => Array.isArray(slideObjects(c)))
+    if (!m) throw new Error(slideObjects(copies[0]))
+    const user = isObject(m.user) ? m.user : {}
+    const slides = slideObjects(m).map((s, i) => readSlide(s, i + 1))
+    const count = m.carousel_media_count
+    return {
+      shortcode: m.code,
+      owner: {username: typeof user.username === 'string' ? user.username : '',
+        name: typeof user.full_name === 'string' ? user.full_name : ''},
+      caption: isObject(m.caption) && typeof m.caption.text === 'string' ? m.caption.text : '',
+      // Instagram's own count wins when it disagrees, so the sweep marks a short capture partial.
+      slides_expected: Number.isInteger(count) && count > 0 ? count : slides.length,
+      slides,
+    }
   }
 
   function stamp(now) {
@@ -175,7 +195,7 @@
       files,
       manifest: {
         version: 1, shortcode: post.shortcode, page_url: pageUrl, kind,
-        slides_expected: post.slides.length, owner: post.owner, caption: post.caption,
+        slides_expected: post.slides_expected || post.slides.length, owner: post.owner, caption: post.caption,
         captured_at: t.captured_at, items,
       },
     }

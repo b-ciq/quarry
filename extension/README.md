@@ -38,7 +38,7 @@ A capture that stops partway has no `capture.json`, so the sweep leaves the fold
 ## Tests
 
 ```
-node --test extension/test/
+node --test 'extension/test/*.test.js'
 ```
 
 `lib/postdata.js` holds the parsing and planning, and is tested against the synthetic fixtures in `test/fixtures/`. The tests also run `content.js` and `service-worker.js` against a fake page and a fake `chrome` object.

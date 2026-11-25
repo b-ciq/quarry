@@ -169,3 +169,61 @@ test('badgeFor covers every state', () => {
   }
   assert.ok(badgeFor({kind: 'error', message: 'boom'}).title.includes('boom'))
 })
+
+// --- Fix round 1 ---
+
+const carouselPost = () => JSON.parse(load('carousel-mixed.json')[1]).require[0][3][0].__bbox.require[0][3][1].__bbox.result.data.xig_fetch_media
+
+test('a carousel copy without carousel_media is skipped for a later full copy', () => {
+  const stub = {...carouselPost()}
+  delete stub.carousel_media
+  const p = findPost([...block(stub), ...load('carousel-mixed.json')], 'FAKEcar1')
+  assert.deepEqual(p.slides.map(s => s.media_id), ['301', '302', '303'])
+})
+
+test('a carousel with no slide list anywhere throws instead of becoming one image', () => {
+  for (const carousel_media of [undefined, null, []]) {
+    const stub = {...carouselPost(), carousel_media}
+    assert.throws(() => findPost(block(stub), 'FAKEcar1'), /slide list/)
+  }
+})
+
+test('a slide whose media_type is not 1 or 2 throws', () => {
+  const m = carouselPost()
+  m.carousel_media[1].media_type = 8
+  assert.throws(() => findPost(block(m), 'FAKEcar1'), /slide 2/)
+  assert.throws(() => findPost(block({code: 'Z1', pk: '1', media_type: 3}), 'Z1'), /media_type/)
+})
+
+test('carousel_media_count above the slides found makes slides_expected the count', () => {
+  const m = {...carouselPost(), carousel_media_count: 5}
+  const p = planCapture(findPost(block(m), 'FAKEcar1'), {kind: 'post', pageUrl: 'u', now: NOW})
+  assert.equal(p.manifest.slides_expected, 5)
+  assert.equal(p.manifest.items.length, 3)
+  for (const bad of [null, 0, -1, 2.5, '7']) {
+    const q = planCapture(findPost(block({...carouselPost(), carousel_media_count: bad}), 'FAKEcar1'), {kind: 'post', pageUrl: 'u', now: NOW})
+    assert.equal(q.manifest.slides_expected, 3, String(bad))
+  }
+})
+
+test('shortcodeFromUrl only accepts https://www.instagram.com', () => {
+  assert.equal(shortcodeFromUrl('https://evil.example/?u=instagram.com/p/ABC'), null)
+  assert.equal(shortcodeFromUrl('https://evil.example/www.instagram.com/p/ABC/'), null)
+  assert.equal(shortcodeFromUrl('https://www.instagram.com.evil.example/p/ABC/'), null)
+  assert.equal(shortcodeFromUrl('https://www.instagram.com@evil.example/p/ABC/'), null)
+  assert.equal(shortcodeFromUrl('http://www.instagram.com/p/ABC/'), null)
+  assert.deepEqual(shortcodeFromUrl('https://www.instagram.com/p/ABC/'), {shortcode: 'ABC', kind: 'post'})
+})
+
+test('non-https image and video_versions URLs are never used', () => {
+  const img = findPost(block({code: 'H1', pk: '1', media_type: 1,
+    image_versions2: {candidates: [{width: 999, height: 999, url: 'http://a/big.jpg'}, {width: 10, height: 10, url: 'https://a/ok.jpg'}]}}), 'H1')
+  assert.equal(img.slides[0].image.url, 'https://a/ok.jpg')
+  const bad = findPost(block({code: 'H2', pk: '2', media_type: 1,
+    image_versions2: {candidates: [{width: 9, height: 9, url: 'javascript:alert(1)'}]}}), 'H2')
+  assert.throws(() => planCapture(bad, {kind: 'post', pageUrl: 'u', now: NOW}))
+  const vid = findPost(block({code: 'H3', pk: '3', media_type: 2,
+    video_versions: [{width: 999, height: 999, url: 'http://a/big.mp4'}, {width: 10, height: 10, url: 'https://a/ok.mp4'}],
+    image_versions2: {candidates: [{width: 10, height: 10, url: 'https://a/p.jpg'}]}}), 'H3')
+  assert.equal(vid.slides[0].video.url, 'https://a/ok.mp4')
+})

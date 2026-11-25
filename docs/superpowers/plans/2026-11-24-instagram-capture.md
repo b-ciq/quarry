@@ -548,7 +548,7 @@ test('mismatch badge copy', () => assert.equal(badgeFor({kind: 'mismatch'}).titl
   - the reel picks `dash-reel1-1080p` and its audio;
   - `findPost(load('reel.json'), 'OTHERreel9')` resolves only to the decoy, never to `FAKEreel1`'s media;
   - a post with no `video_dash_manifest` falls back to the largest `video_versions` entry as `NN.mp4`.
-- [ ] **Step 2: Run the tests.** `node --test extension/test/`. Expected: FAIL.
+- [ ] **Step 2: Run the tests.** `node --test 'extension/test/*.test.js'`. Expected: FAIL.
 - [ ] **Step 3: Implement.**
   - **`manifest.json`:** MV3, `name: "Quarry button"`.
     - `permissions: ["downloads", "scripting", "activeTab"]`.
@@ -562,7 +562,7 @@ test('mismatch badge copy', () => assert.equal(badgeFor({kind: 'mismatch'}).titl
     4. Update the badge per file.
     5. There are no retries. On any failure, set the `error` badge and stop.
   - Nothing runs except on a click.
-- [ ] **Step 4: Run the tests.** `node --test extension/test/`. Expected: PASS.
+- [ ] **Step 4: Run the tests.** `node --test 'extension/test/*.test.js'`. Expected: PASS.
 - [ ] **Step 5: Manual check with Brian.**
   1. Load `extension/` unpacked.
   2. With `quarry ui` running and a root configured, capture the 3 spike posts.
@@ -622,7 +622,7 @@ test('mismatch badge copy', () => assert.equal(badgeFor({kind: 'mismatch'}).titl
   - `pickMime(isTypeSupported) -> string`: prefers `video/mp4;codecs=avc1,mp4a`, falling back to `video/mp4`. Otherwise it throws `Error('MP4 recording unsupported')`.
 
 - [ ] **Step 1: Write the failing tests** for the three helpers, covering boundary values at exactly 5% and at a jump of half the duration.
-- [ ] **Step 2: Run** `node --test extension/test/`. Expected: FAIL.
+- [ ] **Step 2: Run** `node --test 'extension/test/*.test.js'`. Expected: FAIL.
 - [ ] **Step 3: Implement.**
   - Recording is used when a video slide has no video URL.
   - On the click, it sets `currentTime = 0`, unmutes, plays at `playbackRate 1`, and waits for `playing`.
@@ -657,7 +657,7 @@ test('mismatch badge copy', () => assert.equal(badgeFor({kind: 'mismatch'}).titl
 - [ ] **Step 2: Verify.**
   - `git grep -n "inspiration/instagram" -- docs src README.md` returns no stale repo-path instructions.
   - `.venv/bin/quarry validate` prints `ok`.
-  - `caffeinate -ims .venv/bin/python -m pytest -q && npm test --prefix ui && node --test extension/test/` all pass.
+  - `caffeinate -ims .venv/bin/python -m pytest -q && npm test --prefix ui && node --test 'extension/test/*.test.js'` all pass.
 - [ ] **Step 3: Commit.** `git add docs README.md .gitignore && git commit -m "Docs: inspiration root, capture sessions, extension setup"`
 
 ---
