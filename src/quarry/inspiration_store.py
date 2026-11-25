@@ -134,25 +134,19 @@ def atomic_write_bytes(dest: Path, data: bytes) -> None:
 
 
 def atomic_move(src: Path, dest: Path) -> None:
+    """Copy `src` via staging, publish at `dest`, and only then remove `src`.
+
+    Any failure leaves `src` untouched and `dest` unchanged.
+    """
     fd, name = tempfile.mkstemp(dir=_tmp_dir(), prefix=f"{dest.name}.")
     os.close(fd)
     staged = Path(name)
     try:
-        _publish_from(src, staged)
+        shutil.copyfile(src, staged)
         _publish(staged, dest)
     finally:
         staged.unlink(missing_ok=True)
-
-
-def _publish_from(src: Path, staged: Path) -> None:
-    """Move `src` over the staging file (cache and the source may be on different volumes)."""
-    try:
-        os.replace(src, staged)
-    except OSError as e:
-        if e.errno != errno.EXDEV:
-            raise
-        shutil.copyfile(src, staged)
-        src.unlink()
+    src.unlink()
 
 
 @dataclass

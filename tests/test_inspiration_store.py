@@ -132,6 +132,25 @@ def test_atomic_move_falls_back_on_cross_volume(store, tmp_path, monkeypatch):
     assert not list(dest.parent.glob(".*.part"))
 
 
+def test_atomic_move_failure_keeps_source_and_dest(store, tmp_path, monkeypatch):
+    import os
+    dest = store.dir / "ig-abc" / "01.jpg"
+    atomic_write_bytes(dest, b"old")
+    src = tmp_path / "dl.jpg"
+    src.write_bytes(b"new")
+    real = os.replace
+
+    def fake(a, b):
+        if Path(b) == dest:
+            raise OSError(5, "drive offline")
+        return real(a, b)
+
+    monkeypatch.setattr(os, "replace", fake)
+    with pytest.raises(OSError):
+        atomic_move(src, dest)
+    assert src.read_bytes() == b"new" and dest.read_bytes() == b"old"
+
+
 def test_lock_is_exclusive_across_processes(store, tmp_path, monkeypatch):
     import os
     monkeypatch.setenv("QUARRY_CONFIG_DIR", str(tmp_path / "lockcfg"))
