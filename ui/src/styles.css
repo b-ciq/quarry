@@ -894,3 +894,53 @@ body {
   gap: var(--quantic-spacing-3);
   margin-top: var(--quantic-spacing-3);
 }
+
+/* Capture page: header counts, Open next, banners, then the saves table. */
+.capture {
+  display: flex;
+  flex-direction: column;
+  gap: var(--quantic-spacing-3);
+}
+
+.capture-head,
+.capture-next {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--quantic-spacing-3);
+}
+
+.capture-head h2 {
+  margin: 0;
+  font-size: var(--quantic-font-size-body-lg);
+}
+
+.capture-counts,
+.capture-next-id,
+.capture-hint {
+  color: var(--quantic-text-tertiary);
+  font-size: var(--quantic-font-size-body-sm);
+}
+
+.capture-today {
+  font-variant-numeric: tabular-nums;
+}
+
+.capture-waiting {
+  font-size: var(--quantic-font-size-body-sm);
+}
+
+.capture-hint {
+  margin: 0;
+}
+
+.capture-banner-list {
+  margin: 0;
+  padding-left: var(--quantic-spacing-5);
+}
+
+.capture-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--quantic-spacing-1);
+}

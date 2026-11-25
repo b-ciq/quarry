@@ -9,6 +9,7 @@ import {
 } from './api'
 import { IngestDrop } from './components/IngestDrop'
 import { VocabPanel } from './views/VocabPanel'
+import { CaptureView } from './views/CaptureView'
 import { FacetRail } from './components/FacetRail'
 import { OpsBar } from './components/OpsBar'
 import { applyFilters, ReloadGuard, resolveHits, type Asset, type Axis, type Filters } from './state'
@@ -19,7 +20,7 @@ import { ReviewQueue } from './views/ReviewQueue'
 import { RateView, type RateJob } from './views/RateView'
 
 const RAIL_KEY = 'quarry.filters'
-type Page = 'library' | 'rate' | 'vocab' | 'ingest'
+type Page = 'library' | 'rate' | 'vocab' | 'ingest' | 'capture'
 
 export function App() {
   const [assets, setAssets] = useState<Asset[]>([])
@@ -181,6 +182,7 @@ export function App() {
           </ButtonBarItem>
           <ButtonBarItem active={queueIds === null && page === 'vocab'} onClick={() => goPage('vocab')}>Vocabulary</ButtonBarItem>
           <ButtonBarItem active={queueIds === null && page === 'ingest'} onClick={() => goPage('ingest')}>Ingest</ButtonBarItem>
+          <ButtonBarItem active={queueIds === null && page === 'capture'} onClick={() => goPage('capture')}>Capture</ButtonBarItem>
         </ButtonBar>
         <div className="search">
           <div onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); void runSearch() } }}>
@@ -239,6 +241,10 @@ export function App() {
             onChanged={refresh}
             onOpenInGrid={(axis, value) => { setFilters({ [axis]: [value] }); setQ(''); setPage('library') }}
           />
+        </main>
+      ) : page === 'capture' ? (
+        <main className="main">
+          <CaptureView />
         </main>
       ) : page === 'ingest' ? (
         <main className="main">
