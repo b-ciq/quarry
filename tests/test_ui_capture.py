@@ -272,7 +272,7 @@ def test_start_sweeper_files_a_capture(app, downloads, store):
 def test_sweeper_survives_errors(app, downloads, monkeypatch):
     calls = []
 
-    def boom(d, s):
+    def boom(*a):
         calls.append(1)
         raise RuntimeError("boom")
     monkeypatch.setattr(capture_api, "sweep", boom)
@@ -342,3 +342,45 @@ def test_bad_cap_or_config_never_500s_the_list(client, store):
     (config_dir() / "config.toml").write_text("capture_daily_cap = [\n")
     r = client.get("/api/capture")
     assert r.status_code == 200 and r.json()["today"]["cap"] == 40 and r.json()["items"]
+
+
+def _run_sweeper_until(app, monkeypatch, fake, ticks=3):
+    calls = []
+
+    def counted(*a, **k):
+        calls.append(a)
+        return fake(*a, **k)
+    monkeypatch.setattr(capture_api, "sweep", counted)
+    stop = capture_api.start_sweeper(app, interval=0.01)
+    try:
+        deadline = time.monotonic() + 3
+        while len(calls) < ticks and time.monotonic() < deadline:
+            time.sleep(0.01)
+    finally:
+        stop_sweeper(stop)
+    return calls
+
+
+def test_left_in_place_folders_show_as_warnings(app, client, downloads, monkeypatch):
+    from quarry.capture_sweep import SweepResult
+
+    def fake(d, s, held):
+        held["seen"] = held.get("seen", 0) + 1  # the same backoff state comes back every tick
+        r = SweepResult()
+        r.leave("FAKEx__20261126T180000", "not filed, left in place: drive offline")
+        return r
+    calls = _run_sweeper_until(app, monkeypatch, fake)
+    assert len({id(c[2]) for c in calls}) == 1 and calls[-1][2]["seen"] == len(calls)
+    warnings = client.get("/api/capture").json()["warnings"]
+    assert "Capture folder FAKEx__20261126T180000: not filed, left in place: drive offline" in warnings
+
+
+def test_failing_sweeper_shows_as_a_warning_and_clears(app, client, downloads, monkeypatch):
+    from quarry.capture_sweep import SweepResult
+
+    def boom(*a):
+        raise RuntimeError("cache disk full")
+    _run_sweeper_until(app, monkeypatch, boom)
+    assert "Capture sweeper stopped: cache disk full" in client.get("/api/capture").json()["warnings"]
+    _run_sweeper_until(app, monkeypatch, lambda *a: SweepResult())
+    assert not any("sweeper" in w for w in client.get("/api/capture").json()["warnings"])

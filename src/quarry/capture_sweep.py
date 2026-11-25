@@ -10,6 +10,7 @@ import hashlib
 import json
 import shutil
 import tempfile
+import time
 from dataclasses import dataclass, field
 from datetime import date
 from pathlib import Path
@@ -22,6 +23,8 @@ CAPTURE_FILE = "capture.json"
 FAILED_DIR = "_failed"
 IMAGE_EXTS = {".jpg", ".jpeg", ".png", ".webp"}
 MAX_SLIDE = 99  # media names carry a two-digit slide number
+RETRY_AFTER_S = 300  # an unchanged left-in-place folder is retried at most this often
+_clock = time.monotonic
 
 
 class CaptureError(ValueError):
@@ -313,18 +316,40 @@ def _sweep_one(folder: Path, store: Store, stage_root: Path, result: SweepResult
                 result.leave(folder.name, f"filed as {id_}, but the folder could not be removed: {e}")
 
 
-def sweep(downloads: Path, store: Store) -> SweepResult:
+def _stamp(folder: Path) -> int | None:
+    try:
+        return (folder / CAPTURE_FILE).stat().st_mtime_ns
+    except OSError:
+        return None
+
+
+def sweep(downloads: Path, store: Store, held: dict | None = None) -> SweepResult:
     """File every finished capture folder in `downloads`, oldest first.
 
     A folder that cannot be filed for a reason other than its media (Drive offline, ffmpeg missing,
     a hand-edited record) is left in place and retried; it never stops the folders after it.
+    Pass the same `held` dict on every call to back off: a left-in-place folder whose capture.json
+    is unchanged is not prepared again until RETRY_AFTER_S has passed, but is still reported.
     """
+    held = {} if held is None else held  # folder name -> (capture.json mtime_ns, when left, reason)
     result = SweepResult()
     stage_root = cache_dir() / "tmp"
     stage_root.mkdir(parents=True, exist_ok=True)
-    for folder in _capture_folders(Path(downloads)):
+    folders = _capture_folders(Path(downloads))
+    for folder in folders:
+        stamp, last = _stamp(folder), held.get(folder.name)
+        if last is not None and last[0] == stamp and _clock() - last[1] < RETRY_AFTER_S:
+            result.leave(folder.name, last[2])
+            continue
+        before = len(result.left)
         try:
             _sweep_one(folder, store, stage_root, result)
         except Exception as e:  # e.g. a file vanished, the disk is full, ffmpeg is missing: retry later
             result.leave(folder.name, f"not filed, left in place: {e}")
+        if len(result.left) > before:
+            held[folder.name] = (stamp, _clock(), result.left[-1][1])
+        else:
+            held.pop(folder.name, None)
+    for name in set(held) - {f.name for f in folders}:
+        del held[name]
     return result

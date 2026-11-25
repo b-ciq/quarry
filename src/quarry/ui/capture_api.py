@@ -223,6 +223,11 @@ def mount(app: FastAPI) -> None:
             if r["status"] in counts:
                 counts[r["status"]] += 1
         rows.sort(key=_sort_key, reverse=True)
+        swept = getattr(app.state, "capture_sweep", None)
+        if swept is not None:
+            warnings += [f"Capture folder {name}: {reason}" for name, reason in swept["left"]]
+            if swept["error"]:
+                warnings.append(f"Capture sweeper stopped: {swept['error']}")
         cap, cap_warning = _cap()
         if cap_warning:
             warnings.append(cap_warning)
@@ -347,15 +352,21 @@ def start_sweeper(app: FastAPI, interval: float = 5.0) -> threading.Event:
         return stop
     store = Store(root)
 
+    # The latest sweep's left-in-place folders and any error, for the Capture page's warnings.
+    app.state.capture_sweep = {"left": [], "error": None}
+
     def loop() -> None:
         last_error = None
+        held: dict = {}  # backoff state, kept across ticks
         while not stop.is_set():
             try:
-                result = sweep(capture_downloads_dir(), store)
+                result = sweep(capture_downloads_dir(), store, held)
                 if result.filed:
                     log.info("capture sweep filed %s", ", ".join(result.filed))
+                app.state.capture_sweep = {"left": list(result.left), "error": None}
                 last_error = None
             except Exception as e:  # never let the thread die; log each new error once
+                app.state.capture_sweep = {**app.state.capture_sweep, "error": str(e) or repr(e)}
                 if repr(e) != last_error:
                     log.exception("capture sweep failed")
                     last_error = repr(e)

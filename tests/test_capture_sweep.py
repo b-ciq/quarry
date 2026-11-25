@@ -433,3 +433,36 @@ def test_folder_removal_failure_does_not_stop_newer_folders(store, downloads, mo
     res = sweep(downloads, store)
     assert res.filed == ["ig-fakeone1", "ig-faketwo1"]
     assert res.left[0][0] == first.name and "locked" in res.left[0][1]
+
+
+# --- left-in-place backoff ---------------------------------------------------------------------
+
+def test_left_in_place_folder_is_retried_only_after_backoff_or_a_change(store, downloads, monkeypatch):
+    import os
+
+    from quarry import capture_sweep
+    f = capture_folder(downloads, "FAKEcar1", [img(1)], slides_expected=1)
+    clock = [1000.0]
+    monkeypatch.setattr(capture_sweep, "_clock", lambda: clock[0])
+    prepared = []
+    real_prepare = capture_sweep._prepare
+    monkeypatch.setattr(capture_sweep, "_prepare", lambda *a: prepared.append(1) or real_prepare(*a))
+
+    def boom(record):
+        raise OSError("drive offline")
+    monkeypatch.setattr(store, "write", boom)
+    held = {}
+    first = sweep(downloads, store, held)
+    assert len(prepared) == 1 and "drive offline" in first.left[0][1]
+    clock[0] += 60
+    again = sweep(downloads, store, held)
+    assert len(prepared) == 1, "unchanged folder re-prepared inside the backoff"
+    assert again.left == first.left and again.filed == []
+    clock[0] += capture_sweep.RETRY_AFTER_S
+    sweep(downloads, store, held)
+    assert len(prepared) == 2
+    st = (f / "capture.json").stat()
+    os.utime(f / "capture.json", ns=(st.st_atime_ns, st.st_mtime_ns + 1_000_000_000))  # re-captured
+    monkeypatch.setattr(store, "write", Store.write.__get__(store))
+    assert sweep(downloads, store, held).filed == ["ig-fakecar1"] and len(prepared) == 3
+    assert held == {}
