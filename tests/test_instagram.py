@@ -216,6 +216,15 @@ def test_cli_requires_a_root(tmp_path, monkeypatch, capsys):
     assert "QUARRY_INSPIRATION_DIR" in capsys.readouterr().err
 
 
+@pytest.mark.parametrize("config", ["inspiration_dir = [\n", "inspiration_dir = 5\n"])
+def test_cli_malformed_config(tmp_path, monkeypatch, capsys, config):
+    monkeypatch.setenv("QUARRY_CONFIG_DIR", str(tmp_path / "cfg"))
+    (tmp_path / "cfg").mkdir()
+    (tmp_path / "cfg" / "config.toml").write_text(config)
+    assert main(["import-instagram", str(_zip(tmp_path / "e.zip", NEW_FORMAT))]) == 2
+    assert "config.toml" in capsys.readouterr().err
+
+
 def test_corrupt_save_is_never_overwritten(tmp_path):
     root = tmp_path / "root"
     bad = root / "instagram" / "ig-abc" / "save.json"

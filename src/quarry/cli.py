@@ -8,7 +8,7 @@ from quarry.capture_sweep import sweep
 from quarry.export_deck import write_export
 from quarry.indexer import IndexBuildError, build_index, validate_assets
 from quarry.ingest import ingest_dir
-from quarry.inspiration_store import NoInspirationRoot, Store, capture_downloads_dir, inspiration_root
+from quarry.inspiration_store import NoInspirationRoot, Store, capture_downloads_dir, config_dir, inspiration_root
 from quarry.instagram import ExportError, import_instagram
 from quarry.library import LibraryError, scan_library
 from quarry.media_probe import FfmpegMissing
@@ -58,6 +58,18 @@ def cmd_validate(repo: Path) -> int:
     if not errors:
         print("ok")
     return 1 if errors else 0
+
+
+class ConfigProblem(ValueError):
+    """config.toml could not be read or holds a value of the wrong type."""
+
+
+def _config_value(read):
+    """Call `read()`, turning a malformed config.toml (bad TOML or a wrong value type) into ConfigProblem."""
+    try:
+        return read()
+    except (ValueError, TypeError) as e:
+        raise ConfigProblem(f"{config_dir() / 'config.toml'} has a problem: {e}") from e
 
 
 def main(argv=None) -> int:
@@ -175,7 +187,7 @@ def main(argv=None) -> int:
         return 0
     if args.command == "import-instagram":
         try:
-            root = inspiration_root(args.inspiration_dir)
+            root = _config_value(lambda: inspiration_root(args.inspiration_dir))
             res = import_instagram(args.export, root)
         except (ExportError, ValueError, NoInspirationRoot) as exc:
             print(f"error: {exc}", file=sys.stderr)
@@ -187,9 +199,9 @@ def main(argv=None) -> int:
         return 0
     if args.command == "import-captures":
         try:
-            store = Store(inspiration_root(args.inspiration_dir))
-            res = sweep(args.downloads or capture_downloads_dir(), store)
-        except (NoInspirationRoot, FfmpegMissing) as exc:
+            store = Store(_config_value(lambda: inspiration_root(args.inspiration_dir)))
+            res = sweep(args.downloads or _config_value(capture_downloads_dir), store)
+        except (NoInspirationRoot, ConfigProblem, FfmpegMissing) as exc:
             print(f"error: {exc}", file=sys.stderr)
             return 2
         for name, reason in res.failed:

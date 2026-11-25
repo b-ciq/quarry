@@ -316,6 +316,24 @@ def test_cli_import_captures_without_root(tmp_path, capsys):
     assert rc == 2 and "inspiration" in capsys.readouterr().err.lower()
 
 
+@pytest.mark.parametrize("config", ["inspiration_dir = [\n", "inspiration_dir = 5\n"])
+def test_cli_import_captures_malformed_config(tmp_path, capsys, config):
+    from quarry.inspiration_store import config_dir
+    config_dir().mkdir(parents=True, exist_ok=True)
+    (config_dir() / "config.toml").write_text(config)
+    rc = main(["import-captures", "--downloads", str(tmp_path)])
+    assert rc == 2 and "config.toml" in capsys.readouterr().err
+
+
+def test_cli_import_captures_unreadable_config_for_downloads(tmp_path, capsys):
+    from quarry.inspiration_store import config_dir
+    config_dir().mkdir(parents=True, exist_ok=True)
+    (config_dir() / "config.toml").write_text("capture_downloads_dir = [\n")
+    (tmp_path / "root").mkdir()  # an explicit root still needs the downloads folder from config
+    rc = main(["import-captures", "--inspiration-dir", str(tmp_path / "root")])
+    assert rc == 2 and "config.toml" in capsys.readouterr().err
+
+
 def test_store_write_failure_leaves_folder_and_no_half_made_save(store, downloads, monkeypatch):
     f = capture_folder(downloads, "FAKEcar1", [img(1), vid(2)], slides_expected=2)
     before = sorted(p.name for p in f.iterdir())
