@@ -340,3 +340,16 @@ def test_io_error_while_checking_leaves_folder_in_place(store, downloads, monkey
     res = sweep(downloads, store)
     assert res.filed == [] and "disk full" in res.failed[0][1]
     assert (f / "01.jpg").exists() and not (downloads / "_failed").exists()
+
+
+def test_unreadable_save_folder_blocks_filing_without_duplicate(store, downloads):
+    bad = store.dir / "ig-abc" / "save.json"
+    bad.parent.mkdir(parents=True)
+    bad.write_bytes(b"{not json")
+    f = capture_folder(downloads, "Abc", [img(1)], slides_expected=1)
+    res = sweep(downloads, store)
+    assert res.filed == [] and res.failed[0][0] == f.name and "ig-abc" in res.failed[0][1]
+    assert not (store.dir / "ig-abc-2").exists() and bad.read_bytes() == b"{not json"
+    assert (f / "capture.json").exists() and not (downloads / "_failed").exists()
+    store.write(make_record("Abc"))  # Drive caught up
+    assert sweep(downloads, store).filed == ["ig-abc"]

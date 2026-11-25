@@ -224,5 +224,6 @@ def test_corrupt_save_is_never_overwritten(tmp_path):
     posts = [_item("https://www.instagram.com/p/Abc/", 1)]
     res = import_instagram(_zip(tmp_path / "e.zip", posts), root)
     assert bad.read_bytes() == b"{not json, saved_because hand-edited"
-    assert [p.parent.name for p in res.created] == ["ig-abc-2"]
+    assert res.created == [] and not (root / "instagram" / "ig-abc-2").exists()
     assert any("ig-abc" in w and "save.json" in w for w in res.warnings)
+    assert any(w.startswith("skipped Abc:") and "ig-abc" in w for w in res.warnings)

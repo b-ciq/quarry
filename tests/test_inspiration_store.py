@@ -7,7 +7,7 @@ import pytest
 
 from inspiration_helpers import item, make_record
 from quarry.inspiration_store import (
-    NoInspirationRoot, Store, atomic_move, atomic_write_bytes, capture_downloads_dir,
+    NoInspirationRoot, Store, StoreUnreadable, atomic_move, atomic_write_bytes, capture_downloads_dir,
     daily_cap, inspiration_root, store_lock,
 )
 from quarry.schema import validate_inspiration_record
@@ -79,6 +79,21 @@ def test_new_id_handles_case_clash(store):
     store.write(make_record("AbC"))
     assert store.new_id("abc", store.scan()) == "ig-abc-2"
     assert store.new_id("a.b", store.scan()) == "ig-a-b"
+
+
+def test_id_for_new_refuses_when_an_unreadable_folder_could_be_the_shortcode(store):
+    assert store.id_for_new("Abc", store.scan()) == "ig-abc"
+    store.write(make_record("AbC"))
+    assert store.id_for_new("abc", store.scan()) == "ig-abc-2"
+    bad = store.dir / "ig-abc-2" / "save.json"
+    bad.parent.mkdir()
+    bad.write_bytes(b"{not json")
+    with pytest.raises(StoreUnreadable, match="ig-abc-2"):
+        store.id_for_new("ABC", store.scan())
+    (store.dir / "ig-xyz").mkdir()  # no save.json at all: could be this shortcode too
+    with pytest.raises(StoreUnreadable):
+        store.id_for_new("Xyz", store.scan())
+    assert isinstance(StoreUnreadable("x"), OSError)
 
 
 def test_media_path_is_bounded(store):

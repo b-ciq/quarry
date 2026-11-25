@@ -227,7 +227,7 @@ def _file(prep: _Prepared, store: Store) -> str:
     scan = store.scan()
     id_ = scan.by_shortcode.get(cap["shortcode"])
     created = id_ is None
-    record = _new_record(cap, store.new_id(cap["shortcode"], scan)) if created else store.read(id_)
+    record = _new_record(cap, store.id_for_new(cap["shortcode"], scan)) if created else store.read(id_)
     id_ = record["id"]
     capture = record.setdefault("capture", {})
     by_slide = {it["slide"]: it for it in capture.get("items") or [] if isinstance(it, dict) and "slide" in it}

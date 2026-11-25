@@ -26,6 +26,10 @@ class NoInspirationRoot(RuntimeError):
     pass
 
 
+class StoreUnreadable(OSError):
+    """A save folder that could belong to a shortcode has no readable save.json (e.g. Drive mid-sync)."""
+
+
 def config_dir() -> Path:
     env = os.environ.get("QUARRY_CONFIG_DIR")
     return Path(env) if env else Path.home() / ".config" / "quarry"
@@ -214,6 +218,23 @@ class Store:
         base = "ig-" + re.sub(r"[^a-z0-9]+", "-", shortcode.lower()).strip("-")
         candidate, n = base, 1
         while candidate in scan.ids:
+            n += 1
+            candidate = f"{base}-{n}"
+        return candidate
+
+    def id_for_new(self, shortcode: str, scan: Scan) -> str:
+        """The id for a new record, or StoreUnreadable when an unreadable folder might already hold it.
+
+        Use only after `shortcode` was not found in `scan.by_shortcode`. A folder in `scan.ids`
+        whose record could not be read may be this shortcode's, so creating `-2` would duplicate it.
+        """
+        readable = set(scan.by_shortcode.values())
+        base = self.new_id(shortcode, Scan())
+        candidate, n = base, 1
+        while candidate in scan.ids:
+            if candidate not in readable:
+                raise StoreUnreadable(f"{self.dir / candidate} has no readable save.json; "
+                                      f"it may already be {shortcode}")
             n += 1
             candidate = f"{base}-{n}"
         return candidate

@@ -12,7 +12,7 @@ from dataclasses import dataclass, field
 from datetime import UTC, date, datetime
 from pathlib import Path
 
-from quarry.inspiration_store import Store, store_lock
+from quarry.inspiration_store import Store, StoreUnreadable, store_lock
 
 POSTS_FILE = "saved_posts.json"
 COLLECTIONS_FILE = "saved_collections.json"
@@ -226,7 +226,11 @@ def import_instagram(export: Path, root: Path) -> ImportResult:
                     store.write(entry)
                     result.updated.append(path)
                 continue
-            id_ = store.new_id(save.shortcode, scan)
+            try:
+                id_ = store.id_for_new(save.shortcode, scan)
+            except StoreUnreadable as e:
+                result.warnings.append(f"skipped {save.shortcode}: {e}")
+                continue
             if (store.dir / id_).exists():
                 result.warnings.append(f"skipped {save.shortcode}: {store.dir / id_} already exists")
                 continue
