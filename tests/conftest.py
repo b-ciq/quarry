@@ -90,3 +90,11 @@ def git_repo(repo):
     _git(repo.root, "commit", "-q", "--allow-empty", "-m", "init")
     repo.git = lambda *a: _git(repo.root, *a)
     return repo
+
+
+@pytest.fixture(autouse=True)
+def _isolated_quarry_dirs(tmp_path, monkeypatch):
+    """No test may touch the real ~/.config/quarry, ~/.cache/quarry or a Drive folder."""
+    monkeypatch.setenv("QUARRY_CONFIG_DIR", str(tmp_path / "_config"))
+    monkeypatch.setenv("QUARRY_CACHE_DIR", str(tmp_path / "_cache"))
+    monkeypatch.delenv("QUARRY_INSPIRATION_DIR", raising=False)

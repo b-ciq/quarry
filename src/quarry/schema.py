@@ -125,3 +125,61 @@ def validate_sidecar(entry: dict, vocab: dict) -> list[str]:
         if not isinstance(gen, dict) or not all(gen.get(k) not in (None, "") for k in ("prompt", "model", "seed")):
             errors.append("generation: prompt, model and seed required for midjourney source")
     return errors
+
+
+CAPTURE_STATUSES = ("pending", "partial", "captured", "unavailable")
+INSPIRATION_ID_RE = re.compile(r"^ig-[a-z0-9]+(-[a-z0-9]+)*$")
+SHORTCODE_RE = re.compile(r"^[A-Za-z0-9_-]+$")
+MEDIA_NAME_RE = re.compile(r"^\d{2}(-poster)?\.(jpg|jpeg|png|webp|mp4|mov|webm)$")
+
+
+def validate_inspiration_record(rec: dict) -> list[str]:
+    errors: list[str] = []
+    if not isinstance(rec.get("id"), str) or not INSPIRATION_ID_RE.match(rec["id"]):
+        errors.append(f"id: invalid value {rec.get('id')!r}")
+    if rec.get("status") not in STATUSES:
+        errors.append(f"status: invalid value {rec.get('status')!r}")
+    source = rec.get("source")
+    if not isinstance(source, dict):
+        errors.append("source: must be an object")
+    else:
+        if source.get("origin") != "instagram":
+            errors.append(f"source.origin: must be 'instagram', got {source.get('origin')!r}")
+        code = source.get("shortcode")
+        if not isinstance(code, str) or not SHORTCODE_RE.match(code):
+            errors.append(f"source.shortcode: invalid value {code!r}")
+    if not isinstance(rec.get("source_url"), str) or not rec["source_url"]:
+        errors.append("source_url: must be a non-empty string")
+    if "license" in rec:
+        errors.append("license: not allowed on inspiration records")
+    capture = rec.get("capture")
+    if not isinstance(capture, dict):
+        errors.append("capture: must be an object")
+        return errors
+    if capture.get("status") not in CAPTURE_STATUSES:
+        errors.append(f"capture.status: invalid value {capture.get('status')!r}")
+    expected = capture.get("slides_expected")
+    if expected is not None and (not isinstance(expected, int) or isinstance(expected, bool) or expected < 1):
+        errors.append(f"capture.slides_expected: must be an int >= 1 or null, got {expected!r}")
+    items = capture.get("items", [])
+    if not isinstance(items, list):
+        errors.append("capture.items: must be a list")
+        return errors
+    seen: set[int] = set()
+    for i, it in enumerate(items):
+        if not isinstance(it, dict):
+            errors.append(f"capture.items[{i}]: must be an object")
+            continue
+        slide = it.get("slide")
+        if not isinstance(slide, int) or isinstance(slide, bool) or slide < 1:
+            errors.append(f"capture.items[{i}].slide: must be an int >= 1, got {slide!r}")
+        elif slide in seen:
+            errors.append(f"capture.items[{i}]: duplicate slide {slide}")
+        else:
+            seen.add(slide)
+        if it.get("type") not in ("image", "video"):
+            errors.append(f"capture.items[{i}].type: invalid value {it.get('type')!r}")
+        for key in ("file", "poster"):
+            if key in it and (not isinstance(it[key], str) or not MEDIA_NAME_RE.match(it[key])):
+                errors.append(f"capture.items[{i}].{key}: invalid file name {it[key]!r}")
+    return errors
