@@ -29,27 +29,28 @@
   "description": "An abstract landscape of glowing blue, cyan, and magenta particles forming undulating waves against a dark navy background, with bokeh lights on the horizon. The dark upper area leaves room for text.",
   "rating": {
     "bot": {
-      "verdict": "maybe",
+      "verdict": "no",
       "strength": "unsure",
-      "reason": "Polished abstract particle wave with copy space works as a hero background, but it is generic stock tech imagery weakly tied to CIQ subjects.",
+      "reason": "Generic abstract particle-wave stock, the same style curators rejected in similar glowing tech-abstract examples; nothing specific to CIQ.",
       "model": "claude-opus-5-5",
-      "at": "2026-11-23T19:36:23Z",
+      "at": "2026-11-25T05:48:06Z",
       "examples": [
-        "life-scientist-workstation",
-        "life-sysadmin-server-rack"
+        "adobe-829377199",
+        "adobe-930146362",
+        "adobe-466214125",
+        "adobe-36041755",
+        "adobe-1843776305-2",
+        "life-scientist-workstation"
       ],
       "suggested_slugs": {
         "products": [],
         "categories": [],
         "verticals": [],
-        "concepts": [
-          "abstract-data"
-        ],
+        "concepts": [],
         "style": [
           "abstract",
           "particles",
-          "dark-background",
-          "hero-background"
+          "dark-background"
         ]
       }
     }

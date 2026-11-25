@@ -36,23 +36,27 @@
     "bot": {
       "verdict": "maybe",
       "strength": "unsure",
-      "reason": "Strong research/science subject with dramatic lighting, but color (examples are B&W), lower resolution, and laser optics is tangential to CIQ's compute focus; may need treatment and license check.",
+      "reason": "Authentic research-lab photo of a scientist at work, close to the approved workstation shot, but it's about laser optics rather than computing, and it's dark with limited text space for a hero.",
       "model": "claude-opus-5-5",
-      "at": "2026-11-23T19:36:23Z",
+      "at": "2026-11-25T05:48:06Z",
       "examples": [
-        "life-scientist-workstation",
-        "life-sysadmin-server-rack"
+        "adobe-829377199",
+        "adobe-930146362",
+        "adobe-466214125",
+        "adobe-36041755",
+        "adobe-1843776305-2",
+        "life-scientist-workstation"
       ],
       "suggested_slugs": {
         "products": [],
         "categories": [],
         "verticals": [],
         "concepts": [
-          "laboratory",
-          "physics"
+          "physics",
+          "laboratory"
         ],
         "style": [
-          "color-photo",
+          "documentary-photo",
           "low-key-lighting"
         ]
       }

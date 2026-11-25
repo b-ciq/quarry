@@ -33,14 +33,18 @@
   "description": "A dramatic, shallow-depth-of-field view down a row of server racks lit in deep blue with orange highlights and glowing cabling. The left side is blurred and open, which leaves room for text.",
   "rating": {
     "bot": {
-      "verdict": "maybe",
+      "verdict": "no",
       "strength": "unsure",
-      "reason": "Datacenter subject fits CIQ, but the glowing blue/orange server-aisle look is generic stock with possible AI artifacts; needs a license and quality check.",
+      "reason": "Generic glowing server-rack stock that closely matches previously rejected datacenter imagery; reads as cliche and likely AI-generated.",
       "model": "claude-opus-5-5",
-      "at": "2026-11-23T19:36:41Z",
+      "at": "2026-11-25T05:48:06Z",
       "examples": [
-        "life-scientist-workstation",
-        "life-sysadmin-server-rack"
+        "adobe-829377199",
+        "adobe-930146362",
+        "adobe-466214125",
+        "adobe-36041755",
+        "adobe-1843776305-2",
+        "life-scientist-workstation"
       ],
       "suggested_slugs": {
         "products": [],
@@ -48,9 +52,8 @@
         "verticals": [],
         "concepts": [],
         "style": [
-          "stock-photo",
-          "dramatic-lighting",
-          "blue-orange"
+          "stock-cliche",
+          "glowing-servers"
         ]
       }
     }

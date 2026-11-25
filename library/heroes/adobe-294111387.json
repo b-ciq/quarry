@@ -26,26 +26,27 @@
   "description": "An abstract dark blue background with soft bokeh particles and glowing specks, resembling a starfield or digital dust.",
   "rating": {
     "bot": {
-      "verdict": "maybe",
+      "verdict": "no",
       "strength": "unsure",
-      "reason": "Clean dark blue particle background with plenty of text room, but generic and weak on CIQ-specific subject.",
+      "reason": "Generic abstract bokeh stock background with no clear tie to CIQ's subject matter; similar generic tech-glow stock was rejected.",
       "model": "claude-opus-5-5",
-      "at": "2026-11-23T19:36:23Z",
+      "at": "2026-11-25T05:48:06Z",
       "examples": [
-        "life-scientist-workstation",
-        "life-sysadmin-server-rack"
+        "adobe-829377199",
+        "adobe-930146362",
+        "adobe-466214125",
+        "adobe-36041755",
+        "adobe-1843776305-2",
+        "life-scientist-workstation"
       ],
       "suggested_slugs": {
         "products": [],
         "categories": [],
         "verticals": [],
-        "concepts": [
-          "abstract"
-        ],
+        "concepts": [],
         "style": [
           "abstract-background",
-          "bokeh",
-          "dark-blue"
+          "bokeh"
         ]
       }
     }

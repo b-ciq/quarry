@@ -33,14 +33,18 @@
   "description": "A symmetrical datacenter corridor lined with server racks, rendered in blue tones with a bright light at the vanishing point and overlaid network-node lines.",
   "rating": {
     "bot": {
-      "verdict": "maybe",
-      "strength": "unsure",
-      "reason": "Relevant datacenter subject but a common generic stock look (glowing network lines, blue tunnel), with little clean space for text.",
+      "verdict": "no",
+      "strength": "strong",
+      "reason": "Generic glowing blue server-corridor stock cliche with network-node overlay, matching previously rejected datacenter imagery.",
       "model": "claude-opus-5-5",
-      "at": "2026-11-23T19:36:23Z",
+      "at": "2026-11-25T05:48:06Z",
       "examples": [
-        "life-scientist-workstation",
-        "life-sysadmin-server-rack"
+        "adobe-829377199",
+        "adobe-930146362",
+        "adobe-466214125",
+        "adobe-36041755",
+        "adobe-1843776305-2",
+        "life-scientist-workstation"
       ],
       "suggested_slugs": {
         "products": [],
@@ -48,8 +52,8 @@
         "verticals": [],
         "concepts": [],
         "style": [
-          "stock-3d-render",
-          "blue-glow"
+          "stock-cliche",
+          "glowing-blue"
         ]
       }
     }

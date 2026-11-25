@@ -29,26 +29,28 @@
   "description": "Abstract dark blue background with rows of glowing cyan dots receding in a wave, with a soft bokeh blur on the right. Evokes data or digital flow.",
   "rating": {
     "bot": {
-      "verdict": "maybe",
+      "verdict": "no",
       "strength": "unsure",
-      "reason": "Clean abstract blue data-particle background with text room, but generic stock tech look and weak on CIQ-specific subject.",
+      "reason": "Generic abstract digital-particle stock; curators rejected similar glowing tech abstractions, though it is cleaner with room for text.",
       "model": "claude-opus-5-5",
-      "at": "2026-11-23T19:36:23Z",
+      "at": "2026-11-25T05:48:06Z",
       "examples": [
-        "life-scientist-workstation",
-        "life-sysadmin-server-rack"
+        "adobe-829377199",
+        "adobe-930146362",
+        "adobe-466214125",
+        "adobe-36041755",
+        "adobe-1843776305-2",
+        "life-scientist-workstation"
       ],
       "suggested_slugs": {
         "products": [],
         "categories": [],
         "verticals": [],
-        "concepts": [
-          "abstract-data"
-        ],
+        "concepts": [],
         "style": [
           "abstract",
           "bokeh",
-          "dark-background"
+          "particles"
         ]
       }
     }

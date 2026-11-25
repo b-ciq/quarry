@@ -34,14 +34,18 @@
   "description": "An abstract DNA double helix made of glowing cyan dots spirals across a deep navy background, with shallow depth of field blurring the far end.",
   "rating": {
     "bot": {
-      "verdict": "yes",
+      "verdict": "maybe",
       "strength": "unsure",
-      "reason": "Polished abstract DNA helix in brand-friendly blue, with open dark space for text; fits life-sciences and HPC research heroes.",
+      "reason": "Clean, polished life-sciences hero with text room, but the glowing DNA helix is a common stock trope; curators rejected similar abstract tech stock.",
       "model": "claude-opus-5-5",
-      "at": "2026-11-23T19:36:23Z",
+      "at": "2026-11-25T05:48:06Z",
       "examples": [
-        "life-scientist-workstation",
-        "life-sysadmin-server-rack"
+        "adobe-829377199",
+        "adobe-930146362",
+        "adobe-466214125",
+        "adobe-36041755",
+        "adobe-1843776305-2",
+        "life-scientist-workstation"
       ],
       "suggested_slugs": {
         "products": [],
@@ -52,8 +56,7 @@
         ],
         "style": [
           "abstract",
-          "particle-visualization",
-          "dark-background"
+          "stock-cliche"
         ]
       }
     }

@@ -29,27 +29,31 @@
   "description": "Abstract dark blue background with bright cyan light streaks sweeping from the left and converging toward the right, suggesting speed or data flow.",
   "rating": {
     "bot": {
-      "verdict": "maybe",
+      "verdict": "no",
       "strength": "unsure",
-      "reason": "Clean abstract hero with text space, but generic speed-lines stock that is weak on CIQ-specific subject; needs license check.",
+      "reason": "Generic stock light-streak abstraction; like other generic tech stock the curators rejected, it says nothing specific about CIQ.",
       "model": "claude-opus-5-5",
-      "at": "2026-11-23T19:36:23Z",
+      "at": "2026-11-25T05:48:06Z",
       "examples": [
-        "life-scientist-workstation",
-        "life-sysadmin-server-rack"
+        "adobe-829377199",
+        "adobe-930146362",
+        "adobe-466214125",
+        "adobe-36041755",
+        "adobe-1843776305-2",
+        "life-scientist-workstation"
       ],
       "suggested_slugs": {
         "products": [],
         "categories": [],
         "verticals": [],
         "concepts": [
-          "networking",
-          "speed"
+          "speed",
+          "networking"
         ],
         "style": [
           "abstract",
           "light-streaks",
-          "background"
+          "generic-stock"
         ]
       }
     }

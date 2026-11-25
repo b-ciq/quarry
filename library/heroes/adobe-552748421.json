@@ -31,27 +31,29 @@
   "description": "Abstract illustration of three colored binary streams (blue, pink, yellow) fanning out into many glowing lines that merge into a dense field of binary digits on a dark navy background.",
   "rating": {
     "bot": {
-      "verdict": "maybe",
+      "verdict": "no",
       "strength": "unsure",
-      "reason": "Polished abstract data-flow visual with text room, but generic stock style and only loosely tied to CIQ's subjects; needs curator vouch and license check.",
+      "reason": "Generic glowing-binary data stock abstraction, similar to the rejected neon tech abstracts; not distinctive to CIQ.",
       "model": "claude-opus-5-5",
-      "at": "2026-11-23T19:36:41Z",
+      "at": "2026-11-25T05:48:06Z",
       "examples": [
-        "life-scientist-workstation",
-        "life-sysadmin-server-rack"
+        "adobe-829377199",
+        "adobe-930146362",
+        "adobe-466214125",
+        "adobe-36041755",
+        "adobe-1843776305-2",
+        "life-scientist-workstation"
       ],
       "suggested_slugs": {
         "products": [],
         "categories": [],
         "verticals": [],
         "concepts": [
-          "ai",
-          "data-flow"
+          "big-data"
         ],
         "style": [
           "abstract",
-          "stock",
-          "dark-background"
+          "stock-cliche"
         ]
       }
     }
