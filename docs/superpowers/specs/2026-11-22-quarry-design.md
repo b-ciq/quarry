@@ -122,6 +122,7 @@ quarry/
     heroes/  spots/  backgrounds/  screenshots/<product>/  diagrams/  lifestyle/
     <asset>.png + <asset>.json    # sidecar: metadata (schema below)
   inspiration/              # REFERENCE ONLY — never served to consumers.
+                            # UPDATE 2026-11-24: now lives in an external root, not in this repo.
     <source>/<board-or-theme>/
     <item>.jpg + <item>.json      # sidecar incl. source URL, why saved
   taxonomy/
@@ -149,6 +150,9 @@ quarry/
   anchor yet is listed as "aspirational — no production anchor." It is
   generated, and CI rejects it if it contains `inspiration/` paths or
   pinterest/instagram/x.com URLs.
+- UPDATE 2026-11-24: inspiration now lives in an external root (a synced Drive
+  folder), and its records are not in git. See
+  `docs/superpowers/specs/2026-11-24-instagram-capture-design.md`.
 - Inspiration binaries stay out of the shared remote (private store or
   narrower-access LFS bucket; sidecar metadata may live in git), so cloning
   the repo is not itself redistribution of copyrighted material.

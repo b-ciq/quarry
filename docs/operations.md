@@ -27,13 +27,54 @@ Ingest creates `status=proposed` sidecars. Then curate in the workbench review q
 
 ## Instagram saves (inspiration, reference only)
 
-`quarry import-instagram EXPORT.zip`
+Inspiration lives outside the repo, in a synced Drive folder, so images stay off the shared remote. Nothing that serves assets reads it. No bot logs in to Instagram: you export once, then click a button on each post yourself.
+
+### One-time setup
+
+1. Create `~/.config/quarry/config.toml` (or set `QUARRY_CONFIG_DIR` to use another folder):
+
+   ```toml
+   inspiration_dir = "~/Library/CloudStorage/GoogleDrive-bchristensen@ciq.com/My Drive/Quarry inspiration saves"
+   # capture_daily_cap = 40                 # optional, default 40
+   # capture_downloads_dir = "~/Downloads/quarry"   # optional, default shown
+   ```
+
+   `QUARRY_INSPIRATION_DIR` overrides `inspiration_dir`.
+2. `pip install -e ".[inspiration]"` (adds ffmpeg for video).
+3. Load the Chrome extension: `chrome://extensions` → Developer mode → Load unpacked → select `extension/`. Details in `extension/README.md`.
+4. Load it from a stable Quarry checkout, not a Conductor workspace. Chrome keeps pointing at the folder, and an archived workspace deletes it.
+
+### Import an export
 
 1. In Instagram, open Accounts Center → Download your information. Choose only Saved, date range All time, format JSON.
-2. Run the command on the zip (or the unzipped folder). The files go to `<root>/instagram/<id>/save.json`, where the root is set by `QUARRY_INSPIRATION_DIR` or `inspiration_dir` in `~/.config/quarry/config.toml` (or pass `--inspiration-dir`). Each save becomes one record, holding the link, owner, caption, hashtags, collections and save time.
-3. Re-run it on every new export. It skips saves it already has and only adds new ones, plus newly listed collections. It never overwrites curator fields (`status`, `saved_because`, `style`, `concepts`, `description`).
+2. `quarry import-instagram EXPORT [--inspiration-dir DIR]` on the zip or the unzipped folder.
+3. Each save becomes `<root>/instagram/<id>/save.json` with link, owner, caption, hashtags, collections and save time, and a pending `capture` block.
+4. Re-run on every new export. It adds only new saves and newly listed collections, and never overwrites curator fields (`status`, `saved_because`, `style`, `concepts`, `description`).
 
-The export has no images of other people's posts, so records start with a pending `capture` block. Nothing that serves assets reads the inspiration folder, and it lives outside the repo so images stay off the shared remote. No bot logs in to Instagram: collection is a manual export, which keeps the account clear of Instagram's automation rules.
+### Capture session
+
+1. `quarry ui`, then open the Capture page.
+2. Click **Open next**. It opens the next pending post in Instagram.
+3. Click the Quarry button (or Option+Shift+Q). Wait for the checkmark badge.
+4. Repeat. The page sweeps `~/Downloads/quarry/` into the store as you go.
+5. The cap is 40 posts a day, to keep the account looking normal. Change it with `capture_daily_cap`.
+
+To sweep without the UI: `quarry import-captures [--inspiration-dir DIR] [--downloads DIR]`.
+
+### Fixing a capture
+
+1. Wrong or partial files: open the post and capture it again. The new files replace the old.
+2. **Remove...**: delete one slide's file, or all files. The save goes back to partial or pending.
+3. **Add file**: pick a file, or drop one on the row, to fill in a missing slide.
+4. **Unavailable**: mark a deleted or private post so it stops coming up.
+
+### Failed captures
+
+A folder the sweep cannot file moves to `<downloads>/_failed/<folder>/` with a `reason.txt` that says why. Capture the post again, or use Add file on its row.
+
+### Drive sync
+
+The Drive folder syncs deletions both ways. Deleting a file there deletes it everywhere, and Drive trash is the only undo.
 
 ## Per-release screenshot checklist
 

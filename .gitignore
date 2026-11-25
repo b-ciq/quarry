@@ -3,9 +3,12 @@ __pycache__/
 .venv/
 *.egg-info/
 ui/node_modules
-# Inspiration binaries are third-party content: keep them out of the shared remote (sidecars may be committed).
+# Inspiration lives outside the repo (see docs/operations.md). These patterns are a safety net against committing third-party media by accident.
 inspiration/**/*.jpg
 inspiration/**/*.jpeg
 inspiration/**/*.png
 inspiration/**/*.webp
 inspiration/**/*.mp4
+inspiration/**/*.webm
+inspiration/**/*.avif
+inspiration/**/*.heic
