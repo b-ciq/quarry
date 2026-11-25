@@ -2,8 +2,8 @@
 
 The export lists what was saved (link, owner, caption, hashtags, collections) but
 holds no images of other people's posts. Each save becomes a metadata-only
-inspiration sidecar under inspiration/instagram/ with image_status "pending".
-inspiration/ is reference only: nothing that serves assets reads it.
+record at <root>/instagram/<id>/save.json in the inspiration store (outside the
+repo), with a pending capture block. Nothing that serves assets reads it.
 """
 import json
 import re
@@ -12,9 +12,11 @@ from dataclasses import dataclass, field
 from datetime import UTC, date, datetime
 from pathlib import Path
 
+from quarry.inspiration_store import Store, store_lock
+
 POSTS_FILE = "saved_posts.json"
 COLLECTIONS_FILE = "saved_collections.json"
-POST_URL_RE = re.compile(r"instagram\.com/(p|reels?|tv)/([A-Za-z0-9_-]+)")
+POST_URL_RE = re.compile(r"instagram\.com/(?:[A-Za-z0-9._]+/)?(p|reels?|tv)/([A-Za-z0-9_-]+)")
 KINDS = {"p": "post", "reel": "reel", "reels": "reel", "tv": "video"}
 # Fields the importer may fill in later; everything else belongs to curators once written.
 EXPORT_FIELDS = ("caption", "hashtags", "owner")
@@ -174,15 +176,9 @@ def _parse(path: Path) -> tuple[list[Save], bool]:
     return list(saves.values()), collections_data is not None
 
 
-def _slug(s: str) -> str:
-    return re.sub(r"[^a-z0-9]+", "-", s.lower()).strip("-")
-
-
-def _sidecar(save: Save, id_: str, today: str) -> dict:
+def _record(save: Save, id_: str, today: str) -> dict:
     return {
         "id": id_,
-        "file": None,
-        "image_status": "pending",
         "status": "proposed",
         "source_url": save.url,
         "source": {"origin": "instagram", "shortcode": save.shortcode, "kind": save.kind,
@@ -195,57 +191,44 @@ def _sidecar(save: Save, id_: str, today: str) -> dict:
         "concepts": [],
         "style": [],
         "description": "",
+        "capture": {"status": "pending", "slides_expected": None, "items": [], "note": ""},
     }
 
 
-def import_instagram(export: Path, repo_root: Path) -> ImportResult:
+def import_instagram(export: Path, root: Path) -> ImportResult:
     saves, has_collections = _parse(export)
-    dest = Path(repo_root) / "inspiration" / "instagram"
-    existing: dict[str, Path] = {}
-    ids: set[str] = set()
-    for p in sorted(dest.glob("*.json")) if dest.exists() else []:
-        try:
-            entry = json.loads(p.read_text())
-        except json.JSONDecodeError:
-            continue
-        ids.add(p.stem)
-        code = (entry.get("source") or {}).get("shortcode")
-        if code:
-            existing[code] = p
-
+    store = Store(root)
     result = ImportResult()
     if has_collections and not any(s.collections for s in saves):
         result.warnings.append(f"{COLLECTIONS_FILE} found but no collection memberships were recognized")
     today = date.today().isoformat()
-    dest.mkdir(parents=True, exist_ok=True)
-    for save in saves:
-        if save.shortcode in existing:
-            path = existing[save.shortcode]
-            entry = json.loads(path.read_text())
-            before = json.dumps(entry, sort_keys=True)
-            fresh = _sidecar(save, entry.get("id", path.stem), today)
-            for key in EXPORT_FIELDS:
-                if not entry.get(key) and fresh[key]:
-                    entry[key] = fresh[key]
-            if not (entry.get("source") or {}).get("saved_at") and save.saved_at:
-                entry.setdefault("source", {})["saved_at"] = save.saved_at
-            merged = list(entry.get("collections") or [])
-            merged += [c for c in save.collections if c not in merged]
-            entry["collections"] = merged
-            if json.dumps(entry, sort_keys=True) == before:
-                result.unchanged.append(path)
-            else:
-                path.write_text(json.dumps(entry, indent=2, ensure_ascii=False) + "\n")
-                result.updated.append(path)
-            continue
-        base = "ig-" + (_slug(save.shortcode) or "post")
-        id_, n = base, 1
-        while id_ in ids:
-            n += 1
-            id_ = f"{base}-{n}"
-        path = dest / f"{id_}.json"
-        path.write_text(json.dumps(_sidecar(save, id_, today), indent=2, ensure_ascii=False) + "\n")
-        ids.add(id_)
-        existing[save.shortcode] = path
-        result.created.append(path)
+    with store_lock():
+        scan = store.scan()
+        result.warnings.extend(scan.warnings)
+        for save in saves:
+            if save.shortcode in scan.by_shortcode:
+                id_ = scan.by_shortcode[save.shortcode]
+                entry = store.read(id_)
+                before = json.dumps(entry, sort_keys=True)
+                fresh = _record(save, id_, today)
+                for key in EXPORT_FIELDS:
+                    if not entry.get(key) and fresh[key]:
+                        entry[key] = fresh[key]
+                if not (entry.get("source") or {}).get("saved_at") and save.saved_at:
+                    entry.setdefault("source", {})["saved_at"] = save.saved_at
+                merged = list(entry.get("collections") or [])
+                merged += [c for c in save.collections if c not in merged]
+                entry["collections"] = merged
+                path = store.dir / id_ / "save.json"
+                if json.dumps(entry, sort_keys=True) == before:
+                    result.unchanged.append(path)
+                else:
+                    store.write(entry)
+                    result.updated.append(path)
+                continue
+            id_ = store.new_id(save.shortcode, scan)
+            path = store.write(_record(save, id_, today))
+            scan.ids.add(id_)
+            scan.by_shortcode[save.shortcode] = id_
+            result.created.append(path)
     return result

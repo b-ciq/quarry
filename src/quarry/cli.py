@@ -7,6 +7,7 @@ from pathlib import Path
 from quarry.export_deck import write_export
 from quarry.indexer import IndexBuildError, build_index, validate_assets
 from quarry.ingest import ingest_dir
+from quarry.inspiration_store import NoInspirationRoot, inspiration_root
 from quarry.instagram import ExportError, import_instagram
 from quarry.library import LibraryError, scan_library
 from quarry.publish import check_stale, publish
@@ -83,7 +84,8 @@ def main(argv=None) -> int:
     im = sub.add_parser("import-instagram",
                         help="import Instagram saves from a 'Download your information' export as inspiration")
     im.add_argument("export", type=Path, help="the export .zip, or the unzipped folder")
-    im.add_argument("--repo", default=".", type=Path)
+    im.add_argument("--inspiration-dir", default=None, type=Path,
+                    help="inspiration folder (default: QUARRY_INSPIRATION_DIR or config.toml)")
     ix = sub.add_parser("index", help="build the search index (FTS5, vectors, thumbnails)")
     ix.add_argument("--repo", default=".", type=Path)
     ix.add_argument("--fake-embedder", action="store_true", help="deterministic fake embeddings (no models)")
@@ -165,14 +167,15 @@ def main(argv=None) -> int:
         return 0
     if args.command == "import-instagram":
         try:
-            res = import_instagram(args.export, args.repo)
-        except (ExportError, ValueError) as exc:
+            root = inspiration_root(args.inspiration_dir)
+            res = import_instagram(args.export, root)
+        except (ExportError, ValueError, NoInspirationRoot) as exc:
             print(f"error: {exc}", file=sys.stderr)
             return 2
         for w in res.warnings:
             print(f"warning: {w}", file=sys.stderr)
         print(f"created {len(res.created)}, updated {len(res.updated)}, unchanged {len(res.unchanged)}")
-        print("images pending: the export has links only; files are under inspiration/instagram/")
+        print(f"images pending: the export has links only; files are in {root}/instagram/")
         return 0
     if args.command == "index":
         if args.fake_embedder:

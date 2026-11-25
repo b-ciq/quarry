@@ -30,10 +30,10 @@ Ingest creates `status=proposed` sidecars. Then curate in the workbench review q
 `quarry import-instagram EXPORT.zip`
 
 1. In Instagram, open Accounts Center → Download your information. Choose only Saved, date range All time, format JSON.
-2. Run the command on the zip (or the unzipped folder). Each save becomes `inspiration/instagram/ig-<shortcode>.json`, holding the link, owner, caption, hashtags, collections and save time.
+2. Run the command on the zip (or the unzipped folder). The files go to `<root>/instagram/<id>/save.json`, where the root is set by `QUARRY_INSPIRATION_DIR` or `inspiration_dir` in `~/.config/quarry/config.toml` (or pass `--inspiration-dir`). Each save becomes one record, holding the link, owner, caption, hashtags, collections and save time.
 3. Re-run it on every new export. It skips saves it already has and only adds new ones, plus newly listed collections. It never overwrites curator fields (`status`, `saved_because`, `style`, `concepts`, `description`).
 
-The export has no images of other people's posts, so sidecars start with `"file": null, "image_status": "pending"`. Nothing that serves assets reads `inspiration/`. Image files there are gitignored so they stay off the shared remote. No bot logs in to Instagram: collection is a manual export, which keeps the account clear of Instagram's automation rules.
+The export has no images of other people's posts, so records start with a pending `capture` block. Nothing that serves assets reads the inspiration folder, and it lives outside the repo so images stay off the shared remote. No bot logs in to Instagram: collection is a manual export, which keeps the account clear of Instagram's automation rules.
 
 ## Per-release screenshot checklist
 

@@ -1,8 +1,13 @@
 import json
 import zipfile
 
+import pytest
+
 from quarry.cli import main
+from quarry.inspiration_store import Store
 from quarry.instagram import import_instagram, parse_export
+from tests.inspiration_helpers import item as media_item
+from tests.inspiration_helpers import make_record
 
 POSTS_PATH = "your_instagram_activity/saved/saved_posts.json"
 COLLECTIONS_PATH = "your_instagram_activity/saved/saved_collections.json"
@@ -65,8 +70,15 @@ def _zip(path, posts, collections=None):
 
 
 def _sidecars(root):
-    d = root / "inspiration" / "instagram"
-    return {p.stem: json.loads(p.read_text()) for p in sorted(d.glob("*.json"))}
+    d = root / "instagram"
+    return {p.parent.name: json.loads(p.read_text()) for p in sorted(d.glob("*/save.json"))}
+
+
+def make_capture_created(code):
+    rec = make_record(code)
+    rec["source"]["via"] = "capture"
+    rec["capture"] = {"status": "captured", "slides_expected": 1, "items": [media_item(1)], "note": ""}
+    return rec
 
 
 def test_parses_new_format_and_fixes_mojibake(tmp_path):
@@ -107,15 +119,16 @@ def test_accepts_an_unzipped_directory(tmp_path):
 
 
 def test_import_writes_metadata_only_sidecars_outside_library(tmp_path):
-    repo = tmp_path / "repo"
+    repo = tmp_path / "root"; repo.mkdir()
     res = import_instagram(_zip(tmp_path / "e.zip", NEW_FORMAT), repo)
     assert len(res.created) == 2 and not res.updated
-    assert not (repo / "library").exists()
+    assert not (repo / "library").exists() and not (repo / "inspiration").exists()
     sc = _sidecars(repo)
     item = sc["ig-dfakjbkkzb8"]
     assert item["id"] == "ig-dfakjbkkzb8"
     assert item["status"] == "proposed"
-    assert item["file"] is None and item["image_status"] == "pending"
+    assert "file" not in item and "image_status" not in item
+    assert item["capture"] == {"status": "pending", "slides_expected": None, "items": [], "note": ""}
     assert item["source_url"] == "https://www.instagram.com/p/DfaKjbkkZB8/"
     assert item["source"]["origin"] == "instagram" and item["source"]["shortcode"] == "DfaKjbkkZB8"
     assert item["source"]["kind"] == "post" and item["source"]["saved_at"] == "2026-11-24T03:14:32Z"
@@ -126,9 +139,9 @@ def test_import_writes_metadata_only_sidecars_outside_library(tmp_path):
 
 
 def test_reimport_is_idempotent_and_keeps_curator_edits(tmp_path):
-    repo = tmp_path / "repo"
+    repo = tmp_path / "root"; repo.mkdir()
     import_instagram(_zip(tmp_path / "e.zip", NEW_FORMAT), repo)
-    path = repo / "inspiration/instagram/ig-dfakjbkkzb8.json"
+    path = repo / "instagram/ig-dfakjbkkzb8/save.json"
     edited = json.loads(path.read_text())
     edited.update(saved_because="great pixel texture", style=["pixel-mosaic"], status="confirmed")
     path.write_text(json.dumps(edited, indent=2) + "\n")
@@ -145,7 +158,7 @@ def test_reimport_is_idempotent_and_keeps_curator_edits(tmp_path):
 
 
 def test_shortcodes_differing_only_by_case_get_distinct_ids(tmp_path):
-    repo = tmp_path / "repo"
+    repo = tmp_path / "root"; repo.mkdir()
     posts = [_item("https://www.instagram.com/p/AbC/", 1), _item("https://www.instagram.com/p/abc/", 2)]
     res = import_instagram(_zip(tmp_path / "e.zip", posts), repo)
     assert len(res.created) == 2
@@ -157,15 +170,47 @@ def test_shortcodes_differing_only_by_case_get_distinct_ids(tmp_path):
 
 
 def test_cli(tmp_path, capsys):
-    repo = tmp_path / "repo"
-    rc = main(["import-instagram", str(_zip(tmp_path / "e.zip", NEW_FORMAT)), "--repo", str(repo)])
+    repo = tmp_path / "root"; repo.mkdir()
+    rc = main(["import-instagram", str(_zip(tmp_path / "e.zip", NEW_FORMAT)), "--inspiration-dir", str(repo)])
     assert rc == 0
-    assert "created 2, updated 0, unchanged 0" in capsys.readouterr().out
+    out = capsys.readouterr().out
+    assert "created 2, updated 0, unchanged 0" in out
+    assert "files are in" in out and "inspiration/instagram" not in out
 
 
 def test_cli_reports_missing_saves_file(tmp_path, capsys):
     with zipfile.ZipFile(tmp_path / "empty.zip", "w") as z:
         z.writestr("other.json", "{}")
-    rc = main(["import-instagram", str(tmp_path / "empty.zip"), "--repo", str(tmp_path / "repo")])
+    rc = main(["import-instagram", str(tmp_path / "empty.zip"), "--inspiration-dir", str(tmp_path)])
     assert rc == 2
     assert "saved_posts.json" in capsys.readouterr().err
+
+
+def test_cli_rejects_repo_flag(tmp_path):
+    with pytest.raises(SystemExit):
+        main(["import-instagram", str(_zip(tmp_path / "e.zip", NEW_FORMAT)), "--repo", str(tmp_path)])
+
+
+def test_url_forms(tmp_path):
+    posts = [_item("https://www.instagram.com/someuser/p/UserForm1/", 1),
+             _item("https://www.instagram.com/reels/Reels2/", 2)]
+    assert [s.shortcode for s in parse_export(_zip(tmp_path / "e.zip", posts))] == ["UserForm1", "Reels2"]
+
+
+def test_import_after_capture_merges_by_shortcode(tmp_path):
+    root = tmp_path / "root"; root.mkdir(); store = Store(root)
+    rec = make_capture_created("DfaKjbkkZB8")
+    store.write(rec)
+    res = import_instagram(_zip(tmp_path / "e.zip", NEW_FORMAT), root)
+    assert len(res.updated) == 1 and len(res.created) == 1
+    merged = store.read(rec["id"])
+    assert merged["capture"] == rec["capture"] and merged["caption"] == "I’m testing"
+    assert merged["source"]["saved_at"] == "2026-11-24T03:14:32Z"
+    assert merged["source"]["via"] == "capture"
+
+
+def test_cli_requires_a_root(tmp_path, monkeypatch, capsys):
+    monkeypatch.setenv("QUARRY_CONFIG_DIR", str(tmp_path / "cfg"))
+    monkeypatch.delenv("QUARRY_INSPIRATION_DIR", raising=False)
+    assert main(["import-instagram", str(_zip(tmp_path / "e.zip", NEW_FORMAT))]) == 2
+    assert "QUARRY_INSPIRATION_DIR" in capsys.readouterr().err
