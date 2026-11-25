@@ -63,7 +63,7 @@ To sweep without the UI: `quarry import-captures [--inspiration-dir DIR] [--down
 
 ### Fixing a capture
 
-1. Wrong or partial files: open the post and capture it again. The new files replace the old.
+1. Wrong or partial files: click the row's **Open** link to open that post, then press the Quarry button again. The re-capture replaces only the slides it brings and keeps the others. **Open** counts against today's cap, like Open next, and is off once the cap is reached.
 2. **Remove...**: delete one slide's file, or all files. The save goes back to partial or pending.
 3. **Add file**: pick a file, or drop one on the row, to fill in a missing slide.
 4. **Unavailable**: mark a deleted or private post so it stops coming up.

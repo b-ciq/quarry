@@ -25,7 +25,7 @@ After pulling changes, click the reload arrow on the extension's card.
 | `✓` | Everything is saved, including `capture.json`. |
 | `⌘R` | The page data is for a different post, which happens after moving between posts inside Instagram. Reload the page (⌘R) and press again. |
 | `–` | This page isn't a post, reel or video. |
-| `!` | A download failed and the capture stopped. Hover for the reason. Nothing is retried. Press again to start over: files with the same names are overwritten. |
+| `!` | A download failed and the capture stopped. Hover for the reason. Nothing is retried. Press again to start over: that saves a fresh copy into a new timestamped folder. The stopped folder stays in `~/Downloads/quarry` without a `capture.json`, so the sweep never files it. Delete it when you like. |
 
 A capture that stops partway has no `capture.json`, so the sweep leaves the folder alone.
 
