@@ -17,8 +17,9 @@ from fastapi import APIRouter, FastAPI, File, Form, UploadFile
 from fastapi.responses import JSONResponse
 
 from quarry.capture_sweep import FAILED_DIR, IMAGE_EXTS, MAX_SLIDE, capture_status, sweep
-from quarry.inspiration_store import (NoInspirationRoot, Store, atomic_move, atomic_write_bytes, cache_dir,
-                                      capture_downloads_dir, daily_cap, inspiration_root, store_lock)
+from quarry.inspiration_store import (DEFAULT_DAILY_CAP, NoInspirationRoot, Store, atomic_write_bytes, cache_dir,
+                                      capture_downloads_dir, config_dir, daily_cap, inspiration_root,
+                                      store_lock)
 from quarry.media_probe import FfmpegMissing, MediaError, assemble_mp4, image_size, make_poster, probe_video
 from quarry.schema import CAPTURE_STATUSES
 
@@ -76,12 +77,27 @@ def _load_opens(today: str) -> list[str]:
     return [code for code in data["opened"] if isinstance(code, str)]
 
 
+CONFIG_ERRORS = (ValueError, TypeError)  # tomllib.TOMLDecodeError is a ValueError; wrong value types
+
+
+def _config_problem(e: Exception) -> str:
+    return f"Capture is off: {config_dir() / 'config.toml'} has a problem: {e}"
+
+
+def _cap() -> tuple[int, str | None]:
+    """The daily cap, or the default plus a warning when config.toml can't give one."""
+    try:
+        return daily_cap(), None
+    except CONFIG_ERRORS as e:
+        return DEFAULT_DAILY_CAP, f"capture_daily_cap unreadable, using {DEFAULT_DAILY_CAP}: {e}"
+
+
 def _today() -> dict:
-    return {"opened": len(_load_opens(date.today().isoformat())), "cap": daily_cap()}
+    return {"opened": len(_load_opens(date.today().isoformat())), "cap": _cap()[0]}
 
 
 def _failed_folders() -> list[dict]:
-    failed = capture_downloads_dir() / FAILED_DIR
+    failed = capture_downloads_dir() / FAILED_DIR  # caller handles config errors
     if not failed.is_dir():
         return []
     out = []
@@ -155,13 +171,18 @@ def mount(app: FastAPI) -> None:
         root, setup = inspiration_root(), None
     except NoInspirationRoot as e:
         root, setup = None, str(e)
+    except CONFIG_ERRORS as e:  # the workbench always starts; only the Capture page is off
+        root, setup = None, _config_problem(e)
     app.state.capture_root = root
     app.state.capture_setup = setup
     store = Store(root) if root is not None else None
     router = APIRouter()
 
     def mutate(shortcode: str, change) -> JSONResponse | dict:
-        """Apply `change(record, id) -> stale media names` to the record under the store lock."""
+        """Apply `change(record, id) -> (stale media names, staged files)` under the store lock.
+
+        The record and staged files are committed all or nothing; stale media goes only after that.
+        """
         if store is None:
             return _err(409, setup)
         with store_lock():
@@ -170,10 +191,14 @@ def mount(app: FastAPI) -> None:
                 return _err(404, f"No save with shortcode {shortcode}")
             record = store.read(id_)
             try:
-                stale = change(record, id_)
+                stale, files = change(record, id_)
             except _Refused as e:
                 return _err(e.status, e.message)
-            store.write(record)
+            try:
+                store.commit(record, files)
+            except (OSError, ValueError) as e:
+                log.exception("could not save %s", id_)
+                return _err(500, f"Could not save {shortcode}: {e}")
             for name in stale:
                 try:
                     store.media_path(id_, name).unlink(missing_ok=True)
@@ -198,8 +223,17 @@ def mount(app: FastAPI) -> None:
             if r["status"] in counts:
                 counts[r["status"]] += 1
         rows.sort(key=_sort_key, reverse=True)
-        return {"enabled": True, "setup": None, "counts": counts, "today": _today(),
-                "items": rows, "failed": _failed_folders(), "warnings": warnings}
+        cap, cap_warning = _cap()
+        if cap_warning:
+            warnings.append(cap_warning)
+        try:
+            failed = _failed_folders()
+        except CONFIG_ERRORS as e:
+            failed = []
+            warnings.append(f"capture_downloads_dir unreadable: {e}")
+        today = {"opened": len(_load_opens(date.today().isoformat())), "cap": cap}
+        return {"enabled": True, "setup": None, "counts": counts, "today": today,
+                "items": rows, "failed": failed, "warnings": warnings}
 
     @router.post("/api/capture/{shortcode}/opened")
     def opened(shortcode: str):
@@ -209,7 +243,7 @@ def mount(app: FastAPI) -> None:
             id_ = store.scan().by_shortcode.get(shortcode)
             if id_ is None:
                 return _err(404, f"No save with shortcode {shortcode}")
-            today, cap = date.today().isoformat(), daily_cap()
+            today, cap = date.today().isoformat(), _cap()[0]
             codes = _load_opens(today)
             if shortcode not in codes:
                 if len(codes) >= cap:
@@ -223,7 +257,7 @@ def mount(app: FastAPI) -> None:
     def unavailable(shortcode: str):
         def change(record, _id):
             record["capture"]["status"] = "unavailable"
-            return set()
+            return set(), []
         return mutate(shortcode, change)
 
     def remove(shortcode: str, slide: int | None):
@@ -236,7 +270,7 @@ def mount(app: FastAPI) -> None:
             capture["items"] = [it for it in items if it not in gone]
             capture["status"] = capture_status(capture)
             kept = set().union(*map(_media_names, capture["items"]))
-            return set().union(*map(_media_names, gone)) - kept
+            return set().union(*map(_media_names, gone)) - kept, []
         return mutate(shortcode, change)
 
     @router.delete("/api/capture/{shortcode}/items/{slide}")
@@ -283,16 +317,16 @@ def mount(app: FastAPI) -> None:
                     new = {"slide": n, "type": fields["type"], "method": "manual",
                            "captured_at": datetime.now(UTC).strftime("%Y-%m-%dT%H:%M:%SZ"),
                            "file": nn + media_ext, **{k: v for k, v in fields.items() if k != "type"}}
+                    files = [(media, new["file"])]
                     if poster is not None:
                         new["poster"] = f"{nn}-poster.jpg"
-                        atomic_move(poster, store.media_path(id_, new["poster"]))
+                        files.append((poster, new["poster"]))
                     new["sha256"] = sha
-                    atomic_move(media, store.media_path(id_, new["file"]))
                     stale = _media_names(by_slide[n]) - _media_names(new) if n in by_slide else set()
                     by_slide[n] = new
                     capture["items"] = [by_slide[k] for k in sorted(by_slide)]
                     capture["status"] = capture_status(capture)
-                    return stale
+                    return stale, files
 
                 return mutate(shortcode, change)
         except _Refused as e:

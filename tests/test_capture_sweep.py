@@ -331,6 +331,41 @@ def test_store_write_failure_leaves_folder_and_no_half_made_save(store, download
     assert sweep(downloads, store).filed == ["ig-fakecar1"]
 
 
+def _snapshot(folder: Path) -> dict[str, bytes]:
+    return {p.name: p.read_bytes() for p in sorted(folder.iterdir())}
+
+
+@pytest.mark.parametrize("second", ["image", "video"])
+def test_failed_write_over_existing_record_restores_replaced_media(store, downloads, monkeypatch, second):
+    """Re-capturing slide 1 when the write fails leaves the old bytes, save.json and no stray files."""
+    capture_folder(downloads, "FAKEcar1", [vid(1)], slides_expected=1); sweep(downloads, store)
+    save = store.dir / "ig-fakecar1"
+    before = _snapshot(save)
+    spec = img(1, color="blue") if second == "image" else vid(1, codec="vp9", audio=False)
+    f = capture_folder(downloads, "FAKEcar1", [spec], slides_expected=1)
+
+    def boom(record):
+        raise OSError("drive offline")
+    monkeypatch.setattr(store, "write", boom)
+    res = sweep(downloads, store)
+    assert res.filed == [] and "drive offline" in res.failed[0][1] and f.exists()
+    assert _snapshot(save) == before
+    assert list((store.root.parent / "_cache" / "tmp").iterdir()) == []
+
+
+def test_invalid_existing_record_is_refused_before_any_media_moves(store, downloads):
+    capture_folder(downloads, "FAKEcar1", [img(1, color="red")], slides_expected=1); sweep(downloads, store)
+    save = store.dir / "ig-fakecar1"
+    rec = json.loads((save / "save.json").read_text())
+    rec["status"] = "bogus"  # hand-edited into something the validator rejects
+    (save / "save.json").write_text(json.dumps(rec))
+    before = _snapshot(save)
+    f = capture_folder(downloads, "FAKEcar1", [img(1, color="blue")], slides_expected=1)
+    res = sweep(downloads, store)
+    assert res.filed == [] and "invalid inspiration record" in res.failed[0][1] and f.exists()
+    assert _snapshot(save) == before and pixel(save / "01.jpg") == RED
+
+
 def test_io_error_while_checking_leaves_folder_in_place(store, downloads, monkeypatch):
     f = capture_folder(downloads, "FAKEimg1", [img(1)], slides_expected=1)
 

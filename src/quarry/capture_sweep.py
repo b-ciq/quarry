@@ -14,7 +14,7 @@ from dataclasses import dataclass, field
 from datetime import date
 from pathlib import Path
 
-from quarry.inspiration_store import Store, atomic_move, cache_dir, store_lock
+from quarry.inspiration_store import Store, cache_dir, store_lock
 from quarry.media_probe import MediaError, assemble_mp4, audio_codec, image_size, make_poster, probe_video
 from quarry.schema import SHORTCODE_RE
 
@@ -232,7 +232,7 @@ def _media_names(item: dict) -> set[str]:
 
 
 def _file(prep: _Prepared, store: Store) -> str:
-    """Publish staged media and write the record. Caller holds store_lock()."""
+    """Publish staged media and write the record, all or nothing. Caller holds store_lock()."""
     cap = prep.capture
     scan = store.scan()
     id_ = scan.by_shortcode.get(cap["shortcode"])
@@ -246,25 +246,17 @@ def _file(prep: _Prepared, store: Store) -> str:
         if it["slide"] in by_slide:
             stale |= _media_names(by_slide[it["slide"]]) - _media_names(it)
         by_slide[it["slide"]] = it
-    published: list[Path] = []
+    if cap.get("slides_expected") is not None:
+        capture["slides_expected"] = cap["slides_expected"]
+    capture["items"] = [by_slide[n] for n in sorted(by_slide)]
+    capture["status"] = capture_status(capture)
+    capture.setdefault("note", "")
     try:
-        for staged, name in prep.files:
-            dest = store.media_path(id_, name)
-            atomic_move(staged, dest)
-            published.append(dest)
-        if cap.get("slides_expected") is not None:
-            capture["slides_expected"] = cap["slides_expected"]
-        capture["items"] = [by_slide[n] for n in sorted(by_slide)]
-        capture["status"] = capture_status(capture)
-        capture.setdefault("note", "")
-        store.write(record)
+        store.commit(record, prep.files)  # all or nothing: a failure restores any replaced media
     except BaseException:
-        if created:  # leave no half-made save folder; the downloads folder still has everything
-            for p in published:
-                p.unlink(missing_ok=True)
-            save_dir = store.dir / id_
-            if save_dir.is_dir() and not any(save_dir.iterdir()):
-                save_dir.rmdir()
+        save_dir = store.dir / id_
+        if created and save_dir.is_dir() and not any(save_dir.iterdir()):
+            save_dir.rmdir()  # leave no half-made save folder; the downloads folder still has everything
         raise
     for name in stale:
         try:

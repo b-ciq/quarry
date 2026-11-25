@@ -220,6 +220,39 @@ class Store:
             atomic_write_bytes(path, data)
         return path
 
+    def commit(self, record: dict, files: list[tuple[Path, str]]) -> None:
+        """Publish staged media `files` ((staged path, media name)) into `record`'s folder, then write it.
+
+        All or nothing: the record is validated before any file moves, and if a move or the write
+        fails, newly published files are removed and any file they replaced is restored from a
+        backup in the cache dir, so save.json and the media never disagree.
+        """
+        errors = validate_inspiration_record(record)
+        if errors:
+            raise ValueError("invalid inspiration record: " + "; ".join(errors))
+        targets = [(staged, self.media_path(record["id"], name)) for staged, name in files]
+        with store_lock(), tempfile.TemporaryDirectory(dir=_tmp_dir(), prefix="commit-") as backups:
+            done: list[tuple[Path, Path | None]] = []  # (published file, backup of what it replaced)
+            try:
+                for staged, dest in targets:
+                    backup = None
+                    if dest.exists():
+                        backup = Path(backups) / dest.name
+                        shutil.copyfile(dest, backup)
+                    done.append((dest, backup))
+                    atomic_move(staged, dest)
+                self.write(record)
+            except BaseException:
+                for dest, backup in reversed(done):
+                    try:
+                        if backup is None:
+                            dest.unlink(missing_ok=True)
+                        else:
+                            _publish(backup, dest)
+                    except OSError:
+                        pass  # best effort; the original error is what the caller needs
+                raise
+
     def new_id(self, shortcode: str, scan: Scan) -> str:
         base = "ig-" + re.sub(r"[^a-z0-9]+", "-", shortcode.lower()).strip("-")
         candidate, n = base, 1

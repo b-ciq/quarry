@@ -284,3 +284,61 @@ def test_sweeper_survives_errors(app, downloads, monkeypatch):
         assert len(calls) >= 3
     finally:
         stop_sweeper(stop)
+
+
+def _files_in(folder):
+    return {p.name: p.read_bytes() for p in sorted(folder.iterdir())}
+
+
+@pytest.mark.parametrize("name,data", [("x.jpg", None), ("x.png", "png")])
+def test_add_file_failed_write_keeps_old_slide(client, store, monkeypatch, name, data):
+    rec = seed(store, "FAKEw1", items=[item(1)], expected=1, status="captured", files=False)
+    folder = store.dir / rec["id"]
+    (folder / "01.jpg").write_bytes(jpeg_bytes(size=(8, 8)))
+    before = _files_in(folder)
+
+    def boom(self, record):
+        raise OSError("drive offline")
+    monkeypatch.setattr(Store, "write", boom)
+    body = _png() if data == "png" else jpeg_bytes()
+    r = client.post("/api/capture/FAKEw1/files", data={"slide": "1"}, files={"file": (name, body, "image/png")})
+    assert r.status_code == 500 and "drive offline" in r.json()["error"]
+    assert _files_in(folder) == before  # old bytes back, save.json unchanged, no stray 01.png
+    assert list((cache_dir() / "tmp").iterdir()) == []
+
+
+def test_add_file_on_invalid_record_moves_nothing(client, store):
+    rec = seed(store, "FAKEw2", items=[item(1)], expected=1, files=False)
+    folder = store.dir / rec["id"]
+    (folder / "01.jpg").write_bytes(jpeg_bytes(size=(8, 8)))
+    bad = json.loads((folder / "save.json").read_text())
+    bad["status"] = "bogus"
+    (folder / "save.json").write_text(json.dumps(bad))
+    before = _files_in(folder)
+    r = client.post("/api/capture/FAKEw2/files", data={"slide": "1"},
+                    files={"file": ("x.jpg", jpeg_bytes(), "image/jpeg")})
+    assert r.status_code == 500 and "invalid inspiration record" in r.json()["error"]
+    assert _files_in(folder) == before
+
+
+def test_malformed_config_still_starts(repo):
+    config_dir().mkdir(parents=True, exist_ok=True)
+    (config_dir() / "config.toml").write_text("inspiration_dir = [\n")
+    client = TestClient(create_app(repo.root))
+    assert client.get("/api/status").status_code == 200
+    body = client.get("/api/capture").json()
+    assert body["enabled"] is False and "config.toml" in body["setup"]
+    assert client.post("/api/capture/A/opened").status_code == 409
+    assert capture_api.start_sweeper(client.app).is_set()
+
+
+def test_bad_cap_or_config_never_500s_the_list(client, store):
+    seed(store, "A")
+    set_config(capture_daily_cap="lots")
+    r = client.get("/api/capture")
+    assert r.status_code == 200 and r.json()["today"]["cap"] == 40
+    assert any("capture_daily_cap" in w for w in r.json()["warnings"])
+    assert client.post("/api/capture/A/opened").status_code == 200
+    (config_dir() / "config.toml").write_text("capture_daily_cap = [\n")
+    r = client.get("/api/capture")
+    assert r.status_code == 200 and r.json()["today"]["cap"] == 40 and r.json()["items"]
