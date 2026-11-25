@@ -36,7 +36,12 @@ class _Failed(Exception):
 @dataclass
 class SweepResult:
     filed: list[str] = field(default_factory=list)
-    failed: list[tuple[str, str]] = field(default_factory=list)
+    failed: list[tuple[str, str]] = field(default_factory=list)  # moved to _failed, or left in place
+    left: list[tuple[str, str]] = field(default_factory=list)  # the left-in-place subset of `failed`
+
+    def leave(self, folder: str, reason: str) -> None:
+        self.failed.append((folder, reason))
+        self.left.append((folder, reason))
 
 
 @dataclass
@@ -284,34 +289,42 @@ def _capture_folders(downloads: Path) -> list[Path]:
     return sorted(folders, key=lambda p: (p.name.rpartition("__")[2], p.name))
 
 
+def _sweep_one(folder: Path, store: Store, stage_root: Path, result: SweepResult) -> None:
+    if not is_finished(folder):
+        return
+    with tempfile.TemporaryDirectory(dir=stage_root, prefix="capture-") as tmp:
+        # Checks and transcodes run outside the lock so a long video does not block other writers.
+        try:
+            prep, reason = _prepare(folder, Path(tmp)), None
+        except _Failed as e:
+            prep, reason = None, str(e)
+        with store_lock():
+            if not (folder / CAPTURE_FILE).is_file():
+                return  # another sweep filed or failed it meanwhile
+            if reason is not None:
+                _move_to_failed(folder, reason)
+                result.failed.append((folder.name, reason))
+                return
+            id_ = _file(prep, store)
+            result.filed.append(id_)
+            try:
+                shutil.rmtree(folder)
+            except Exception as e:
+                result.leave(folder.name, f"filed as {id_}, but the folder could not be removed: {e}")
+
+
 def sweep(downloads: Path, store: Store) -> SweepResult:
-    """File every finished capture folder in `downloads`, oldest first."""
+    """File every finished capture folder in `downloads`, oldest first.
+
+    A folder that cannot be filed for a reason other than its media (Drive offline, ffmpeg missing,
+    a hand-edited record) is left in place and retried; it never stops the folders after it.
+    """
     result = SweepResult()
     stage_root = cache_dir() / "tmp"
     stage_root.mkdir(parents=True, exist_ok=True)
     for folder in _capture_folders(Path(downloads)):
-        if not is_finished(folder):
-            continue
-        with tempfile.TemporaryDirectory(dir=stage_root, prefix="capture-") as tmp:
-            # Checks and transcodes run outside the lock so a long video does not block other writers.
-            try:
-                prep, reason = _prepare(folder, Path(tmp)), None
-            except _Failed as e:
-                prep, reason = None, str(e)
-            except OSError as e:  # e.g. a file vanished or the cache disk is full: retry next sweep
-                result.failed.append((folder.name, f"not filed, left in place: {e}"))
-                continue
-            with store_lock():
-                if not (folder / CAPTURE_FILE).is_file():
-                    continue  # another sweep filed or failed it meanwhile
-                if reason is not None:
-                    _move_to_failed(folder, reason)
-                    result.failed.append((folder.name, reason))
-                    continue
-                try:
-                    result.filed.append(_file(prep, store))
-                except (OSError, ValueError) as e:
-                    result.failed.append((folder.name, f"not filed, left in place: {e}"))
-                    continue
-                shutil.rmtree(folder)
+        try:
+            _sweep_one(folder, store, stage_root, result)
+        except Exception as e:  # e.g. a file vanished, the disk is full, ffmpeg is missing: retry later
+            result.leave(folder.name, f"not filed, left in place: {e}")
     return result

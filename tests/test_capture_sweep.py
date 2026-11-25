@@ -388,3 +388,48 @@ def test_unreadable_save_folder_blocks_filing_without_duplicate(store, downloads
     assert (f / "capture.json").exists() and not (downloads / "_failed").exists()
     store.write(make_record("Abc"))  # Drive caught up
     assert sweep(downloads, store).filed == ["ig-abc"]
+
+
+# --- one bad folder never stops the rest -------------------------------------------------------
+
+def test_non_os_error_in_older_folder_does_not_stop_newer_folders(store, downloads, monkeypatch):
+    from quarry.media_probe import FfmpegMissing
+    old = capture_folder(downloads, "FAKEold1", [vid(1)], slides_expected=1)
+    capture_folder(downloads, "FAKEnew1", [img(1)], slides_expected=1)
+
+    def missing(*a, **k):
+        raise FfmpegMissing("imageio-ffmpeg is not installed")
+    monkeypatch.setattr("quarry.capture_sweep.probe_video", missing)
+    res = sweep(downloads, store)
+    assert res.filed == ["ig-fakenew1"]
+    assert res.failed == res.left and res.left[0][0] == old.name
+    assert "left in place" in res.left[0][1] and "imageio-ffmpeg" in res.left[0][1]
+    assert (old / "capture.json").exists() and not (downloads / "_failed").exists()
+
+
+def test_hand_edited_record_error_does_not_stop_newer_folders(store, downloads):
+    rec = make_record("FAKEodd1")
+    store.write(rec)
+    path = store.dir / rec["id"] / "save.json"
+    rec["capture"] = "oops"  # a shape the validator never sees because _file trips over it first
+    path.write_text(json.dumps(rec))
+    old = capture_folder(downloads, "FAKEodd1", [img(1)], slides_expected=1)
+    capture_folder(downloads, "FAKEnew1", [img(1)], slides_expected=1)
+    res = sweep(downloads, store)
+    assert res.filed == ["ig-fakenew1"] and res.left[0][0] == old.name and old.exists()
+
+
+def test_folder_removal_failure_does_not_stop_newer_folders(store, downloads, monkeypatch):
+    import shutil as _shutil
+    real = _shutil.rmtree
+    first = capture_folder(downloads, "FAKEone1", [img(1)], slides_expected=1)
+    capture_folder(downloads, "FAKEtwo1", [img(1)], slides_expected=1)
+
+    def rmtree(p, *a, **k):
+        if p == first:
+            raise PermissionError("locked")
+        return real(p, *a, **k)
+    monkeypatch.setattr("quarry.capture_sweep.shutil.rmtree", rmtree)
+    res = sweep(downloads, store)
+    assert res.filed == ["ig-fakeone1", "ig-faketwo1"]
+    assert res.left[0][0] == first.name and "locked" in res.left[0][1]
