@@ -35,24 +35,28 @@
     "bot": {
       "verdict": "maybe",
       "strength": "unsure",
-      "reason": "Striking network-hub hero with a wolf logo (likely Warewulf), but the logo looks pasted on and the red particle style is unproven for the brand.",
+      "reason": "Custom Warewulf-branded hero with strong mood and text room, but the logo looks composited onto stock-like imagery and the fuzzy nodes read somewhat biological, so it needs curator review.",
       "model": "claude-opus-5-5",
-      "at": "2026-11-23T19:37:15Z",
+      "at": "2026-11-25T05:49:07Z",
       "examples": [
-        "life-scientist-workstation",
-        "life-sysadmin-server-rack"
+        "adobe-829377199",
+        "adobe-930146362",
+        "adobe-466214125",
+        "adobe-36041755",
+        "adobe-1843776305-2",
+        "life-scientist-workstation"
       ],
       "suggested_slugs": {
         "products": [],
         "categories": [],
         "verticals": [],
         "concepts": [
-          "networking"
+          "cluster-provisioning"
         ],
         "style": [
           "abstract",
-          "dark-background",
-          "particle-network"
+          "dark-red",
+          "logo-composite"
         ]
       }
     }

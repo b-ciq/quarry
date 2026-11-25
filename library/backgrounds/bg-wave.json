@@ -23,14 +23,18 @@
   "tone": "dark",
   "rating": {
     "bot": {
-      "verdict": "yes",
+      "verdict": "maybe",
       "strength": "unsure",
-      "reason": "Polished abstract particle landscape on dark background with ample negative space for text; fits a data/compute mood.",
+      "reason": "Polished abstract particle landscape with text space and dark tone, but generic data-wave stock and weak on CIQ subject; green/gold palette needs brand check.",
       "model": "claude-opus-5-5",
-      "at": "2026-11-23T19:37:15Z",
+      "at": "2026-11-25T05:49:07Z",
       "examples": [
-        "life-scientist-workstation",
-        "life-sysadmin-server-rack"
+        "adobe-829377199",
+        "adobe-930146362",
+        "adobe-466214125",
+        "adobe-36041755",
+        "adobe-1843776305-2",
+        "life-scientist-workstation"
       ],
       "suggested_slugs": {
         "products": [],
@@ -38,9 +42,8 @@
         "verticals": [],
         "concepts": [],
         "style": [
-          "abstract",
-          "particles",
-          "wave"
+          "abstract-particles",
+          "data-landscape"
         ]
       }
     }
