@@ -28,4 +28,4 @@ Licensed stock (Adobe, iStock) is fine when it fits the brand.
 - Strong: you would bet the curators agree.
 - Unsure: anything borderline, or a style you have not seen them rule on.
 
-Brett and Isabelle own this page. Edit it when the bot keeps getting something wrong.
+Brian and Isabelle own this page. Edit it when the bot keeps getting something wrong.

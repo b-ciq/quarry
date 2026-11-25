@@ -4,7 +4,7 @@ For curators (no terminal skills needed beyond the steps below). The workbench i
 
 ## 1. Get access
 
-1. Ask Brett for access to the quarry GitHub repo.
+1. Ask Brian for access to the quarry GitHub repo.
 2. Install `git`, `git-lfs` (`git lfs install`), Python 3.11+, and Node 24 only if you will change the UI source in `ui/`.
 
 ## 2. Get a working copy

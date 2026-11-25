@@ -1,7 +1,7 @@
 # Fast Rating — bot rates, humans check
 
 **Date:** 2026-11-22
-**Author:** Brett Christensen with Claude
+**Author:** Brian Christensen with Claude
 **Status:** Draft for approval
 **Depends on:** workbench v1 (`2026-11-22-workbench-design.md`, merged)
 **Research:** `.context/fast-rating-research.md` (local notes; sources listed there)
@@ -13,7 +13,7 @@ descriptions; 2 are confirmed. Today a curator opens each one in a full
 form editor and types. The tagging bot (`skills/tag-assets`) only runs in a
 chat, one asset at a time, waiting for approval.
 
-Flip the work: **a bot rates and tags every new image; Brett and Isabelle
+Flip the work: **a bot rates and tags every new image; Brian and Isabelle
 check its work at swipe speed** and correct it, and every correction makes
 the bot's next guesses better. The model is Tinder-fast verdicts, borrowed
 from AI-assisted labeling (pre-annotate, human approves/rejects/fixes) and
@@ -29,7 +29,7 @@ For each image, one of three verdicts:
 | **No** | Not usable | `retired` |
 | **Maybe-yes** | Promising, not ready to use | `parked` (new status) |
 
-**Parked (decided by Brett):** out of the library — never servable, not in
+**Parked (decided by Brian):** out of the library — never servable, not in
 search, export, or the review lanes — until someone upgrades it to Yes or
 drops it to No. Anti-example stays a separate, deliberate marking for "a
 style to avoid"; No is just "not usable".
@@ -79,7 +79,7 @@ style to avoid"; No is just "not usable".
   action, localhost only.
 - Claude API via the official `anthropic` Python SDK, new optional extra
   `rate`. Key from `ANTHROPIC_API_KEY` (or an `ant auth login` profile).
-  Brett will get a CIQ key. With no credentials the workbench works as
+  Brian will get a CIQ key. With no credentials the workbench works as
   today and the Auto-rate button explains why it's off.
 - Model: `claude-opus-5-5` by default, overridable with
   `QUARRY_RATER_MODEL`. Effort `low`. Structured output for the result.
@@ -97,7 +97,7 @@ style to avoid"; No is just "not usable".
 ## Approaches considered
 
 **Where the bot runs**
-- **A — Claude API inside the workbench (chosen by Brett).** One click,
+- **A — Claude API inside the workbench (chosen by Brian).** One click,
   runs as a background job, no terminal for Isabelle. Costs an API key and
   a few cents per image.
 - B — Claude Code batch job via the skill. No key, but started from a
@@ -106,7 +106,7 @@ style to avoid"; No is just "not usable".
   descriptions and has nothing to learn from yet (2 confirmed assets).
 
 **Review screen**
-- **A — Two lanes (chosen by Brett): grid for strong calls, card for unsure.**
+- **A — Two lanes (chosen by Brian): grid for strong calls, card for unsure.**
   Near-identical stock heroes cost one keystroke per screen, not one each.
 - B — One card at a time for everything. Simpler, slower on the easy ones.
 
@@ -169,7 +169,7 @@ Per image, the prompt contains:
 1. The rubric: `taxonomy/rating-guide.md` — a short, human-edited
    "what makes a Yes / No / Maybe-yes for CIQ" page. Seeded by the builder
    from the brand intent in the main spec and the anti-examples' reasons;
-   Brett and Isabelle own it after that.
+   Brian and Isabelle own it after that.
 2. The vocabulary (allowed slugs per axis) and class rules (tone for
    backgrounds, etc.).
 3. Up to 6 examples: human-rated assets nearest in style space (DINO
@@ -259,7 +259,7 @@ both `bot` and `human` verdicts. Per-lane numbers so you can see if
 - Bot run chunks: `rate: bot rated 20 assets`.
 - Undo: `rate: undo <verdict> <id>`.
 
-### Builder-check rulings (Claude's calls; Brett to check)
+### Builder-check rulings (Claude's calls; Brian to check)
 
 1. **Every verdict counts, wherever it's made.** The shared `transition`
    path in `write_api.py` writes `rating.human` on confirm / retire / park,
@@ -300,7 +300,7 @@ both `bot` and `human` verdicts. Per-lane numbers so you can see if
 ## Rollout
 
 1. Build behind the `rate` extra; no key = feature politely off.
-2. Brett runs Auto-rate on the 183, works both lanes, writes the first
+2. Brian runs Auto-rate on the 183, works both lanes, writes the first
    rubric edits from what the bot got wrong.
 3. Isabelle onboarding gains a "Rate" section in `docs/onboarding.md`.
 4. Watch the agreement score; revisit auto-accept for strong calls when it
@@ -308,7 +308,7 @@ both `bot` and `human` verdicts. Per-lane numbers so you can see if
 
 ## Left to the builder
 
-- Exact prompt wording and the seed `rating-guide.md` (short; Brett edits).
+- Exact prompt wording and the seed `rating-guide.md` (short; Brian edits).
 - Concurrency level, chunk size, retry policy for 429/5xx (SDK defaults are
   fine to start).
 - Frontend component structure; reuse `TagChips`, keyboard guard pattern

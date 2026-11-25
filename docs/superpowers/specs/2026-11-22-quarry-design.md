@@ -1,7 +1,7 @@
 # Quarry — Agent-First Brand Library for CIQ
 
 **Date:** 2026-11-22
-**Author:** Brett Christensen (bchristensen@ciq.com) with Claude
+**Author:** Brian Christensen (bchristensen@ciq.com) with Claude
 **Status:** Draft for approval
 
 ## Intent
@@ -36,7 +36,7 @@ jobs, in order of build priority:
 
 ### Who uses it
 
-- **Brett (brand steward)** — operates quarry through Claude Code: ingest,
+- **Brian (brand steward)** — operates quarry through Claude Code: ingest,
   tag, curate, define vocabulary.
 - **Marketing** — consumes through Claude Desktop (or any MCP-capable agent):
   "find me a dark background for a Fuzzball deck" and get files back. No
@@ -74,7 +74,7 @@ jobs, in order of build priority:
   the vocabulary is controlled and admin-edited, like the deck builder's
   `vocab` block today.
 - Assets served without license/provenance metadata.
-- A system only Brett can operate.
+- A system only Brian can operate.
 
 ## Constraints
 
@@ -217,7 +217,7 @@ validates against it, exactly like `image_library.py` does today.
   reference/URL, so a 500-asset library doesn't eat the conversation's
   context), `list_vocabulary` (serves the served vocabulary edition only).
   Confirmed, licensed, unrestricted `library/` assets only. Runs locally
-  for Brett in phase 1; hosted for marketing in phase 1.5.
+  for Brian in phase 1; hosted for marketing in phase 1.5.
 - **File delivery** (Claude's call): an MCP image inlined in chat isn't a
   usable deliverable, so `get_asset` returns metadata + thumbnail **plus a
   fetchable full-res reference** — a local path when the server runs
@@ -319,7 +319,7 @@ chained to inspiration/vocabulary work.
    deck-builder vocab (quarry becomes the writable vocab), ingest skills
    for Figma/Adobe Stock/Midjourney, hybrid index + search, local MCP
    server, `quarry publish` pipeline incl. deck-builder export + the `spot`
-   kind extension. Success: Brett finds any production asset by asking; a
+   kind extension. Success: Brian finds any production asset by asking; a
    published export passes the deck builder's own validator and renders in
    a real deck. **The hosted-auth policy conversation with CIQ IT starts
    during this phase.**
@@ -338,21 +338,21 @@ chained to inspiration/vocabulary work.
 
 ## Decided (and by whom)
 
-- Approach A over B/C — Brett.
-- Access is agent-first (Claude Desktop / MCP), no web UI — Brett.
+- Approach A over B/C — Brian.
+- Access is agent-first (Claude Desktop / MCP), no web UI — Brian.
 - Quarry is the system of record; Figma/Adobe Stock/Midjourney stay as
-  sources, not storage — Brett (sources named), Claude (system-of-record
+  sources, not storage — Brian (sources named), Claude (system-of-record
   call).
 - Git LFS first, bucket only if scale demands — Claude's call. Corpus is
-  under ~500 images today (Brett), so LFS is comfortable for phase 1.
+  under ~500 images today (Brian), so LFS is comfortable for phase 1.
 - Licensing: stock images are org-wide-use at CIQ; no per-person or per-use
-  restrictions today — Brett. Future employee portraits WILL carry usage
+  restrictions today — Brian. Future employee portraits WILL carry usage
   restrictions, so the schema includes an optional `usage_restrictions`
   field from day one, enforced at every consumer-facing exit; no restricted
   assets exist until portraits arrive.
 - Seed taxonomy from the deck builder's existing vocab; export bridge keeps
   the deck builder unchanged initially — Claude's call.
-- Hard structural partition of inspiration vs production — Brett (copyright
+- Hard structural partition of inspiration vs production — Brian (copyright
   requirement), structure Claude's call.
 - Phasing DAM → hosted self-serve → vocabulary → generation — Claude's
   call, revised after adversarial review to pull marketing self-serve ahead
@@ -367,8 +367,8 @@ chained to inspiration/vocabulary work.
   shared key) — policy decision; the conversation starts during phase 1 so
   it can't stall phase 1.5.
 - **Single-curator risk (accepted, with trigger):** phases 1–1.5 assume
-  Brett is the sole curator and operator; the `quarry publish` pipeline and
-  operations doc keep the procedure out of one person's head, but if Brett
+  Brian is the sole curator and operator; the `quarry publish` pipeline and
+  operations doc keep the procedure out of one person's head, but if Brian
   is unavailable, ingest/curation freeze. Accepted short-term; **trigger: a
   second trained operator before phase 1.5 exit.** Curation from Claude
   Desktop (no terminal) is a possible later addition, not a requirement.
