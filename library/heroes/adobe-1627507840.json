@@ -34,14 +34,18 @@
   "description": "An angled close-up of glossy dark tiles linked by glowing lines and nodes, like a workflow or pipeline graph, with teal, magenta and orange accents. The shallow depth of field blurs the edges.",
   "rating": {
     "bot": {
-      "verdict": "maybe",
+      "verdict": "no",
       "strength": "unsure",
-      "reason": "Dark, techy workflow mood suits automation heroes, but the tiles carry AI-garbled pseudo-text that needs cleanup before use.",
+      "reason": "Generic glowing-node tech stock with garbled pseudo-text on tiles; close to the abstract network images curators rejected.",
       "model": "claude-opus-5-5",
-      "at": "2026-11-23T19:35:47Z",
+      "at": "2026-11-25T05:47:30Z",
       "examples": [
-        "life-scientist-workstation",
-        "life-sysadmin-server-rack"
+        "adobe-829377199",
+        "adobe-930146362",
+        "adobe-466214125",
+        "adobe-36041755",
+        "adobe-1843776305-2",
+        "life-scientist-workstation"
       ],
       "suggested_slugs": {
         "products": [],
@@ -51,8 +55,7 @@
           "workflow"
         ],
         "style": [
-          "abstract-3d",
-          "dark-background",
+          "abstract-tech",
           "ai-generated"
         ]
       }

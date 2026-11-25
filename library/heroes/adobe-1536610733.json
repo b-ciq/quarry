@@ -26,14 +26,18 @@
   "description": "Top-down aerial view of a single white car driving along a straight two-lane road cutting horizontally through dense green forest.",
   "rating": {
     "bot": {
-      "verdict": "maybe",
+      "verdict": "no",
       "strength": "unsure",
-      "reason": "Polished aerial hero with room for text, but the subject (car on forest road) is only metaphorically tied to CIQ's world.",
+      "reason": "Attractive generic stock aerial, but off-topic for CIQ's products and audiences with no tech connection.",
       "model": "claude-opus-5-5",
-      "at": "2026-11-23T19:35:30Z",
+      "at": "2026-11-25T05:47:30Z",
       "examples": [
-        "life-scientist-workstation",
-        "life-sysadmin-server-rack"
+        "adobe-829377199",
+        "adobe-930146362",
+        "adobe-466214125",
+        "adobe-36041755",
+        "adobe-1843776305-2",
+        "life-scientist-workstation"
       ],
       "suggested_slugs": {
         "products": [],
@@ -41,13 +45,11 @@
         "verticals": [],
         "concepts": [
           "journey",
-          "migration",
-          "path-forward"
+          "nature"
         ],
         "style": [
           "aerial",
-          "nature",
-          "photography"
+          "stock-photo"
         ]
       }
     }

@@ -32,27 +32,29 @@
   "description": "Abstract dark teal background with streaks of light converging toward a horizon, dotted with warm orange bokeh points, evoking fiber-optic data flow.",
   "rating": {
     "bot": {
-      "verdict": "yes",
+      "verdict": "maybe",
       "strength": "unsure",
-      "reason": "Clean, polished abstract fiber-optic hero with ample dark negative space for text; fits infrastructure/compute themes.",
+      "reason": "Clean, restrained abstract with ample text space suits a hero, but it is generic fiber-optic stock, a style curators have rejected for similar tech abstracts.",
       "model": "claude-opus-5-5",
-      "at": "2026-11-23T19:35:30Z",
+      "at": "2026-11-25T05:47:30Z",
       "examples": [
-        "life-scientist-workstation",
-        "life-sysadmin-server-rack"
+        "adobe-829377199",
+        "adobe-930146362",
+        "adobe-466214125",
+        "adobe-36041755",
+        "adobe-1843776305-2",
+        "life-scientist-workstation"
       ],
       "suggested_slugs": {
         "products": [],
         "categories": [],
         "verticals": [],
         "concepts": [
-          "networking",
-          "data-flow"
+          "networking"
         ],
         "style": [
-          "abstract",
-          "dark-background",
-          "bokeh"
+          "abstract-background",
+          "fiber-optic"
         ]
       }
     }

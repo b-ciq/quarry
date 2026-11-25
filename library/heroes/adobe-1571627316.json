@@ -31,14 +31,18 @@
   "description": "A close-up 3D render of a processor chip on a dark circuit board, with glowing blue light traces radiating out from it.",
   "rating": {
     "bot": {
-      "verdict": "maybe",
+      "verdict": "no",
       "strength": "unsure",
-      "reason": "Polished and on-topic for compute, but a generic glowing-chip stock trope with limited CIQ specificity.",
+      "reason": "Generic glowing-chip stock render, similar to rejected server-rack and circuit-glow examples; not distinctively CIQ.",
       "model": "claude-opus-5-5",
-      "at": "2026-11-23T19:35:30Z",
+      "at": "2026-11-25T05:47:30Z",
       "examples": [
-        "life-scientist-workstation",
-        "life-sysadmin-server-rack"
+        "adobe-829377199",
+        "adobe-930146362",
+        "adobe-466214125",
+        "adobe-36041755",
+        "adobe-1843776305-2",
+        "life-scientist-workstation"
       ],
       "suggested_slugs": {
         "products": [],
@@ -49,8 +53,7 @@
         ],
         "style": [
           "3d-render",
-          "dark-blue",
-          "abstract-tech"
+          "stock-cliche"
         ]
       }
     }

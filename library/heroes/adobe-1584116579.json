@@ -38,24 +38,27 @@
     "bot": {
       "verdict": "maybe",
       "strength": "unsure",
-      "reason": "Dark, techy mood fits automation/containers themes, but it's AI-generated with gibberish code text and a generic look, so it needs curator review.",
+      "reason": "Polished dark workflow/pipeline mood fits automation, but it reads as generic AI-style tech stock with gibberish code text, similar to rejected glowing-circuit examples.",
       "model": "claude-opus-5-5",
-      "at": "2026-11-23T19:35:30Z",
+      "at": "2026-11-25T05:47:30Z",
       "examples": [
-        "life-scientist-workstation",
-        "life-sysadmin-server-rack"
+        "adobe-829377199",
+        "adobe-930146362",
+        "adobe-466214125",
+        "adobe-36041755",
+        "adobe-1843776305-2",
+        "life-scientist-workstation"
       ],
       "suggested_slugs": {
         "products": [],
         "categories": [],
         "verticals": [],
         "concepts": [
-          "workflows",
-          "pipelines"
+          "workflows"
         ],
         "style": [
-          "ai-generated",
-          "abstract",
+          "abstract-tech",
+          "isometric",
           "dark-background"
         ]
       }

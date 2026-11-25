@@ -28,26 +28,29 @@
     "bot": {
       "verdict": "maybe",
       "strength": "unsure",
-      "reason": "Clean, polished aerial hero with strong composition, but the subject is only metaphorical (a path forward) and not clearly about CIQ's world.",
+      "reason": "Clean, polished aerial with a strong 'path forward' metaphor, but off-topic for CIQ's tech subjects; usable only as an abstract hero if curators like it.",
       "model": "claude-opus-5-5",
-      "at": "2026-11-23T19:35:30Z",
+      "at": "2026-11-25T05:47:30Z",
       "examples": [
-        "life-scientist-workstation",
-        "life-sysadmin-server-rack"
+        "adobe-829377199",
+        "adobe-930146362",
+        "adobe-466214125",
+        "adobe-36041755",
+        "adobe-1843776305-2",
+        "life-scientist-workstation"
       ],
       "suggested_slugs": {
         "products": [],
         "categories": [],
         "verticals": [],
         "concepts": [
-          "journey",
-          "nature",
-          "metaphor"
+          "migration",
+          "path-forward"
         ],
         "style": [
           "aerial",
-          "landscape",
-          "color-photo"
+          "nature",
+          "metaphor"
         ]
       }
     }

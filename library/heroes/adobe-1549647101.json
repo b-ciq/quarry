@@ -33,22 +33,25 @@
   "description": "A close-up 3D render of a processor chip on a dark circuit board, with colorful light streams rising from it and flowing across the board in orange, blue, green and pink.",
   "rating": {
     "bot": {
-      "verdict": "maybe",
+      "verdict": "no",
       "strength": "unsure",
-      "reason": "Polished compute-themed hero with a clear subject, but the glowing-chip look is a common stock trope; needs a license check and confirmation that it fits CIQ's style.",
+      "reason": "Generic glowing-chip stock render; curators consistently rejected similar abstract tech/datacenter stock imagery.",
       "model": "claude-opus-5-5",
-      "at": "2026-11-23T19:35:30Z",
+      "at": "2026-11-25T05:47:30Z",
       "examples": [
-        "life-scientist-workstation",
-        "life-sysadmin-server-rack"
+        "adobe-829377199",
+        "adobe-930146362",
+        "adobe-466214125",
+        "adobe-36041755",
+        "adobe-1843776305-2",
+        "life-scientist-workstation"
       ],
       "suggested_slugs": {
         "products": [],
         "categories": [],
         "verticals": [],
         "concepts": [
-          "hardware",
-          "ai"
+          "hardware"
         ],
         "style": [
           "3d-render",

@@ -27,25 +27,27 @@
   "rating": {
     "bot": {
       "verdict": "no",
-      "strength": "unsure",
-      "reason": "Popcorn-like floating particles look polished but are off-topic for CIQ's products and audiences, and possibly AI-generated.",
+      "strength": "strong",
+      "reason": "Off-topic popcorn-like macro render with no connection to CIQ's products or audiences; looks AI-generated.",
       "model": "claude-opus-5-5",
-      "at": "2026-11-23T19:35:47Z",
+      "at": "2026-11-25T05:47:30Z",
       "examples": [
-        "life-scientist-workstation",
-        "life-sysadmin-server-rack"
+        "adobe-829377199",
+        "adobe-930146362",
+        "adobe-466214125",
+        "adobe-36041755",
+        "adobe-1843776305-2",
+        "life-scientist-workstation"
       ],
       "suggested_slugs": {
         "products": [],
         "categories": [],
         "verticals": [],
-        "concepts": [
-          "abstract"
-        ],
+        "concepts": [],
         "style": [
           "macro",
-          "3d-render",
-          "ai-generated"
+          "ai-render",
+          "abstract"
         ]
       }
     }
