@@ -28,12 +28,16 @@
     "bot": {
       "verdict": "no",
       "strength": "unsure",
-      "reason": "Generic seasonal holiday stock with no connection to CIQ's products or audiences; usable only for a one-off holiday post at most.",
+      "reason": "Generic seasonal stock with no connection to CIQ's products or audiences; at most a niche holiday-card asset.",
       "model": "claude-opus-5-5",
-      "at": "2026-11-23T19:36:41Z",
+      "at": "2026-11-25T05:48:27Z",
       "examples": [
-        "life-scientist-workstation",
-        "life-sysadmin-server-rack"
+        "adobe-829377199",
+        "adobe-930146362",
+        "adobe-466214125",
+        "adobe-36041755",
+        "adobe-1843776305-2",
+        "life-scientist-workstation"
       ],
       "suggested_slugs": {
         "products": [],

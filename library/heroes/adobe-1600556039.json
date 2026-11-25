@@ -32,26 +32,27 @@
   "description": "A glowing translucent shield with orange and cyan edges hovers over a dark hexagonal grid surface with a luminous ring and bokeh particles.",
   "rating": {
     "bot": {
-      "verdict": "maybe",
+      "verdict": "no",
       "strength": "unsure",
-      "reason": "Polished hero with text room, but a glowing security shield is close to the generic glowing-padlock cliche.",
+      "reason": "Generic glowing security-shield stock cliche, similar to the glowing tech stock the curators rejected.",
       "model": "claude-opus-5-5",
-      "at": "2026-11-23T19:35:30Z",
+      "at": "2026-11-25T05:47:30Z",
       "examples": [
-        "life-scientist-workstation",
-        "life-sysadmin-server-rack"
+        "adobe-829377199",
+        "adobe-930146362",
+        "adobe-466214125",
+        "adobe-36041755",
+        "adobe-1843776305-2",
+        "life-scientist-workstation"
       ],
       "suggested_slugs": {
         "products": [],
         "categories": [],
         "verticals": [],
-        "concepts": [
-          "cybersecurity"
-        ],
+        "concepts": [],
         "style": [
-          "abstract",
-          "dark-background",
-          "glow"
+          "glowing-tech-stock",
+          "abstract-3d"
         ]
       }
     }

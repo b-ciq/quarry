@@ -35,20 +35,23 @@
     "bot": {
       "verdict": "maybe",
       "strength": "unsure",
-      "reason": "Striking science imagery with dark space for text, but subject is only loosely tied to CIQ and the source/license needs checking.",
+      "reason": "Striking science imagery with room for text, but only loosely tied to CIQ's HPC/research world and needs a source/license check.",
       "model": "claude-opus-5-5",
-      "at": "2026-11-23T19:37:15Z",
+      "at": "2026-11-25T05:49:07Z",
       "examples": [
-        "life-scientist-workstation",
-        "life-sysadmin-server-rack"
+        "adobe-829377199",
+        "adobe-930146362",
+        "adobe-466214125",
+        "adobe-36041755",
+        "adobe-1843776305-2",
+        "life-scientist-workstation"
       ],
       "suggested_slugs": {
         "products": [],
         "categories": [],
         "verticals": [],
         "concepts": [
-          "astronomy",
-          "space"
+          "astronomy"
         ],
         "style": [
           "astrophotography",

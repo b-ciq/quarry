@@ -31,13 +31,17 @@
   "rating": {
     "bot": {
       "verdict": "no",
-      "strength": "unsure",
-      "reason": "Generic business-analytics stock cliche (hands on tablet over printed charts); off-topic for CIQ's technical world and likely AI-generated.",
+      "strength": "strong",
+      "reason": "Generic business-analytics stock cliche (finger on tablet, printed charts), likely AI-generated, and off CIQ's technical subject matter.",
       "model": "claude-opus-5-5",
-      "at": "2026-11-23T19:36:58Z",
+      "at": "2026-11-25T05:48:27Z",
       "examples": [
-        "life-scientist-workstation",
-        "life-sysadmin-server-rack"
+        "adobe-829377199",
+        "adobe-930146362",
+        "adobe-466214125",
+        "adobe-36041755",
+        "adobe-1843776305-2",
+        "life-scientist-workstation"
       ],
       "suggested_slugs": {
         "products": [],

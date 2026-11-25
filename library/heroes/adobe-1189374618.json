@@ -31,26 +31,27 @@
   "description": "A glowing blue wireframe cube made of tiny digits with a pink-orange swirling wave inside, set against a dark background. Blurred amber server-like lights recede on the left.",
   "rating": {
     "bot": {
-      "verdict": "maybe",
-      "strength": "unsure",
-      "reason": "Polished abstract data visual with room for text, but the subject is generic and the glowing digital-cube style is a stock trope; needs a curator to vouch for it.",
+      "verdict": "no",
+      "strength": "strong",
+      "reason": "Generic glowing abstract tech stock, similar to prior rejected neon data/server imagery; not specific to CIQ.",
       "model": "claude-opus-5-5",
-      "at": "2026-11-23T19:35:12Z",
+      "at": "2026-11-25T05:47:11Z",
       "examples": [
-        "life-scientist-workstation",
-        "life-sysadmin-server-rack"
+        "adobe-829377199",
+        "adobe-930146362",
+        "adobe-466214125",
+        "adobe-36041755",
+        "adobe-1843776305-2",
+        "life-scientist-workstation"
       ],
       "suggested_slugs": {
         "products": [],
         "categories": [],
         "verticals": [],
-        "concepts": [
-          "ai"
-        ],
+        "concepts": [],
         "style": [
-          "abstract",
-          "dark-background",
-          "glow"
+          "abstract-glow",
+          "generic-tech-stock"
         ]
       }
     }

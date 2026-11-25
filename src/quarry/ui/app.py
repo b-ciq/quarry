@@ -10,7 +10,7 @@ from fastapi.staticfiles import StaticFiles
 
 from quarry.publish import check_stale, sidecar_digest
 from quarry.rater import Rater
-from quarry.ui import gitops, ingest_api, jobs, rate_api, read_api, vocab_api, write_api
+from quarry.ui import capture_api, gitops, ingest_api, jobs, rate_api, read_api, security, vocab_api, write_api
 
 STATIC_DIR = Path(__file__).parent / "static"
 SYNC_LOCK_WAIT = 5.0  # seconds /api/sync waits for an in-progress write before answering 409
@@ -39,6 +39,7 @@ def create_app(repo_root: Path, fake_embedder: bool = False, skill_dir: Path | N
                rater: Rater | None = None) -> FastAPI:
     repo_root = Path(repo_root)
     app = FastAPI(title="quarry workbench")
+    security.install(app)
     app.state.repo_root = repo_root
     app.state.rater = rater  # injected (tests); rate_api builds a ClaudeRater lazily otherwise
     app.state.embedder_mode = lambda: _embedder_mode(repo_root)
@@ -103,6 +104,7 @@ def create_app(repo_root: Path, fake_embedder: bool = False, skill_dir: Path | N
     rate_api.mount(app)
     vocab_api.mount(app)
     ingest_api.mount(app)
+    capture_api.mount(app)
     jobs.mount(app)
 
     @app.get("/")
@@ -130,4 +132,5 @@ def serve(repo_root: Path, port: int = 8787, fake_embedder: bool = False) -> Non
     import uvicorn
     skill = Path(os.environ.get("QUARRY_DECK_SKILL_DIR", "~/.claude/skills/quantic-deck-builder")).expanduser()
     app = create_app(repo_root, fake_embedder, skill_dir=skill, rater=dev_rater())
+    capture_api.start_sweeper(app)  # files downloaded captures; does nothing without an inspiration root
     uvicorn.run(app, host="127.0.0.1", port=port)

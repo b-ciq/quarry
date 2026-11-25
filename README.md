@@ -8,7 +8,7 @@ It also exports a manifest the Quantic deck builder consumes.
 
 ```
 python -m venv .venv && . .venv/bin/activate
-pip install -e ".[dev,ui]"  # tests + workbench; add .[mcp] for the server, .[ml] for real embeddings, .[rate] for the Claude rating bot (dev already includes it)
+pip install -e ".[dev,ui]"  # tests + workbench; add .[mcp] for the server, .[inspiration] for Instagram video capture, .[ml] for real embeddings, .[rate] for the Claude rating bot (dev already includes it)
 ```
 
 Library images use git LFS (`git lfs install`).
@@ -18,6 +18,8 @@ Library images use git LFS (`git lfs install`).
 - `quarry validate [--repo] [--check-stale]`
 - `quarry seed-deck-builder [--skill-dir]`
 - `quarry ingest DIR --class CLS --source ORIGIN [--license LIC] [--license-id ID] [--product P] [--anti-example]`
+- `quarry import-instagram EXPORT [--inspiration-dir]` (Instagram saves → the external inspiration root, metadata only)
+- `quarry import-captures [--inspiration-dir] [--downloads]` (file Quarry button captures into the inspiration root)
 - `quarry index [--fake-embedder]`
 - `quarry search QUERY [--class] [--product] [--tone] [--all-statuses] [--anti] [--limit] [--fake-embedder]`
 - `quarry check-image PATH [--limit] [--fake-embedder]`

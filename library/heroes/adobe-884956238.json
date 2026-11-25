@@ -31,27 +31,29 @@
   "description": "Abstract streaks of blue, pink, and teal light points rushing toward a glowing center against a dark blue background, suggesting high-speed data flow.",
   "rating": {
     "bot": {
-      "verdict": "maybe",
+      "verdict": "no",
       "strength": "unsure",
-      "reason": "Polished abstract data-speed visual with text room on the right, but generic stock tech look and a weak tie to CIQ's subject matter.",
+      "reason": "Generic abstract data-light stock, matching the style curators rejected in similar Adobe examples; weak tie to CIQ subject.",
       "model": "claude-opus-5-5",
-      "at": "2026-11-23T19:36:58Z",
+      "at": "2026-11-25T05:48:48Z",
       "examples": [
-        "life-scientist-workstation",
-        "life-sysadmin-server-rack"
+        "adobe-829377199",
+        "adobe-930146362",
+        "adobe-466214125",
+        "adobe-36041755",
+        "adobe-1843776305-2",
+        "life-scientist-workstation"
       ],
       "suggested_slugs": {
         "products": [],
         "categories": [],
         "verticals": [],
         "concepts": [
-          "data-flow",
-          "speed"
+          "data-flow"
         ],
         "style": [
-          "abstract",
-          "light-streaks",
-          "dark-background"
+          "abstract-light",
+          "generic-stock"
         ]
       }
     }

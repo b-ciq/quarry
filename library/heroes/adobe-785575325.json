@@ -32,27 +32,27 @@
   "description": "Abstract digital landscape of glowing blue and pink particle waves with vertical columns of light dots rising like data streams against a dark background.",
   "rating": {
     "bot": {
-      "verdict": "maybe",
+      "verdict": "no",
       "strength": "unsure",
-      "reason": "Polished abstract data-landscape hero with good mood and open space, but generic stock-style 'digital matrix' look that is weak on CIQ-specific subject.",
+      "reason": "Generic abstract neon data-stream stock; curators consistently rejected similar glowing tech abstracts.",
       "model": "claude-opus-5-5",
-      "at": "2026-11-23T19:36:58Z",
+      "at": "2026-11-25T05:48:27Z",
       "examples": [
-        "life-scientist-workstation",
-        "life-sysadmin-server-rack"
+        "adobe-829377199",
+        "adobe-930146362",
+        "adobe-466214125",
+        "adobe-36041755",
+        "adobe-1843776305-2",
+        "life-scientist-workstation"
       ],
       "suggested_slugs": {
         "products": [],
         "categories": [],
         "verticals": [],
-        "concepts": [
-          "abstract-data"
-        ],
+        "concepts": [],
         "style": [
-          "abstract",
-          "particles",
-          "dark-background",
-          "neon"
+          "abstract-particles",
+          "neon-glow"
         ]
       }
     }

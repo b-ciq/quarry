@@ -31,26 +31,27 @@
   "description": "A glowing translucent blue and magenta cube sits on a dark digital grid surrounded by faint line charts and data points. Neon cyber aesthetic on a deep navy background.",
   "rating": {
     "bot": {
-      "verdict": "maybe",
+      "verdict": "no",
       "strength": "unsure",
-      "reason": "Polished dark neon hero with room for text, but generic AI-style glowing cube with garbled chart text; subject is weak for CIQ specifically.",
+      "reason": "Generic neon cyber stock look like the rejected glowing-tech examples; gibberish chart text and no clear CIQ subject.",
       "model": "claude-opus-5-5",
-      "at": "2026-11-23T19:35:30Z",
+      "at": "2026-11-25T05:47:30Z",
       "examples": [
-        "life-scientist-workstation",
-        "life-sysadmin-server-rack"
+        "adobe-829377199",
+        "adobe-930146362",
+        "adobe-466214125",
+        "adobe-36041755",
+        "adobe-1843776305-2",
+        "life-scientist-workstation"
       ],
       "suggested_slugs": {
         "products": [],
         "categories": [],
         "verticals": [],
-        "concepts": [
-          "abstract-tech"
-        ],
+        "concepts": [],
         "style": [
-          "neon",
-          "ai-generated",
-          "dark-background"
+          "neon-abstract",
+          "generic-tech-stock"
         ]
       }
     }

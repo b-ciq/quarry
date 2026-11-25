@@ -34,27 +34,28 @@
   },
   "rating": {
     "bot": {
-      "verdict": "maybe",
+      "verdict": "no",
       "strength": "unsure",
-      "reason": "Polished abstract particle wave with a dark, on-brand mood and space for text, but generic stock style and weak on CIQ subject matter.",
+      "reason": "Generic abstract particle-wave stock with no clear tie to CIQ's subject matter; curators rejected similar glowing abstract tech imagery.",
       "model": "claude-opus-5-5",
-      "at": "2026-11-23T19:37:31Z",
+      "at": "2026-11-25T05:49:21Z",
       "examples": [
-        "life-scientist-workstation",
-        "life-sysadmin-server-rack"
+        "adobe-829377199",
+        "adobe-930146362",
+        "adobe-466214125",
+        "adobe-36041755",
+        "adobe-1843776305-2",
+        "life-scientist-workstation"
       ],
       "suggested_slugs": {
         "products": [],
         "categories": [],
         "verticals": [],
-        "concepts": [
-          "abstract-data"
-        ],
+        "concepts": [],
         "style": [
           "abstract",
           "particles",
-          "dark-background",
-          "bokeh"
+          "dark-background"
         ]
       }
     }

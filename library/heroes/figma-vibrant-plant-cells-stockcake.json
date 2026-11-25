@@ -35,12 +35,16 @@
     "bot": {
       "verdict": "maybe",
       "strength": "unsure",
-      "reason": "Striking science imagery fits life-sciences research, but abstract micrography is weak on CIQ's subject and looks AI-generated, so it needs a license/provenance check.",
+      "reason": "Striking life-sciences visual with hero potential, but it looks AI-generated, the link to CIQ is indirect, and it needs a curator check.",
       "model": "claude-opus-5-5",
-      "at": "2026-11-23T19:37:31Z",
+      "at": "2026-11-25T05:49:07Z",
       "examples": [
-        "life-scientist-workstation",
-        "life-sysadmin-server-rack"
+        "adobe-829377199",
+        "adobe-930146362",
+        "adobe-466214125",
+        "adobe-36041755",
+        "adobe-1843776305-2",
+        "life-scientist-workstation"
       ],
       "suggested_slugs": {
         "products": [],
@@ -52,8 +56,7 @@
         ],
         "style": [
           "macro",
-          "abstract",
-          "colorful"
+          "ai-generated"
         ]
       }
     }

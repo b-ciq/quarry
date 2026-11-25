@@ -31,22 +31,25 @@
   "description": "Fiber-optic strands glow in blue and pink bokeh against a dark navy background. White arcs with node points connect them across the frame, leaving open dark space at the top.",
   "rating": {
     "bot": {
-      "verdict": "maybe",
+      "verdict": "no",
       "strength": "unsure",
-      "reason": "Clean dark hero with room for text and a networking mood, but it's a fairly generic fiber-optic bokeh stock look that is weak on CIQ-specific subject.",
+      "reason": "Generic abstract network/fiber-optic stock look, similar to other abstract tech stock the curators rejected; not specific to CIQ's world.",
       "model": "claude-opus-5-5",
-      "at": "2026-11-23T19:36:23Z",
+      "at": "2026-11-25T05:48:06Z",
       "examples": [
-        "life-scientist-workstation",
-        "life-sysadmin-server-rack"
+        "adobe-829377199",
+        "adobe-930146362",
+        "adobe-466214125",
+        "adobe-36041755",
+        "adobe-1843776305-2",
+        "life-scientist-workstation"
       ],
       "suggested_slugs": {
         "products": [],
         "categories": [],
         "verticals": [],
         "concepts": [
-          "networking",
-          "connectivity"
+          "networking"
         ],
         "style": [
           "abstract",

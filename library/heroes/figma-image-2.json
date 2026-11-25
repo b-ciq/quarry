@@ -31,14 +31,18 @@
   "description": "An abstract dark background with a bright central burst of fine fiber-like lines radiating outward, dotted with glowing nodes fading into soft focus.",
   "rating": {
     "bot": {
-      "verdict": "yes",
+      "verdict": "maybe",
       "strength": "unsure",
-      "reason": "Clean, moody abstract network burst with ample negative space; works as a hero background for compute/infrastructure themes.",
+      "reason": "Clean, moody abstract with text room fits a hero, but it is generic network-burst stock and weak on CIQ-specific subject; similar abstract tech stock was rejected.",
       "model": "claude-opus-5-5",
-      "at": "2026-11-23T19:37:15Z",
+      "at": "2026-11-25T05:49:07Z",
       "examples": [
-        "life-scientist-workstation",
-        "life-sysadmin-server-rack"
+        "adobe-829377199",
+        "adobe-930146362",
+        "adobe-466214125",
+        "adobe-36041755",
+        "adobe-1843776305-2",
+        "life-scientist-workstation"
       ],
       "suggested_slugs": {
         "products": [],
@@ -50,7 +54,7 @@
         "style": [
           "abstract",
           "dark-background",
-          "hero-background"
+          "monochrome"
         ]
       }
     }

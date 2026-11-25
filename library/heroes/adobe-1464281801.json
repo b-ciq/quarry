@@ -33,28 +33,27 @@
   "description": "A data center aisle lined with server racks, with glowing teal fiber-like light streams and bokeh particles flowing through the foreground toward a bright vanishing point.",
   "rating": {
     "bot": {
-      "verdict": "maybe",
-      "strength": "unsure",
-      "reason": "Relevant datacenter subject and polished, but the glowing data-stream look is a generic stock trope; usable as a hero if curators accept the style.",
+      "verdict": "no",
+      "strength": "strong",
+      "reason": "Generic glowing data-center stock clich\u00e9, very similar to prior rejected server-aisle light-stream images.",
       "model": "claude-opus-5-5",
-      "at": "2026-11-23T19:35:30Z",
+      "at": "2026-11-25T05:47:30Z",
       "examples": [
-        "life-scientist-workstation",
-        "life-sysadmin-server-rack"
+        "adobe-829377199",
+        "adobe-930146362",
+        "adobe-466214125",
+        "adobe-36041755",
+        "adobe-1843776305-2",
+        "life-scientist-workstation"
       ],
       "suggested_slugs": {
         "products": [],
         "categories": [],
         "verticals": [],
-        "concepts": [
-          "networking",
-          "data-flow"
-        ],
+        "concepts": [],
         "style": [
-          "abstract",
-          "glowing-lights",
-          "bokeh",
-          "ai-generated"
+          "generic-stock",
+          "glowing-data-streams"
         ]
       }
     }

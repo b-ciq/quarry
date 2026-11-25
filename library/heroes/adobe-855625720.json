@@ -30,28 +30,30 @@
   "description": "A glass hourglass filled with glittering blue sand sits on a reflective black surface, with sand scattered across the table. The background is dark, leaving open space on the right.",
   "rating": {
     "bot": {
-      "verdict": "maybe",
+      "verdict": "no",
       "strength": "unsure",
-      "reason": "Polished, moody hero with ample negative space for text, but the hourglass is a generic time metaphor only loosely tied to CIQ's subjects; usable for EOL or urgency messaging if a curator vouches for it.",
+      "reason": "Polished with text room, but a generic hourglass metaphor that is off-topic for CIQ's products; curators reject generic stock.",
       "model": "claude-opus-5-5",
-      "at": "2026-11-23T19:36:58Z",
+      "at": "2026-11-25T05:48:48Z",
       "examples": [
-        "life-scientist-workstation",
-        "life-sysadmin-server-rack"
+        "adobe-829377199",
+        "adobe-930146362",
+        "adobe-466214125",
+        "adobe-36041755",
+        "adobe-1843776305-2",
+        "life-scientist-workstation"
       ],
       "suggested_slugs": {
         "products": [],
         "categories": [],
         "verticals": [],
         "concepts": [
-          "end-of-life",
           "time",
-          "migration"
+          "end-of-life"
         ],
         "style": [
-          "dark-background",
-          "still-life",
-          "metaphor"
+          "metaphor",
+          "dark-background"
         ]
       }
     }

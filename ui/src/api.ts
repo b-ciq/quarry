@@ -1,5 +1,6 @@
 import type { Asset } from './state'
 import type { Agreement, Verdict } from './rating'
+import type { CaptureItem, CaptureList, CaptureToday } from './capture'
 
 export interface GitStatus {
   ahead: number
@@ -181,3 +182,32 @@ export interface NeedsDetailsError {
 }
 /** Needs-details assets mapped to the errors that block confirming them. */
 export const fetchNeedsDetails = () => call<Record<string, NeedsDetailsError[]>>('GET', '/api/rate/needs-details')
+
+// --- Capture ---
+export type CaptureResult<T> = { ok: true; data: T } | { ok: false; status: number; error: string }
+export interface CaptureItemResult {
+  item: CaptureItem
+}
+export interface CaptureOpenedResult extends CaptureItemResult {
+  today: CaptureToday
+}
+
+async function captureCall<T>(method: string, url: string, form?: FormData): Promise<CaptureResult<T>> {
+  const r = await call<T>(method, url, form ? { form } : undefined)
+  return r.ok ? { ok: true, data: r.data } : { ok: false, status: r.status, error: r.error }
+}
+
+const shortcodeUrl = (shortcode: string) => `/api/capture/${seg(shortcode)}`
+export const fetchCapture = () => captureCall<CaptureList>('GET', '/api/capture')
+export const markOpened = (shortcode: string) => captureCall<CaptureOpenedResult>('POST', `${shortcodeUrl(shortcode)}/opened`)
+export const markUnavailable = (shortcode: string) =>
+  captureCall<CaptureItemResult>('POST', `${shortcodeUrl(shortcode)}/unavailable`)
+export const removeSlide = (shortcode: string, slide: number) =>
+  captureCall<CaptureItemResult>('DELETE', `${shortcodeUrl(shortcode)}/items/${slide}`)
+export const removeAll = (shortcode: string) => captureCall<CaptureItemResult>('DELETE', `${shortcodeUrl(shortcode)}/items`)
+export function addCaptureFile(shortcode: string, file: File, slide?: number) {
+  const form = new FormData()
+  form.append('file', file)
+  if (slide !== undefined) form.append('slide', String(slide))
+  return captureCall<CaptureItemResult>('POST', `${shortcodeUrl(shortcode)}/files`, form)
+}

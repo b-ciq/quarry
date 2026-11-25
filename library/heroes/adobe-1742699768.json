@@ -29,27 +29,28 @@
   "description": "Abstract dark background with vertical streaks of glowing cyan, blue, and purple light and bokeh particles, suggesting data streams.",
   "rating": {
     "bot": {
-      "verdict": "maybe",
+      "verdict": "no",
       "strength": "unsure",
-      "reason": "Polished abstract data-light background with room for text, but subject is generic and loosely tied to CIQ's world.",
+      "reason": "Generic abstract glowing-light stock background; curators have rejected similar Adobe tech-glow abstracts as not distinctly CIQ.",
       "model": "claude-opus-5-5",
-      "at": "2026-11-23T19:36:05Z",
+      "at": "2026-11-25T05:47:48Z",
       "examples": [
-        "life-scientist-workstation",
-        "life-sysadmin-server-rack"
+        "adobe-829377199",
+        "adobe-930146362",
+        "adobe-466214125",
+        "adobe-36041755",
+        "adobe-1843776305-2",
+        "life-scientist-workstation"
       ],
       "suggested_slugs": {
         "products": [],
         "categories": [],
         "verticals": [],
-        "concepts": [
-          "abstract",
-          "data-flow"
-        ],
+        "concepts": [],
         "style": [
-          "abstract-background",
-          "dark",
-          "neon-gradient"
+          "abstract",
+          "dark-background",
+          "glow"
         ]
       }
     }

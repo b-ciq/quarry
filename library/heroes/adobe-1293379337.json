@@ -29,14 +29,18 @@
   "description": "Abstract dark blue background of a glowing particle wave overlaid with a connected node-and-line network mesh, with a shallow depth of field.",
   "rating": {
     "bot": {
-      "verdict": "maybe",
+      "verdict": "no",
       "strength": "unsure",
-      "reason": "Polished abstract network hero with room for text, but a generic stock tech look that is weak on CIQ-specific subject.",
+      "reason": "Generic glowing blue network-mesh stock abstraction; curators rejected similar abstract tech stock imagery.",
       "model": "claude-opus-5-5",
-      "at": "2026-11-23T19:35:30Z",
+      "at": "2026-11-25T05:47:11Z",
       "examples": [
-        "life-scientist-workstation",
-        "life-sysadmin-server-rack"
+        "adobe-829377199",
+        "adobe-930146362",
+        "adobe-466214125",
+        "adobe-36041755",
+        "adobe-1843776305-2",
+        "life-scientist-workstation"
       ],
       "suggested_slugs": {
         "products": [],
@@ -47,8 +51,7 @@
         ],
         "style": [
           "abstract",
-          "background",
-          "blue-glow"
+          "stock-cliche"
         ]
       }
     }

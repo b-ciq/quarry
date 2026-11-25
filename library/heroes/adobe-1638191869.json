@@ -31,26 +31,28 @@
   "description": "A glowing green translucent cube sits on a dark circuit board, surrounded by green and amber bokeh lights.",
   "rating": {
     "bot": {
-      "verdict": "maybe",
+      "verdict": "no",
       "strength": "unsure",
-      "reason": "Polished hero-style render with a compute/container feel, but it reads as generic AI stock and the green palette may not match CIQ's brand.",
+      "reason": "Generic glowing-tech stock cliche (green cube on circuit board), similar to rejected abstract tech stock; strong green also evokes other brands.",
       "model": "claude-opus-5-5",
-      "at": "2026-11-23T19:35:47Z",
+      "at": "2026-11-25T05:47:30Z",
       "examples": [
-        "life-scientist-workstation",
-        "life-sysadmin-server-rack"
+        "adobe-829377199",
+        "adobe-930146362",
+        "adobe-466214125",
+        "adobe-36041755",
+        "adobe-1843776305-2",
+        "life-scientist-workstation"
       ],
       "suggested_slugs": {
         "products": [],
         "categories": [],
         "verticals": [],
-        "concepts": [
-          "hardware"
-        ],
+        "concepts": [],
         "style": [
-          "3d-render",
-          "abstract",
-          "bokeh"
+          "abstract-tech",
+          "bokeh",
+          "dark-background"
         ]
       }
     }

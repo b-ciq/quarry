@@ -33,26 +33,29 @@
   "description": "A person seen from behind sits at a desk facing a wall of glowing monitors showing world maps and dashboards in a dark operations center, lit by a desk lamp.",
   "rating": {
     "bot": {
-      "verdict": "maybe",
+      "verdict": "no",
       "strength": "unsure",
-      "reason": "Moody ops-center scene fits security/operations, but it is a generic AI-looking stock cliche with gibberish screen content and no real room for text.",
+      "reason": "Generic stock clich\u00e9 of a person at glowing monitors in a dark ops center; it looks AI-generated, the screen content is gibberish, and the scene is close to the glowing-tech stock imagery curators rejected.",
       "model": "claude-opus-5-5",
-      "at": "2026-11-23T19:35:47Z",
+      "at": "2026-11-25T05:47:30Z",
       "examples": [
-        "life-scientist-workstation",
-        "life-sysadmin-server-rack"
+        "adobe-829377199",
+        "adobe-930146362",
+        "adobe-466214125",
+        "adobe-36041755",
+        "adobe-1843776305-2",
+        "life-scientist-workstation"
       ],
       "suggested_slugs": {
         "products": [],
         "categories": [],
         "verticals": [],
         "concepts": [
-          "monitoring"
+          "soc"
         ],
         "style": [
-          "dark",
           "ai-generated",
-          "control-room"
+          "dark-moody"
         ]
       }
     }

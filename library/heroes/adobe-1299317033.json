@@ -31,14 +31,18 @@
   "description": "Abstract dark blue background with glowing network lines radiating from a central illuminated node, with orange and blue bokeh particles. Shallow depth of field leaves open dark space at the top.",
   "rating": {
     "bot": {
-      "verdict": "maybe",
+      "verdict": "no",
       "strength": "unsure",
-      "reason": "Clean abstract network hero with good text space, but generic glowing-node stock look and weak tie to CIQ subjects.",
+      "reason": "Generic abstract glowing-network stock, the same cliche style curators rejected in similar Adobe examples.",
       "model": "claude-opus-5-5",
-      "at": "2026-11-23T19:35:30Z",
+      "at": "2026-11-25T05:47:11Z",
       "examples": [
-        "life-scientist-workstation",
-        "life-sysadmin-server-rack"
+        "adobe-829377199",
+        "adobe-930146362",
+        "adobe-466214125",
+        "adobe-36041755",
+        "adobe-1843776305-2",
+        "life-scientist-workstation"
       ],
       "suggested_slugs": {
         "products": [],
@@ -49,8 +53,7 @@
         ],
         "style": [
           "abstract",
-          "dark-background",
-          "bokeh"
+          "generic-tech-stock"
         ]
       }
     }

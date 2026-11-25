@@ -1,7 +1,7 @@
 {
   "id": "adobe-1163200357",
   "file": "adobe-1163200357.jpg",
-  "status": "proposed",
+  "status": "parked",
   "class": "hero",
   "products": [],
   "categories": [
@@ -32,27 +32,37 @@
   "description": "Close-up profile of a bearded man in glasses staring at several monitors filled with blue code, with the code reflected in his lenses, set in a dark, moody scene.",
   "rating": {
     "bot": {
-      "verdict": "maybe",
+      "verdict": "no",
       "strength": "unsure",
-      "reason": "Relevant developer/code subject with a hero-friendly crop, but it is a common stock trope and the screen text is likely AI-garbled, so it needs a curator check.",
+      "reason": "Generic stock clich\u00e9 of a person staring at glowing code, likely AI-generated with gibberish code; curators rejected similar glowing tech stock.",
       "model": "claude-opus-5-5",
-      "at": "2026-11-23T19:35:12Z",
+      "at": "2026-11-25T05:47:11Z",
       "examples": [
-        "life-scientist-workstation",
-        "life-sysadmin-server-rack"
+        "adobe-829377199",
+        "adobe-930146362",
+        "adobe-466214125",
+        "adobe-36041755",
+        "adobe-1843776305-2",
+        "life-scientist-workstation"
       ],
       "suggested_slugs": {
         "products": [],
         "categories": [],
         "verticals": [],
         "concepts": [
-          "software-development"
+          "developer"
         ],
         "style": [
-          "dark-moody",
-          "stock-photo"
+          "stock-cliche",
+          "dark-moody"
         ]
       }
+    },
+    "human": {
+      "verdict": "maybe",
+      "by": "b-ciq <bkfchristensen@gmail.com>",
+      "at": "2026-11-25T05:50:57Z",
+      "reason": "Clean composition but human looks very AI"
     }
   }
 }

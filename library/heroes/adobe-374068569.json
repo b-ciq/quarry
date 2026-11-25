@@ -29,13 +29,17 @@
   "rating": {
     "bot": {
       "verdict": "no",
-      "strength": "unsure",
-      "reason": "Generic road-map stock of Charlotte, NC; off-topic for CIQ's products unless tied to a specific local event.",
+      "strength": "strong",
+      "reason": "Generic road map stock photo, off-topic for CIQ's products and audiences.",
       "model": "claude-opus-5-5",
-      "at": "2026-11-23T19:36:23Z",
+      "at": "2026-11-25T05:48:06Z",
       "examples": [
-        "life-scientist-workstation",
-        "life-sysadmin-server-rack"
+        "adobe-829377199",
+        "adobe-930146362",
+        "adobe-466214125",
+        "adobe-36041755",
+        "adobe-1843776305-2",
+        "life-scientist-workstation"
       ],
       "suggested_slugs": {
         "products": [],
@@ -43,12 +47,11 @@
         "verticals": [],
         "concepts": [
           "location",
-          "events"
+          "travel"
         ],
         "style": [
           "stock-photo",
-          "map",
-          "shallow-depth-of-field"
+          "map"
         ]
       }
     }

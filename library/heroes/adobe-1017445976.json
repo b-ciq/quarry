@@ -1,7 +1,7 @@
 {
   "id": "adobe-1017445976",
   "file": "adobe-1017445976.jpg",
-  "status": "proposed",
+  "status": "retired",
   "class": "hero",
   "products": [],
   "categories": [
@@ -34,29 +34,36 @@
   "description": "A spiral galaxy glows diagonally across a dark starfield, overlaid with faint handwritten-style equations and diagrams, above a grid-like floor of glowing technical notation.",
   "rating": {
     "bot": {
-      "verdict": "maybe",
+      "verdict": "no",
       "strength": "unsure",
-      "reason": "Striking science/research hero mood, but the overlaid equations look like AI-garbled gibberish text and it is busy for copy space.",
+      "reason": "Stylized AI-looking sci-fi composite with gibberish pseudo-equations; generic tech-stock feel like other rejected examples.",
       "model": "claude-opus-5-5",
-      "at": "2026-11-23T19:35:12Z",
+      "at": "2026-11-25T05:47:11Z",
       "examples": [
-        "life-scientist-workstation",
-        "life-sysadmin-server-rack"
+        "adobe-829377199",
+        "adobe-930146362",
+        "adobe-466214125",
+        "adobe-36041755",
+        "adobe-1843776305-2",
+        "life-scientist-workstation"
       ],
       "suggested_slugs": {
         "products": [],
         "categories": [],
         "verticals": [],
         "concepts": [
-          "astronomy",
-          "simulation"
+          "astronomy"
         ],
         "style": [
           "ai-generated",
-          "space",
-          "abstract-background"
+          "sci-fi"
         ]
       }
+    },
+    "human": {
+      "verdict": "no",
+      "by": "b-ciq <bkfchristensen@gmail.com>",
+      "at": "2026-11-25T05:49:49Z"
     }
   }
 }

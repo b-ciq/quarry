@@ -28,24 +28,27 @@
     "bot": {
       "verdict": "yes",
       "strength": "unsure",
-      "reason": "Polished dark background with a community network of faces on the right and ample text space on the left; fits CIQ's community and people messaging.",
+      "reason": "Clean dark background with open left space for text; community/people network fits Rocky/CIQ community storytelling and looks custom-made.",
       "model": "claude-opus-5-5",
-      "at": "2026-11-23T19:37:15Z",
+      "at": "2026-11-25T05:49:07Z",
       "examples": [
-        "life-scientist-workstation",
-        "life-sysadmin-server-rack"
+        "adobe-829377199",
+        "adobe-930146362",
+        "adobe-466214125",
+        "adobe-36041755",
+        "adobe-1843776305-2",
+        "life-scientist-workstation"
       ],
       "suggested_slugs": {
         "products": [],
         "categories": [],
         "verticals": [],
         "concepts": [
-          "community",
-          "network"
+          "community"
         ],
         "style": [
-          "portrait-network",
-          "dark-background"
+          "network-graph",
+          "portrait-collage"
         ]
       }
     }

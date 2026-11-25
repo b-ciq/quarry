@@ -24,12 +24,16 @@
     "bot": {
       "verdict": "maybe",
       "strength": "unsure",
-      "reason": "Moody dark abstract lattice suits a background, but the subject is only loosely tied to CIQ themes and the busy texture leaves limited text space.",
+      "reason": "Moody, polished abstract background with on-brand dark tone, but its subject only loosely evokes CIQ's world, and the portrait crop limits hero use.",
       "model": "claude-opus-5-5",
-      "at": "2026-11-23T19:37:15Z",
+      "at": "2026-11-25T05:48:48Z",
       "examples": [
-        "life-scientist-workstation",
-        "life-sysadmin-server-rack"
+        "adobe-829377199",
+        "adobe-930146362",
+        "adobe-466214125",
+        "adobe-36041755",
+        "adobe-1843776305-2",
+        "life-scientist-workstation"
       ],
       "suggested_slugs": {
         "products": [],
@@ -39,7 +43,11 @@
           "network",
           "structure"
         ],
-        "style": []
+        "style": [
+          "abstract",
+          "3d-render",
+          "portrait-orientation"
+        ]
       }
     }
   }

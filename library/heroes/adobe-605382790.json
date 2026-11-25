@@ -29,25 +29,26 @@
   "rating": {
     "bot": {
       "verdict": "no",
-      "strength": "unsure",
-      "reason": "Generic stock cliche of a hand touching a glowing data visualization, which reads as a 'pointing at screens' trope rather than CIQ's world.",
+      "strength": "strong",
+      "reason": "Generic stock cliche of a hand touching a glowing data visualization; similar abstract tech stock was rejected.",
       "model": "claude-opus-5-5",
-      "at": "2026-11-23T19:36:41Z",
+      "at": "2026-11-25T05:48:27Z",
       "examples": [
-        "life-scientist-workstation",
-        "life-sysadmin-server-rack"
+        "adobe-829377199",
+        "adobe-930146362",
+        "adobe-466214125",
+        "adobe-36041755",
+        "adobe-1843776305-2",
+        "life-scientist-workstation"
       ],
       "suggested_slugs": {
         "products": [],
         "categories": [],
         "verticals": [],
-        "concepts": [
-          "data-sorting",
-          "ai"
-        ],
+        "concepts": [],
         "style": [
-          "stock-cliche",
-          "dark-tech-abstract"
+          "abstract-tech-stock",
+          "hand-touching-screen"
         ]
       }
     }

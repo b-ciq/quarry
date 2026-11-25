@@ -29,26 +29,28 @@
   "description": "An abstract wide banner of flowing waves made of glowing dots in purple, blue, and pink against a dark background, with bokeh light in the foreground.",
   "rating": {
     "bot": {
-      "verdict": "maybe",
+      "verdict": "no",
       "strength": "unsure",
-      "reason": "Polished abstract hero with good mood, but generic stock-style particle wave that is only loosely tied to CIQ subjects and has limited calm space for text.",
+      "reason": "Generic abstract neon particle-wave stock; similar glowing tech abstracts were rejected and it has no clear tie to CIQ's subjects.",
       "model": "claude-opus-5-5",
-      "at": "2026-11-23T19:37:15Z",
+      "at": "2026-11-25T05:48:48Z",
       "examples": [
-        "life-scientist-workstation",
-        "life-sysadmin-server-rack"
+        "adobe-829377199",
+        "adobe-930146362",
+        "adobe-466214125",
+        "adobe-36041755",
+        "adobe-1843776305-2",
+        "life-scientist-workstation"
       ],
       "suggested_slugs": {
         "products": [],
         "categories": [],
         "verticals": [],
-        "concepts": [
-          "abstract"
-        ],
+        "concepts": [],
         "style": [
-          "abstract-background",
+          "abstract",
           "particle-wave",
-          "dark-gradient"
+          "neon-gradient"
         ]
       }
     }

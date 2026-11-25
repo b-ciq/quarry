@@ -34,25 +34,26 @@
     "bot": {
       "verdict": "maybe",
       "strength": "unsure",
-      "reason": "Relevant developer-at-code scene with good depth, but full-color generic office stock with likely AI artifacts on the screen text; it doesn't match the black-and-white style of the approved people shots.",
+      "reason": "Relevant developer-at-work subject with good composition, but feels generic stock (possibly AI-generated) and needs a check for garbled screen and hand details.",
       "model": "claude-opus-5-5",
-      "at": "2026-11-23T19:36:58Z",
+      "at": "2026-11-25T05:48:27Z",
       "examples": [
-        "life-scientist-workstation",
-        "life-sysadmin-server-rack"
+        "adobe-829377199",
+        "adobe-930146362",
+        "adobe-466214125",
+        "adobe-36041755",
+        "adobe-1843776305-2",
+        "life-scientist-workstation"
       ],
       "suggested_slugs": {
         "products": [],
         "categories": [],
         "verticals": [],
         "concepts": [
-          "developer",
           "software-development"
         ],
         "style": [
-          "color-photo",
-          "office",
-          "stock-lifestyle"
+          "lifestyle-photo"
         ]
       }
     }

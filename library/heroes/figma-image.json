@@ -35,12 +35,16 @@
     "bot": {
       "verdict": "maybe",
       "strength": "unsure",
-      "reason": "Moody dark hero with room for text and a container-like cube, but it reads as generic AI tech art and has faint garbled text in the background.",
+      "reason": "Clean dark composition with room for text and a container metaphor, but generic glowing-tech style similar to rejected stock, and background has faint gibberish text.",
       "model": "claude-opus-5-5",
-      "at": "2026-11-23T19:37:15Z",
+      "at": "2026-11-25T05:49:07Z",
       "examples": [
-        "life-scientist-workstation",
-        "life-sysadmin-server-rack"
+        "adobe-829377199",
+        "adobe-930146362",
+        "adobe-466214125",
+        "adobe-36041755",
+        "adobe-1843776305-2",
+        "life-scientist-workstation"
       ],
       "suggested_slugs": {
         "products": [],
@@ -48,9 +52,8 @@
         "verticals": [],
         "concepts": [],
         "style": [
-          "abstract",
-          "dark-background",
-          "neon-glow"
+          "abstract-tech",
+          "dark-neon"
         ]
       }
     }

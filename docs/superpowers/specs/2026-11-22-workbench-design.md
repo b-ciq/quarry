@@ -1,7 +1,7 @@
 # Quarry Workbench — Curator UI
 
 **Date:** 2026-11-22
-**Author:** Brett Christensen with Claude
+**Author:** Brian Christensen with Claude
 **Status:** Draft for approval
 **Depends on:** phase 1 DAM core (merged; see `2026-11-22-quarry-design.md`)
 
@@ -16,7 +16,7 @@ missing, what's inconsistent, and whether a vocabulary term means anything.
 
 ### Who
 
-Brett (now) and Isabelle (joining within a week), as co-owners. Marketing
+Brian (now) and Isabelle (joining within a week), as co-owners. Marketing
 is NOT a user of this tool — their surface remains Claude Desktop via MCP
 (phase 1.5). A read-only variant for others is a possible future, not this.
 
@@ -196,13 +196,13 @@ re-index since new images need embeddings.
 
 A throwaway single-file prototype (real library data: grid + facet rail,
 editor drawer, keyboard review queue, vocabulary modal, ops bar) was built
-and reviewed by Brett on 2026-11-22: approved as-is, no layout changes
+and reviewed by Brian on 2026-11-22: approved as-is, no layout changes
 requested. The prototype is reference-only (`.context/prototype/`,
 gitignored); the real build starts clean but matches its layout.
 
 ## Rollout
 
-1. Workbench v1 (this doc) on Brett's machine.
+1. Workbench v1 (this doc) on Brian's machine.
 2. Isabelle onboarding: repo access, setup script, `quarry ui`, a short
    onboarding page in docs/ written as part of the build; pairing session.
 3. Later candidates (explicitly out of v1): read-only shared deployment,
@@ -216,5 +216,5 @@ gitignored); the real build starts clean but matches its layout.
   something to show — on-demand thumb or placeholder; builder picks).
 - Git shell-out details and ahead/behind polling cadence.
 - Visual design details — but the frontend uses the **Quantic design
-  system** (`@ctrliq/*` packages + playbooks; Brett's decision 2026-11-22),
+  system** (`@ctrliq/*` packages + playbooks; Brian's decision 2026-11-22),
   with the approved spike as the layout reference.

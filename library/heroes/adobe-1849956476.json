@@ -40,23 +40,26 @@
     "bot": {
       "verdict": "maybe",
       "strength": "unsure",
-      "reason": "Strong on-topic subject and hero composition, but the saturated neon look reads like generic AI stock, and the screen text and keyboard need a check for AI artifacts.",
+      "reason": "Relevant sysadmin subject with good mood, but neon glow, an RGB keyboard and possible AI-generated code text lean toward stock clich\u00e9 and need closer review.",
       "model": "claude-opus-5-5",
-      "at": "2026-11-23T19:36:05Z",
+      "at": "2026-11-25T05:47:48Z",
       "examples": [
-        "life-scientist-workstation",
-        "life-sysadmin-server-rack"
+        "adobe-829377199",
+        "adobe-930146362",
+        "adobe-466214125",
+        "adobe-36041755",
+        "adobe-1843776305-2",
+        "life-scientist-workstation"
       ],
       "suggested_slugs": {
         "products": [],
         "categories": [],
         "verticals": [],
-        "concepts": [
-          "developer"
-        ],
+        "concepts": [],
         "style": [
           "neon-lighting",
-          "ai-generated"
+          "stock-photo",
+          "possibly-ai-generated"
         ]
       }
     }

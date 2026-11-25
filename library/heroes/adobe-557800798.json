@@ -32,14 +32,18 @@
   "description": "A symmetrical datacenter corridor lined with server racks whose doors show glowing cyan holographic interface panels, under teal ceiling lights leading to a closed door.",
   "rating": {
     "bot": {
-      "verdict": "maybe",
-      "strength": "unsure",
-      "reason": "On-topic datacenter hero with strong symmetry, but the glowing AI-generated sci-fi panels look generic and slightly garbled up close.",
+      "verdict": "no",
+      "strength": "strong",
+      "reason": "Generic AI-styled glowing server corridor with garbled fake interface panels; matches previously rejected datacenter stock cliches.",
       "model": "claude-opus-5-5",
-      "at": "2026-11-23T19:36:41Z",
+      "at": "2026-11-25T05:48:06Z",
       "examples": [
-        "life-scientist-workstation",
-        "life-sysadmin-server-rack"
+        "adobe-829377199",
+        "adobe-930146362",
+        "adobe-466214125",
+        "adobe-36041755",
+        "adobe-1843776305-2",
+        "life-scientist-workstation"
       ],
       "suggested_slugs": {
         "products": [],
@@ -48,8 +52,7 @@
         "concepts": [],
         "style": [
           "ai-generated",
-          "futuristic",
-          "teal-glow"
+          "sci-fi-glow"
         ]
       }
     }

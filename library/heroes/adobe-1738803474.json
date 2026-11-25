@@ -31,12 +31,16 @@
     "bot": {
       "verdict": "maybe",
       "strength": "unsure",
-      "reason": "Polished, moody office meeting with good atmosphere, but generic business stock with weak tie to CIQ's technical subject matter.",
+      "reason": "Polished, warm stock with room for text, but a generic team meeting that is weak on CIQ-specific subject matter.",
       "model": "claude-opus-5-5",
-      "at": "2026-11-23T19:36:05Z",
+      "at": "2026-11-25T05:47:48Z",
       "examples": [
-        "life-scientist-workstation",
-        "life-sysadmin-server-rack"
+        "adobe-829377199",
+        "adobe-930146362",
+        "adobe-466214125",
+        "adobe-36041755",
+        "adobe-1843776305-2",
+        "life-scientist-workstation"
       ],
       "suggested_slugs": {
         "products": [],
@@ -47,9 +51,9 @@
           "teamwork"
         ],
         "style": [
-          "warm-lighting",
+          "stock-photo",
           "night-office",
-          "candid"
+          "warm-lighting"
         ]
       }
     }

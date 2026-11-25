@@ -33,25 +33,25 @@
     "bot": {
       "verdict": "maybe",
       "strength": "unsure",
-      "reason": "Polished abstract hero with dark space for text, but generic and only loosely tied to CIQ subjects; the red/cyan palette needs a brand check.",
+      "reason": "Clean abstract hero with dark negative space for text, but generic and weak on CIQ-specific subject; similar glowing tech abstracts were rejected.",
       "model": "claude-opus-5-5",
-      "at": "2026-11-23T19:35:47Z",
+      "at": "2026-11-25T05:47:48Z",
       "examples": [
-        "life-scientist-workstation",
-        "life-sysadmin-server-rack"
+        "adobe-829377199",
+        "adobe-930146362",
+        "adobe-466214125",
+        "adobe-36041755",
+        "adobe-1843776305-2",
+        "life-scientist-workstation"
       ],
       "suggested_slugs": {
         "products": [],
         "categories": [],
         "verticals": [],
-        "concepts": [
-          "abstract",
-          "data-flow"
-        ],
+        "concepts": [],
         "style": [
-          "abstract-background",
-          "dark",
-          "light-lines"
+          "abstract",
+          "dark-background"
         ]
       }
     }

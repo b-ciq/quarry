@@ -28,12 +28,16 @@
     "bot": {
       "verdict": "maybe",
       "strength": "unsure",
-      "reason": "Polished monochrome hero with good text space, but hourglass is a generic time metaphor weakly tied to CIQ's subjects.",
+      "reason": "Polished, moody black-and-white hero with strong copy space, but the time metaphor is generic and not tied to CIQ's subject matter.",
       "model": "claude-opus-5-5",
-      "at": "2026-11-23T19:36:05Z",
+      "at": "2026-11-25T05:47:48Z",
       "examples": [
-        "life-scientist-workstation",
-        "life-sysadmin-server-rack"
+        "adobe-829377199",
+        "adobe-930146362",
+        "adobe-466214125",
+        "adobe-36041755",
+        "adobe-1843776305-2",
+        "life-scientist-workstation"
       ],
       "suggested_slugs": {
         "products": [],
@@ -41,13 +45,13 @@
         "verticals": [],
         "concepts": [
           "time",
-          "deadline",
-          "end-of-life"
+          "end-of-life",
+          "urgency"
         ],
         "style": [
-          "monochrome",
-          "still-life",
-          "negative-space"
+          "black-and-white",
+          "minimal",
+          "copy-space"
         ]
       }
     }

@@ -28,12 +28,16 @@
     "bot": {
       "verdict": "maybe",
       "strength": "unsure",
-      "reason": "Polished abstract hero with plenty of text space, but the subject is generic light streaks with no clear tie to CIQ's world; needs a curator to vouch for it.",
+      "reason": "Polished abstract hero with strong negative space for text, but purely decorative and weak on CIQ subject matter.",
       "model": "claude-opus-5-5",
-      "at": "2026-11-23T19:35:47Z",
+      "at": "2026-11-25T05:47:48Z",
       "examples": [
-        "life-scientist-workstation",
-        "life-sysadmin-server-rack"
+        "adobe-829377199",
+        "adobe-930146362",
+        "adobe-466214125",
+        "adobe-36041755",
+        "adobe-1843776305-2",
+        "life-scientist-workstation"
       ],
       "suggested_slugs": {
         "products": [],
@@ -41,12 +45,12 @@
         "verticals": [],
         "concepts": [
           "speed",
-          "data-flow"
+          "abstract"
         ],
         "style": [
-          "abstract",
-          "light-trails",
-          "dark-background"
+          "abstract-light",
+          "dark-background",
+          "negative-space"
         ]
       }
     }

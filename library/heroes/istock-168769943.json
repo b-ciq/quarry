@@ -39,14 +39,18 @@
   "description": "A man in glasses and a striped blue shirt stands with arms crossed beside black mesh-door server racks in a datacenter aisle.",
   "rating": {
     "bot": {
-      "verdict": "maybe",
+      "verdict": "yes",
       "strength": "unsure",
-      "reason": "Relevant subject (person at datacenter racks), but it's in full color while the approved examples are black and white, and the casual snapshot quality falls short of the polished hero style.",
+      "reason": "Authentic photo of a real person in an HPC datacenter fits CIQ's research and sysadmin world, much like the approved scientist-workstation shot.",
       "model": "claude-opus-5-5",
-      "at": "2026-11-23T19:37:31Z",
+      "at": "2026-11-25T05:49:07Z",
       "examples": [
-        "life-scientist-workstation",
-        "life-sysadmin-server-rack"
+        "adobe-829377199",
+        "adobe-930146362",
+        "adobe-466214125",
+        "adobe-36041755",
+        "adobe-1843776305-2",
+        "life-scientist-workstation"
       ],
       "suggested_slugs": {
         "products": [],
@@ -54,8 +58,8 @@
         "verticals": [],
         "concepts": [],
         "style": [
-          "color-photo",
-          "portrait"
+          "portrait",
+          "candid-photo"
         ]
       }
     }

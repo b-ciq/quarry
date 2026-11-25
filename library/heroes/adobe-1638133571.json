@@ -33,27 +33,29 @@
   "description": "A glossy glass sphere floating on a dark blue background, with a glowing processor chip at its center and circuit-like light streaks radiating outward.",
   "rating": {
     "bot": {
-      "verdict": "maybe",
+      "verdict": "no",
       "strength": "unsure",
-      "reason": "Polished compute-themed hero with dark negative space, but the glowing tech-sphere style is close to generic stock clich\u00e9 and needs a license check.",
+      "reason": "Generic glowing-chip stock sci-fi cliche, similar to other abstract tech stock the curators rejected.",
       "model": "claude-opus-5-5",
-      "at": "2026-11-23T19:35:47Z",
+      "at": "2026-11-25T05:47:30Z",
       "examples": [
-        "life-scientist-workstation",
-        "life-sysadmin-server-rack"
+        "adobe-829377199",
+        "adobe-930146362",
+        "adobe-466214125",
+        "adobe-36041755",
+        "adobe-1843776305-2",
+        "life-scientist-workstation"
       ],
       "suggested_slugs": {
         "products": [],
         "categories": [],
         "verticals": [],
         "concepts": [
-          "ai",
-          "semiconductors"
+          "ai"
         ],
         "style": [
-          "3d-render",
-          "abstract",
-          "dark-background"
+          "abstract-tech",
+          "3d-render"
         ]
       }
     }

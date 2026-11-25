@@ -34,28 +34,29 @@
   "description": "A glowing translucent cube with circuit patterns and a blue cloud icon sits on a dark circuit-board grid lit with pink and blue neon light.",
   "rating": {
     "bot": {
-      "verdict": "maybe",
-      "strength": "unsure",
-      "reason": "Polished cloud/container hero with dark tech mood, but the cloud icon in a glowing cube is a bit generic stock cliche and the subject is weak for CIQ specifics.",
+      "verdict": "no",
+      "strength": "strong",
+      "reason": "Generic neon cloud-in-a-cube stock cliche, matching the abstract tech stock that curators consistently reject.",
       "model": "claude-opus-5-5",
-      "at": "2026-11-23T19:37:15Z",
+      "at": "2026-11-25T05:48:48Z",
       "examples": [
-        "life-scientist-workstation",
-        "life-sysadmin-server-rack"
+        "adobe-829377199",
+        "adobe-930146362",
+        "adobe-466214125",
+        "adobe-36041755",
+        "adobe-1843776305-2",
+        "life-scientist-workstation"
       ],
       "suggested_slugs": {
         "products": [],
-        "categories": [
-          "cloud"
-        ],
+        "categories": [],
         "verticals": [],
         "concepts": [
           "cloud"
         ],
         "style": [
-          "neon",
-          "3d-render",
-          "abstract-tech"
+          "neon-abstract",
+          "generic-stock"
         ]
       }
     }

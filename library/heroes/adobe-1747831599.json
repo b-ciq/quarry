@@ -34,14 +34,18 @@
   "description": "A translucent glowing shield icon with circuit-board traces on a dark blue gradient background, leaving open space on the left for text.",
   "rating": {
     "bot": {
-      "verdict": "maybe",
+      "verdict": "no",
       "strength": "unsure",
-      "reason": "Clean hero with text room and on-topic security theme, but a glowing shield is near the generic security-cliche territory the rubric warns against.",
+      "reason": "Generic glowing security-shield stock cliche, the same family as the glowing padlock and neon tech-abstract images curators rejected; the clean text space doesn't rescue it.",
       "model": "claude-opus-5-5",
-      "at": "2026-11-23T19:36:05Z",
+      "at": "2026-11-25T05:47:48Z",
       "examples": [
-        "life-scientist-workstation",
-        "life-sysadmin-server-rack"
+        "adobe-829377199",
+        "adobe-930146362",
+        "adobe-466214125",
+        "adobe-36041755",
+        "adobe-1843776305-2",
+        "life-scientist-workstation"
       ],
       "suggested_slugs": {
         "products": [],
@@ -49,9 +53,8 @@
         "verticals": [],
         "concepts": [],
         "style": [
-          "abstract",
-          "glow-icon",
-          "dark-gradient"
+          "stock-cliche",
+          "abstract-tech"
         ]
       }
     }

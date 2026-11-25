@@ -9,11 +9,12 @@ requires-python = ">=3.11"
 dependencies = ["Pillow", "numpy", "sqlite-vec"]
 
 [project.optional-dependencies]
-dev = ["pytest", "mcp>=1.2,<2", "fastapi", "httpx", "python-multipart", "anthropic"]
+dev = ["pytest", "mcp>=1.2,<2", "fastapi", "httpx", "python-multipart", "anthropic", "imageio-ffmpeg"]
 mcp = ["mcp>=1.2,<2"]
 ui = ["fastapi", "uvicorn", "python-multipart"]
 rate = ["anthropic"]
 ml = ["torch", "transformers"]
+inspiration = ["imageio-ffmpeg"]
 
 [project.scripts]
 quarry = "quarry.cli:main"

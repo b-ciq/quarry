@@ -26,14 +26,18 @@
   "description": "Red, white, and blue fireworks burst against a black night sky on the right, leaving the left side empty for text.",
   "rating": {
     "bot": {
-      "verdict": "maybe",
+      "verdict": "no",
       "strength": "unsure",
-      "reason": "Polished hero with ample text space, but fireworks are off-topic for CIQ; only useful for celebratory or holiday announcements.",
+      "reason": "Generic celebratory stock with no connection to CIQ's technical subject matter, despite clean copy space.",
       "model": "claude-opus-5-5",
-      "at": "2026-11-23T19:36:05Z",
+      "at": "2026-11-25T05:47:48Z",
       "examples": [
-        "life-scientist-workstation",
-        "life-sysadmin-server-rack"
+        "adobe-829377199",
+        "adobe-930146362",
+        "adobe-466214125",
+        "adobe-36041755",
+        "adobe-1843776305-2",
+        "life-scientist-workstation"
       ],
       "suggested_slugs": {
         "products": [],
@@ -41,10 +45,9 @@
         "verticals": [],
         "concepts": [
           "celebration",
-          "announcement"
+          "holiday"
         ],
         "style": [
-          "photo",
           "dark-background",
           "copy-space"
         ]

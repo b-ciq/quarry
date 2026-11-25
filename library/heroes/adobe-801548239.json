@@ -29,24 +29,27 @@
   "description": "Abstract dark background of blue and orange glowing dots forming a wavy surface with concentric rings, resembling a digital fingerprint or ripple.",
   "rating": {
     "bot": {
-      "verdict": "maybe",
+      "verdict": "no",
       "strength": "unsure",
-      "reason": "Clean, dark abstract with room for text and a tech mood, but generic stock and only loosely tied to CIQ subjects. It reads as a fingerprint/security clich\u00e9.",
+      "reason": "Generic abstract stock tech visual (digital fingerprint ripple); curators have rejected similar glowing abstract stock imagery.",
       "model": "claude-opus-5-5",
-      "at": "2026-11-23T19:36:58Z",
+      "at": "2026-11-25T05:48:48Z",
       "examples": [
-        "life-scientist-workstation",
-        "life-sysadmin-server-rack"
+        "adobe-829377199",
+        "adobe-930146362",
+        "adobe-466214125",
+        "adobe-36041755",
+        "adobe-1843776305-2",
+        "life-scientist-workstation"
       ],
       "suggested_slugs": {
         "products": [],
         "categories": [],
         "verticals": [],
-        "concepts": [
-          "abstract"
-        ],
+        "concepts": [],
         "style": [
-          "abstract-particles",
+          "abstract",
+          "particles",
           "dark-background"
         ]
       }

@@ -25,6 +25,57 @@ Ingest creates `status=proposed` sidecars. Then curate in the workbench review q
 - Midjourney: use the archive export. `--source midjourney`. Record prompt, model and seed in the sidecar's `generation` block; this is required before a midjourney asset can be confirmed.
 - Screenshots: add `--product <slug>`; they nest under `screenshots/<product>/`. Set `product_version` and `captured_at` during curation.
 
+## Instagram saves (inspiration, reference only)
+
+Inspiration lives outside the repo, in a synced Drive folder, so images stay off the shared remote. Nothing that serves assets reads it. No bot logs in to Instagram: you export once, then click a button on each post yourself.
+
+### One-time setup
+
+1. Create `~/.config/quarry/config.toml` (or set `QUARRY_CONFIG_DIR` to use another folder):
+
+   ```toml
+   inspiration_dir = "~/Library/CloudStorage/GoogleDrive-bchristensen@ciq.com/My Drive/Quarry inspiration saves"
+   # capture_daily_cap = 40                 # optional, default 40
+   # capture_downloads_dir = "~/Downloads/quarry"   # optional, default shown
+   ```
+
+   `QUARRY_INSPIRATION_DIR` overrides `inspiration_dir`.
+2. `pip install -e ".[inspiration]"` (adds ffmpeg for video).
+3. Load the Chrome extension: `chrome://extensions` → Developer mode → Load unpacked → select `extension/`. Details in `extension/README.md`.
+4. Load it from a stable Quarry checkout, not a Conductor workspace. Chrome keeps pointing at the folder, and an archived workspace deletes it.
+
+### Import an export
+
+1. In Instagram, open Accounts Center → Download your information. Choose only Saved, date range All time, format JSON.
+2. `quarry import-instagram EXPORT [--inspiration-dir DIR]` on the zip or the unzipped folder.
+3. Each save becomes `<root>/instagram/<id>/save.json` with link, owner, caption, hashtags, collections and save time, and a pending `capture` block.
+4. Re-run on every new export. It adds only new saves and newly listed collections, and never overwrites curator fields (`status`, `saved_because`, `style`, `concepts`, `description`).
+
+### Capture session
+
+1. `quarry ui`, then open the Capture page.
+2. Click **Open next**. It opens the next pending post in Instagram.
+3. Click the Quarry button (or Option+Shift+Q). Wait for the checkmark badge.
+4. Repeat. The page sweeps `~/Downloads/quarry/` into the store as you go.
+5. After 40 posts opened in a day, Open next turns off until tomorrow. Change the number with `capture_daily_cap`.
+
+To sweep without the UI: `quarry import-captures [--inspiration-dir DIR] [--downloads DIR]`.
+
+### Fixing a capture
+
+1. Wrong or partial files: click the row's **Open** link to open that post, then press the Quarry button again. The re-capture replaces only the slides it brings and keeps the others. **Open** counts against today's cap, like Open next, and is off once the cap is reached.
+2. **Remove...**: delete one slide's file, or all files. The save goes back to partial or pending.
+3. **Add file**: pick a file, or drop one on the row, to fill in a missing slide.
+4. **Unavailable**: mark a deleted or private post so it stops coming up.
+
+### Failed captures
+
+A folder the sweep cannot file moves to `<downloads>/_failed/<folder>/` with a `reason.txt` that says why. Capture the post again, or use Add file on its row.
+
+### Drive sync
+
+The Drive folder syncs deletions both ways. Deleting a file there deletes it everywhere, and Drive trash is the only undo.
+
 ## Per-release screenshot checklist
 
 1. `quarry search --class screenshot --product <product> --all-statuses --limit 100 -v`
@@ -59,5 +110,5 @@ The `spot` kind patch lives in `~/.claude/skills/quantic-deck-builder/src/image_
 
 ## Risks and open items
 
-- Single curator: ingest and curation freeze if Brett is unavailable. Trigger: train a second operator before phase 1.5 exit.
+- Single curator: ingest and curation freeze if Brian is unavailable. Trigger: train a second operator before phase 1.5 exit.
 - Hosted-server auth: the conversation with CIQ IT (who may connect; SSO vs shared key) starts now, during phase 1, so it does not stall phase 1.5.

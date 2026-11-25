@@ -37,24 +37,27 @@
     "bot": {
       "verdict": "maybe",
       "strength": "unsure",
-      "reason": "Moody abstract dot-grid landscape with plenty of dark space for text suits a hero, but the subject is only loosely tied to CIQ and it looks AI-generated, so it needs a curator's check.",
+      "reason": "Elegant minimal abstract with ample text space, but weak on subject and appears AI-generated; needs curator vouching.",
       "model": "claude-opus-5-5",
-      "at": "2026-11-23T19:37:31Z",
+      "at": "2026-11-25T05:49:21Z",
       "examples": [
-        "life-scientist-workstation",
-        "life-sysadmin-server-rack"
+        "adobe-829377199",
+        "adobe-930146362",
+        "adobe-466214125",
+        "adobe-36041755",
+        "adobe-1843776305-2",
+        "life-scientist-workstation"
       ],
       "suggested_slugs": {
         "products": [],
         "categories": [],
         "verticals": [],
-        "concepts": [
-          "abstract"
-        ],
+        "concepts": [],
         "style": [
+          "abstract",
           "dark-background",
-          "particle-wave",
-          "minimal"
+          "minimal",
+          "copy-space"
         ]
       }
     }

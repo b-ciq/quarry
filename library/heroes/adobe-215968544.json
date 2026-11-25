@@ -30,12 +30,16 @@
     "bot": {
       "verdict": "maybe",
       "strength": "unsure",
-      "reason": "Polished hero with sky space for text, but the bridge is only a loose metaphor for infrastructure and weak on CIQ subject matter; likely stock needing a license check.",
+      "reason": "Polished, clean hero with text room and a fitting infrastructure metaphor, but only metaphorical, not literally about CIQ's world; needs a curator's call.",
       "model": "claude-opus-5-5",
-      "at": "2026-11-23T19:36:05Z",
+      "at": "2026-11-25T05:47:48Z",
       "examples": [
-        "life-scientist-workstation",
-        "life-sysadmin-server-rack"
+        "adobe-829377199",
+        "adobe-930146362",
+        "adobe-466214125",
+        "adobe-36041755",
+        "adobe-1843776305-2",
+        "life-scientist-workstation"
       ],
       "suggested_slugs": {
         "products": [],
@@ -45,11 +49,7 @@
           "connectivity",
           "migration"
         ],
-        "style": [
-          "metaphor",
-          "architecture",
-          "landscape"
-        ]
+        "style": []
       }
     }
   }

@@ -32,26 +32,27 @@
   "description": "Stylized server racks recede in a blurred perspective, overlaid with glowing blue light streaks and orange highlight panels. The dark blue palette and shallow focus suggest high-speed data and compute infrastructure.",
   "rating": {
     "bot": {
-      "verdict": "maybe",
-      "strength": "unsure",
-      "reason": "On-topic datacenter/compute hero with strong depth, but generic blue-glow stock look with tiny pseudo-text; needs curator vouch and license check.",
+      "verdict": "no",
+      "strength": "strong",
+      "reason": "Generic glowing-server stock cliche, matching earlier rejected datacenter/light-streak stock images.",
       "model": "claude-opus-5-5",
-      "at": "2026-11-23T19:36:58Z",
+      "at": "2026-11-25T05:48:48Z",
       "examples": [
-        "life-scientist-workstation",
-        "life-sysadmin-server-rack"
+        "adobe-829377199",
+        "adobe-930146362",
+        "adobe-466214125",
+        "adobe-36041755",
+        "adobe-1843776305-2",
+        "life-scientist-workstation"
       ],
       "suggested_slugs": {
         "products": [],
         "categories": [],
         "verticals": [],
-        "concepts": [
-          "data-flow"
-        ],
+        "concepts": [],
         "style": [
-          "abstract-tech",
-          "blue-glow",
-          "stock-ai-render"
+          "generic-tech-stock",
+          "glowing-data-streaks"
         ]
       }
     }

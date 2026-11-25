@@ -28,23 +28,26 @@
     "bot": {
       "verdict": "maybe",
       "strength": "unsure",
-      "reason": "Polished abstract wave with room for text, but generic stock look and weak tie to CIQ subject matter.",
+      "reason": "Clean dark abstract with room for text and a brand-adjacent palette, but generic and not clearly tied to CIQ's subject matter.",
       "model": "claude-opus-5-5",
-      "at": "2026-11-23T19:36:58Z",
+      "at": "2026-11-25T05:48:27Z",
       "examples": [
-        "life-scientist-workstation",
-        "life-sysadmin-server-rack"
+        "adobe-829377199",
+        "adobe-930146362",
+        "adobe-466214125",
+        "adobe-36041755",
+        "adobe-1843776305-2",
+        "life-scientist-workstation"
       ],
       "suggested_slugs": {
         "products": [],
         "categories": [],
         "verticals": [],
-        "concepts": [
-          "abstract"
-        ],
+        "concepts": [],
         "style": [
-          "abstract-background",
-          "dark-gradient",
+          "abstract",
+          "background",
+          "dark",
           "wave-lines"
         ]
       }

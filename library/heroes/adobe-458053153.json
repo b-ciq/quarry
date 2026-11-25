@@ -31,27 +31,30 @@
   "description": "A glass office building at night, its lit interior floors showing desks and workstations, reflected in a wet plaza in teal and pink tones.",
   "rating": {
     "bot": {
-      "verdict": "maybe",
+      "verdict": "no",
       "strength": "unsure",
-      "reason": "Moody, polished office-building night shot with teal/pink tones fits the hero style, but the subject is generic corporate architecture rather than CIQ's tech world.",
+      "reason": "Moody generic office-building stock; weak tie to CIQ's subjects, and curators have rejected similar atmospheric stock.",
       "model": "claude-opus-5-5",
-      "at": "2026-11-23T19:36:23Z",
+      "at": "2026-11-25T05:48:06Z",
       "examples": [
-        "life-scientist-workstation",
-        "life-sysadmin-server-rack"
+        "adobe-829377199",
+        "adobe-930146362",
+        "adobe-466214125",
+        "adobe-36041755",
+        "adobe-1843776305-2",
+        "life-scientist-workstation"
       ],
       "suggested_slugs": {
         "products": [],
         "categories": [],
         "verticals": [],
         "concepts": [
-          "enterprise-office"
+          "corporate-office"
         ],
         "style": [
           "architecture",
           "night",
-          "reflection",
-          "teal-pink"
+          "neon-tones"
         ]
       }
     }

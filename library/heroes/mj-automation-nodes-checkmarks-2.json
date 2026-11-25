@@ -37,12 +37,16 @@
     "bot": {
       "verdict": "maybe",
       "strength": "unsure",
-      "reason": "Clean dark teal wave with ample text space suits a hero background, but it is generic abstract imagery with no clear tie to CIQ's subject matter.",
+      "reason": "Clean dark hero with lots of text space and a fitting palette, but the generic abstract wave says little about CIQ's subject matter.",
       "model": "claude-opus-5-5",
-      "at": "2026-11-23T19:37:31Z",
+      "at": "2026-11-25T05:49:07Z",
       "examples": [
-        "life-scientist-workstation",
-        "life-sysadmin-server-rack"
+        "adobe-829377199",
+        "adobe-930146362",
+        "adobe-466214125",
+        "adobe-36041755",
+        "adobe-1843776305-2",
+        "life-scientist-workstation"
       ],
       "suggested_slugs": {
         "products": [],
@@ -52,9 +56,9 @@
           "abstract"
         ],
         "style": [
-          "abstract-background",
-          "dark-gradient",
-          "particle-wave"
+          "particle-wave",
+          "dark-background",
+          "minimal"
         ]
       }
     }

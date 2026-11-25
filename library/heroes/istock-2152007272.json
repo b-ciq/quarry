@@ -35,14 +35,18 @@
   "description": "A person in a cap looks through a telescope inside an observatory dome lit deep red, with star trails visible through the open dome slit.",
   "rating": {
     "bot": {
-      "verdict": "maybe",
+      "verdict": "yes",
       "strength": "unsure",
-      "reason": "Striking science/research mood with dramatic color, but subject (amateur astronomy) is only loosely tied to CIQ's HPC world and differs from the B&W people style.",
+      "reason": "Striking, polished real-science photo with research mood and space for text; fits higher-ed/research audience though not directly computing.",
       "model": "claude-opus-5-5",
-      "at": "2026-11-23T19:37:31Z",
+      "at": "2026-11-25T05:49:07Z",
       "examples": [
-        "life-scientist-workstation",
-        "life-sysadmin-server-rack"
+        "adobe-829377199",
+        "adobe-930146362",
+        "adobe-466214125",
+        "adobe-36041755",
+        "adobe-1843776305-2",
+        "life-scientist-workstation"
       ],
       "suggested_slugs": {
         "products": [],
@@ -52,8 +56,8 @@
           "astronomy"
         ],
         "style": [
-          "dramatic-color",
-          "silhouette"
+          "dramatic-lighting",
+          "photography"
         ]
       }
     }

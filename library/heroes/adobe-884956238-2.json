@@ -32,26 +32,28 @@
   "description": "Abstract dark background of streaming points of light rushing toward a vanishing point, suggesting high-speed data or compute. The right side is mostly empty dark space.",
   "rating": {
     "bot": {
-      "verdict": "yes",
+      "verdict": "maybe",
       "strength": "unsure",
-      "reason": "Polished abstract data-flow background with dark tone and open space for text; fits compute/data themes as a hero.",
+      "reason": "Clean dark abstract with ample text space suits a hero, but it is generic data-streaming stock similar to imagery curators have rejected.",
       "model": "claude-opus-5-5",
-      "at": "2026-11-23T19:36:58Z",
+      "at": "2026-11-25T05:48:48Z",
       "examples": [
-        "life-scientist-workstation",
-        "life-sysadmin-server-rack"
+        "adobe-829377199",
+        "adobe-930146362",
+        "adobe-466214125",
+        "adobe-36041755",
+        "adobe-1843776305-2",
+        "life-scientist-workstation"
       ],
       "suggested_slugs": {
         "products": [],
         "categories": [],
         "verticals": [],
-        "concepts": [
-          "data-flow"
-        ],
+        "concepts": [],
         "style": [
           "abstract",
           "dark-background",
-          "bokeh"
+          "data-streams"
         ]
       }
     }
