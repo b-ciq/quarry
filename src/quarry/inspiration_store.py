@@ -182,6 +182,7 @@ class Store:
                     continue
                 if not MEDIA_NAME_RE.match(child.name):
                     s.warnings.append(f"unexpected file in {entry.name}/: {child.name}")
+            s.ids.add(entry.name)
             if not save.is_file():
                 s.warnings.append(f"{entry.name}/ has no save.json")
                 continue
@@ -191,7 +192,6 @@ class Store:
             except (OSError, ValueError, KeyError, TypeError) as e:
                 s.warnings.append(f"unreadable {entry.name}/save.json: {e}")
                 continue
-            s.ids.add(entry.name)
             s.by_shortcode[code] = entry.name
         return s
 

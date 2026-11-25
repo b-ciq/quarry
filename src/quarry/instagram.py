@@ -227,6 +227,9 @@ def import_instagram(export: Path, root: Path) -> ImportResult:
                     result.updated.append(path)
                 continue
             id_ = store.new_id(save.shortcode, scan)
+            if (store.dir / id_).exists():
+                result.warnings.append(f"skipped {save.shortcode}: {store.dir / id_} already exists")
+                continue
             path = store.write(_record(save, id_, today))
             scan.ids.add(id_)
             scan.by_shortcode[save.shortcode] = id_

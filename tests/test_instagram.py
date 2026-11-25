@@ -214,3 +214,15 @@ def test_cli_requires_a_root(tmp_path, monkeypatch, capsys):
     monkeypatch.delenv("QUARRY_INSPIRATION_DIR", raising=False)
     assert main(["import-instagram", str(_zip(tmp_path / "e.zip", NEW_FORMAT))]) == 2
     assert "QUARRY_INSPIRATION_DIR" in capsys.readouterr().err
+
+
+def test_corrupt_save_is_never_overwritten(tmp_path):
+    root = tmp_path / "root"
+    bad = root / "instagram" / "ig-abc" / "save.json"
+    bad.parent.mkdir(parents=True)
+    bad.write_bytes(b"{not json, saved_because hand-edited")
+    posts = [_item("https://www.instagram.com/p/Abc/", 1)]
+    res = import_instagram(_zip(tmp_path / "e.zip", posts), root)
+    assert bad.read_bytes() == b"{not json, saved_because hand-edited"
+    assert [p.parent.name for p in res.created] == ["ig-abc-2"]
+    assert any("ig-abc" in w and "save.json" in w for w in res.warnings)
