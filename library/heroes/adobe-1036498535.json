@@ -32,27 +32,29 @@
   "description": "Abstract digital tunnel of blue and orange light streams and particles converging toward a vanishing point on a dark background, suggesting high-speed data flow.",
   "rating": {
     "bot": {
-      "verdict": "yes",
+      "verdict": "no",
       "strength": "unsure",
-      "reason": "Polished abstract data-flow visual with dark background and orange/blue palette; works as a hero background with room for text.",
+      "reason": "Generic abstract data-stream stock imagery, similar to previously rejected glowing tech abstracts; nothing CIQ-specific.",
       "model": "claude-opus-5-5",
-      "at": "2026-11-23T19:35:12Z",
+      "at": "2026-11-25T05:47:11Z",
       "examples": [
-        "life-scientist-workstation",
-        "life-sysadmin-server-rack"
+        "adobe-829377199",
+        "adobe-930146362",
+        "adobe-466214125",
+        "adobe-36041755",
+        "adobe-1843776305-2",
+        "life-scientist-workstation"
       ],
       "suggested_slugs": {
         "products": [],
         "categories": [],
         "verticals": [],
         "concepts": [
-          "networking",
-          "data-flow"
+          "networking"
         ],
         "style": [
           "abstract",
-          "dark-background",
-          "light-streaks"
+          "generic-tech-stock"
         ]
       }
     }

@@ -29,13 +29,17 @@
   "rating": {
     "bot": {
       "verdict": "no",
-      "strength": "unsure",
-      "reason": "AI-generated abstract with garbled digital readout text; generic and not clearly tied to CIQ's world.",
+      "strength": "strong",
+      "reason": "Generic AI-style tech abstraction with garbled digit readout; no clear tie to CIQ's world, matching prior rejections of glowing tech stock.",
       "model": "claude-opus-5-5",
-      "at": "2026-11-23T19:35:12Z",
+      "at": "2026-11-25T05:47:11Z",
       "examples": [
-        "life-scientist-workstation",
-        "life-sysadmin-server-rack"
+        "adobe-829377199",
+        "adobe-930146362",
+        "adobe-466214125",
+        "adobe-36041755",
+        "adobe-1843776305-2",
+        "life-scientist-workstation"
       ],
       "suggested_slugs": {
         "products": [],
@@ -43,9 +47,9 @@
         "verticals": [],
         "concepts": [],
         "style": [
-          "abstract",
+          "abstract-tech",
           "ai-generated",
-          "neon"
+          "bokeh"
         ]
       }
     }

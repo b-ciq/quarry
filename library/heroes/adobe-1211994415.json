@@ -35,14 +35,18 @@
   "description": "Two technicians in glasses lean in to work on illuminated server hardware in a dark data center lit with teal and magenta tones. A small logo mark sits in the lower-left corner.",
   "rating": {
     "bot": {
-      "verdict": "maybe",
+      "verdict": "no",
       "strength": "unsure",
-      "reason": "Relevant datacenter/sysadmin subject, but cinematic neon stock look with a corner watermark-like mark and a soft, possibly AI-generated background figure needs a license check and cleanup.",
+      "reason": "Generic AI-style stock look with neon clich\u00e9 lighting and a watermark/logo mark in the corner; the humans rejected similar glowing server-room stock.",
       "model": "claude-opus-5-5",
-      "at": "2026-11-23T19:35:12Z",
+      "at": "2026-11-25T05:47:11Z",
       "examples": [
-        "life-scientist-workstation",
-        "life-sysadmin-server-rack"
+        "adobe-829377199",
+        "adobe-930146362",
+        "adobe-466214125",
+        "adobe-36041755",
+        "adobe-1843776305-2",
+        "life-scientist-workstation"
       ],
       "suggested_slugs": {
         "products": [],
@@ -50,8 +54,8 @@
         "verticals": [],
         "concepts": [],
         "style": [
-          "neon-cinematic",
-          "possible-ai-generated"
+          "neon-stock",
+          "ai-generated-look"
         ]
       }
     }

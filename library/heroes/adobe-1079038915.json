@@ -30,27 +30,30 @@
   "description": "A glowing cyan line graph trends upward across a faint grid on a black background, angled in perspective.",
   "rating": {
     "bot": {
-      "verdict": "maybe",
+      "verdict": "no",
       "strength": "unsure",
-      "reason": "Clean dark hero with room for text, but a glowing stock-chart line is a generic growth cliche loosely tied to CIQ's subjects.",
+      "reason": "Generic glowing stock-market chart cliche; off-topic for CIQ's Linux/HPC world, similar to rejected glowing tech stock.",
       "model": "claude-opus-5-5",
-      "at": "2026-11-23T19:35:12Z",
+      "at": "2026-11-25T05:47:11Z",
       "examples": [
-        "life-scientist-workstation",
-        "life-sysadmin-server-rack"
+        "adobe-829377199",
+        "adobe-930146362",
+        "adobe-466214125",
+        "adobe-36041755",
+        "adobe-1843776305-2",
+        "life-scientist-workstation"
       ],
       "suggested_slugs": {
         "products": [],
         "categories": [],
         "verticals": [],
         "concepts": [
-          "growth",
-          "performance"
+          "growth"
         ],
         "style": [
-          "dark-background",
           "neon-glow",
-          "abstract"
+          "dark-background",
+          "abstract-chart"
         ]
       }
     }

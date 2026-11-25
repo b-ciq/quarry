@@ -34,14 +34,18 @@
   "description": "A glowing particle-style DNA double helix in blue and red rests on a dark circuit-board-like grid, with blurred helices framing the foreground and background.",
   "rating": {
     "bot": {
-      "verdict": "maybe",
+      "verdict": "no",
       "strength": "unsure",
-      "reason": "Polished life-sciences/genomics hero with good depth, but DNA-on-circuit is a common stock trope; needs license check and brand fit confirmation.",
+      "reason": "Generic glowing-tech stock cliche (DNA on circuit grid); the curators consistently reject similar Adobe abstract tech renders.",
       "model": "claude-opus-5-5",
-      "at": "2026-11-23T19:35:12Z",
+      "at": "2026-11-25T05:47:11Z",
       "examples": [
-        "life-scientist-workstation",
-        "life-sysadmin-server-rack"
+        "adobe-829377199",
+        "adobe-930146362",
+        "adobe-466214125",
+        "adobe-36041755",
+        "adobe-1843776305-2",
+        "life-scientist-workstation"
       ],
       "suggested_slugs": {
         "products": [],
@@ -51,9 +55,7 @@
           "genomics"
         ],
         "style": [
-          "abstract",
-          "3d-render",
-          "dark-background"
+          "abstract-tech-render"
         ]
       }
     }
