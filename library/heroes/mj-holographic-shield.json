@@ -39,14 +39,18 @@
   },
   "rating": {
     "bot": {
-      "verdict": "yes",
+      "verdict": "maybe",
       "strength": "unsure",
-      "reason": "Polished dark-blue particle shield abstract with ample negative space for text; a security theme fits RLC Pro Hardened, and it reads as a subtle concept rather than a glowing-padlock cliche.",
+      "reason": "Tasteful, restrained security hero with open space for text, though a particle shield leans toward the generic security-stock look curators have rejected.",
       "model": "claude-opus-5-5",
-      "at": "2026-11-23T19:37:31Z",
+      "at": "2026-11-25T05:49:21Z",
       "examples": [
-        "life-scientist-workstation",
-        "life-sysadmin-server-rack"
+        "adobe-829377199",
+        "adobe-930146362",
+        "adobe-466214125",
+        "adobe-36041755",
+        "adobe-1843776305-2",
+        "life-scientist-workstation"
       ],
       "suggested_slugs": {
         "products": [],
@@ -56,7 +60,8 @@
         "style": [
           "abstract",
           "particles",
-          "dark-background"
+          "dark-background",
+          "copy-space"
         ]
       }
     }

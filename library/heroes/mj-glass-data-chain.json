@@ -34,28 +34,28 @@
   },
   "rating": {
     "bot": {
-      "verdict": "maybe",
+      "verdict": "no",
       "strength": "unsure",
-      "reason": "Polished, moody 3D render with room for text, but a glowing chain is a near-clich\u00e9 security/blockchain metaphor and only loosely tied to CIQ's subjects.",
+      "reason": "Abstract glowing chain is a generic stock-style security/blockchain metaphor, weak tie to CIQ's world, similar to rejected abstract tech stock.",
       "model": "claude-opus-5-5",
-      "at": "2026-11-23T19:37:31Z",
+      "at": "2026-11-25T05:49:21Z",
       "examples": [
-        "life-scientist-workstation",
-        "life-sysadmin-server-rack"
+        "adobe-829377199",
+        "adobe-930146362",
+        "adobe-466214125",
+        "adobe-36041755",
+        "adobe-1843776305-2",
+        "life-scientist-workstation"
       ],
       "suggested_slugs": {
         "products": [],
         "categories": [],
         "verticals": [],
         "concepts": [
-          "supply-chain",
-          "connectivity"
+          "supply-chain"
         ],
         "style": [
-          "3d-render",
-          "abstract",
-          "dark-background",
-          "bokeh"
+          "abstract-3d-render"
         ]
       }
     }

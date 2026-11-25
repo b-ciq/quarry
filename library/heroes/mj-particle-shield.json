@@ -36,24 +36,27 @@
   },
   "rating": {
     "bot": {
-      "verdict": "yes",
+      "verdict": "maybe",
       "strength": "unsure",
-      "reason": "Polished abstract particle-wave hero with dark negative space for text; on-brand data/compute mood, though subject is generic.",
+      "reason": "Clean, moody abstract with ample text space suits a hero, but subject is generic and loosely tied to CIQ; similar abstract tech stock was rejected.",
       "model": "claude-opus-5-5",
-      "at": "2026-11-23T19:37:31Z",
+      "at": "2026-11-25T05:49:21Z",
       "examples": [
-        "life-scientist-workstation",
-        "life-sysadmin-server-rack"
+        "adobe-829377199",
+        "adobe-930146362",
+        "adobe-466214125",
+        "adobe-36041755",
+        "adobe-1843776305-2",
+        "life-scientist-workstation"
       ],
       "suggested_slugs": {
         "products": [],
         "categories": [],
         "verticals": [],
-        "concepts": [
-          "abstract"
-        ],
+        "concepts": [],
         "style": [
-          "particle-wave",
+          "abstract",
+          "particles",
           "dark-background",
           "bokeh"
         ]
