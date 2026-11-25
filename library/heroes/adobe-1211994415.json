@@ -1,7 +1,7 @@
 {
   "id": "adobe-1211994415",
   "file": "adobe-1211994415.jpg",
-  "status": "proposed",
+  "status": "parked",
   "class": "hero",
   "products": [],
   "categories": [
@@ -58,6 +58,12 @@
           "ai-generated-look"
         ]
       }
+    },
+    "human": {
+      "verdict": "maybe",
+      "by": "b-ciq <bkfchristensen@gmail.com>",
+      "at": "2026-11-25T05:51:48Z",
+      "reason": "good composition but human looks AI. could work well for composition reference in image generation. Might also work better in black and white style"
     }
   }
 }
