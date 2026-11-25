@@ -1,7 +1,7 @@
 {
   "id": "adobe-1163200357",
   "file": "adobe-1163200357.jpg",
-  "status": "proposed",
+  "status": "parked",
   "class": "hero",
   "products": [],
   "categories": [
@@ -57,6 +57,12 @@
           "dark-moody"
         ]
       }
+    },
+    "human": {
+      "verdict": "maybe",
+      "by": "b-ciq <bkfchristensen@gmail.com>",
+      "at": "2026-11-25T05:50:57Z",
+      "reason": "Clean composition but human looks very AI"
     }
   }
 }
