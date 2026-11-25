@@ -177,6 +177,8 @@ class Store:
         if not self.dir.is_dir():
             return s
         for entry in sorted(self.dir.iterdir()):
+            if entry.name.startswith("."):
+                continue  # Finder's .DS_Store and other hidden files
             if not entry.is_dir() or not INSPIRATION_ID_RE.match(entry.name):
                 s.warnings.append(f"unexpected entry in instagram/: {entry.name}")
                 continue

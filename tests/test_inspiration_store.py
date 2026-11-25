@@ -62,6 +62,14 @@ def test_scan_ignores_conflict_copies_and_strays(store):
     assert not any(".DS_Store" in w for w in s.warnings)
 
 
+def test_scan_skips_dot_names_directly_under_instagram(store):
+    store.write(make_record("Abc"))
+    (store.dir / ".DS_Store").write_text("")  # Finder
+    (store.dir / ".hidden").mkdir()
+    s = store.scan()
+    assert s.by_shortcode == {"Abc": "ig-abc"} and s.ids == {"ig-abc"} and s.warnings == []
+
+
 def test_scan_picks_up_changed_record(store):
     rec = make_record("Abc")
     store.write(rec)
