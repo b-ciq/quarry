@@ -1,7 +1,7 @@
 {
   "id": "adobe-1036498535",
   "file": "adobe-1036498535.jpg",
-  "status": "proposed",
+  "status": "confirmed",
   "class": "hero",
   "products": [],
   "categories": [
@@ -57,6 +57,12 @@
           "generic-tech-stock"
         ]
       }
+    },
+    "human": {
+      "verdict": "yes",
+      "by": "b-ciq <bkfchristensen@gmail.com>",
+      "at": "2026-11-25T05:50:29Z",
+      "reason": "Abstract concept showing data, communication, speed. Clean aesthetic"
     }
   }
 }
