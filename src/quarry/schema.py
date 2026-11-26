@@ -1,5 +1,6 @@
 import re
 from pathlib import Path
+from typing import NamedTuple
 
 CLASSES = {"hero", "spot-illustration", "background", "screenshot", "diagram", "lifestyle"}
 CLASS_DIRS = {
@@ -128,8 +129,29 @@ def validate_sidecar(entry: dict, vocab: dict) -> list[str]:
 
 
 CAPTURE_STATUSES = ("pending", "partial", "captured", "unavailable")
-INSPIRATION_ID_RE = re.compile(r"^ig-[a-z0-9]+(-[a-z0-9]+)*$")
+INSPIRATION_ID_RE = re.compile(r"^(ig|pin)-[a-z0-9]+(-[a-z0-9]+)*$")
 SHORTCODE_RE = re.compile(r"^[A-Za-z0-9_-]+$")
+PIN_ID_RE = re.compile(r"^\d+$")
+
+
+class Source(NamedTuple):
+    """Where an inspiration source lives: its id prefix, its folder under the root, and its lookup key."""
+    prefix: str
+    folder: str
+    key: str  # the `source` field that identifies a record within this source
+
+
+SOURCES: dict[str, Source] = {
+    "instagram": Source("ig-", "instagram", "shortcode"),
+    "pinterest": Source("pin-", "pinterest", "pin_id"),
+}
+
+
+def source_for_id(id: str) -> Source:
+    for src in SOURCES.values():
+        if id.startswith(src.prefix):
+            return src
+    raise ValueError(f"no inspiration source for id {id!r}")
 MEDIA_NAME_RE = re.compile(r"^\d{2}(-poster)?\.(jpg|jpeg|png|webp|mp4|mov|webm)$")
 
 
@@ -143,11 +165,19 @@ def validate_inspiration_record(rec: dict) -> list[str]:
     if not isinstance(source, dict):
         errors.append("source: must be an object")
     else:
-        if source.get("origin") != "instagram":
-            errors.append(f"source.origin: must be 'instagram', got {source.get('origin')!r}")
-        code = source.get("shortcode")
-        if not isinstance(code, str) or not SHORTCODE_RE.match(code):
-            errors.append(f"source.shortcode: invalid value {code!r}")
+        origin = source.get("origin")
+        if origin == "instagram":
+            code = source.get("shortcode")
+            if not isinstance(code, str) or not SHORTCODE_RE.match(code):
+                errors.append(f"source.shortcode: invalid value {code!r}")
+        elif origin == "pinterest":
+            pin_id = source.get("pin_id")
+            if not isinstance(pin_id, str) or not PIN_ID_RE.match(pin_id):
+                errors.append(f"source.pin_id: invalid value {pin_id!r}")
+            elif rec.get("id") != f"pin-{pin_id}":
+                errors.append(f"id: must be 'pin-{pin_id}' for this pin, got {rec.get('id')!r}")
+        else:
+            errors.append(f"source.origin: must be one of {sorted(SOURCES)}, got {origin!r}")
     if not isinstance(rec.get("source_url"), str) or not rec["source_url"]:
         errors.append("source_url: must be a non-empty string")
     if "license" in rec:

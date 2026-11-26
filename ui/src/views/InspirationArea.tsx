@@ -5,7 +5,7 @@ import { CAP_MESSAGE, capReached, nextPending, type CaptureList } from '../captu
 import { FilterRail } from '../components/FilterRail'
 import { ThumbGrid } from '../components/ThumbGrid'
 import {
-  facetGroups, filterItems, inspirationFacets, inspirationText, nextAfter, viewOf,
+  facetGroups, filterItems, fromLine, inspirationFacets, inspirationText, nextAfter, sourceLabel, viewOf,
   type Faceting, type InspirationItem, type View,
 } from '../gallery'
 import { useViewKeys } from '../keys'
@@ -268,11 +268,11 @@ function InspirationDetail({ item, view, busy, onDecide, onSkip }: {
             )}
             {view === 'approved' && <Button size="sm" variant="outline" destructive disabled={busy} onClick={() => onDecide('no')}>Reject</Button>}
             {view === 'rejected' && <Button size="sm" variant="outline" disabled={busy} onClick={() => onDecide('yes')}>Approve instead</Button>}
-            <Button size="sm" variant="ghost" as="a" href={item.source_url} target="_blank">View on Instagram</Button>
+            <Button size="sm" variant="ghost" as="a" href={item.source_url} target="_blank">View on {sourceLabel(item.origin)}</Button>
           </div>
           <div className="field">
             <span className="field-label">From</span>
-            <p>{item.owner ? `@${item.owner}` : 'unknown'}{item.saved_at ? ` · saved ${item.saved_at.slice(0, 10)}` : ''}</p>
+            <p>{fromLine(item)}</p>
           </div>
           {item.caption && (
             <div className="field">

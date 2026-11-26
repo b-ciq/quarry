@@ -5,7 +5,7 @@ from pathlib import Path
 
 import pytest
 
-from inspiration_helpers import item, make_record
+from inspiration_helpers import item, make_pin, make_record
 from quarry.inspiration_store import (
     NoInspirationRoot, Store, StoreUnreadable, atomic_move, atomic_write_bytes, capture_downloads_dir,
     daily_cap, inspiration_root, store_lock,
@@ -186,3 +186,47 @@ def test_lock_is_exclusive_across_processes(store, tmp_path, monkeypatch):
         waited = time.monotonic() - t
     p.wait()
     assert waited >= 0.8
+
+
+def test_validator_accepts_pinterest_record():
+    assert validate_inspiration_record(make_pin("123")) == []
+
+
+def test_validator_pinterest_rules():
+    pin = make_pin("123")
+    assert any("pin_id" in e for e in validate_inspiration_record({**pin, "source": {**pin["source"], "pin_id": "12a"}}))
+    assert any("id" in e for e in validate_inspiration_record({**pin, "id": "pin-999"}))
+    assert any("origin" in e for e in validate_inspiration_record({**pin, "source": {**pin["source"], "origin": "tumblr"}}))
+    assert "shortcode" not in pin["source"] and validate_inspiration_record(pin) == []
+    ig = make_record("X1")
+    src = {k: v for k, v in ig["source"].items() if k != "shortcode"}
+    assert any("shortcode" in e for e in validate_inspiration_record({**ig, "source": src}))
+
+
+def test_write_routes_by_prefix(store):
+    store.write(make_pin("123"))
+    assert (store.root / "pinterest" / "pin-123" / "save.json").is_file()
+    assert store.read("pin-123")["source"]["pin_id"] == "123"
+    assert store.read_cached("pin-123")["id"] == "pin-123"
+    assert store.media_path("pin-123", "01.jpg") == store.root / "pinterest" / "pin-123" / "01.jpg"
+    assert store.folder("ig-abc") == store.dir / "ig-abc"
+
+
+def test_scan_routes_by_source(store):
+    store.write(make_record("AAA"))
+    store.write(make_pin("123"))
+    s = store.scan()
+    assert s.by_shortcode == {"AAA": "ig-aaa"}
+    assert s.by_source["pinterest"] == {"123": "pin-123"}
+    assert s.by_source["instagram"] is s.by_shortcode
+    assert sorted(s.readable) == ["ig-aaa", "pin-123"]
+    assert s.ids == {"ig-aaa", "pin-123"}
+
+
+def test_scan_warns_on_strays_in_pinterest(store):
+    (store.root / "pinterest" / "junk").mkdir(parents=True)
+    (store.root / "pinterest" / "ig-abc").mkdir()  # wrong prefix for this folder
+    s = store.scan()
+    assert any("pinterest/: junk" in w for w in s.warnings)
+    assert any("pinterest/: ig-abc" in w for w in s.warnings)
+    assert s.ids == set()
