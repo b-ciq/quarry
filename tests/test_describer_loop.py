@@ -11,7 +11,7 @@ from quarry.describer import FakeDescriber, media_fingerprint
 from quarry.describer_loop import DescriberLoop, waiting_count
 from quarry.inspiration_store import Store, cache_dir, config_dir
 from quarry.rater import RaterError
-from tests.inspiration_helpers import item, make_record
+from tests.inspiration_helpers import item, make_pin, make_record
 
 ROOT = Path(__file__).resolve().parent.parent
 
@@ -67,6 +67,21 @@ def test_settles_before_describing(env):
     assert fake.calls == [rid]
     assert loop.status()["state"] == "idle"
     assert loop.status()["waiting"] == 0
+
+
+def test_describes_pinterest_pins_too(env):
+    pin = make_pin("987")
+    pin["capture"]["items"] = [{**item(1), "sha256": "p1"}]
+    pin["capture"]["status"] = "captured"
+    env.store.write(pin)
+    (env.store.folder(pin["id"]) / "01.jpg").write_bytes(b"pin")
+    fake = FakeDescriber()
+    loop = env.make(fake)
+    loop.settle_s = 0
+    loop.tick()
+    assert fake.calls == ["pin-987"]
+    rec = env.store.read("pin-987")
+    assert rec["description"] == "Fake description." and rec["bot"]["media"] == media_fingerprint(rec)
 
 
 def test_newest_capture_first_one_per_tick(env):

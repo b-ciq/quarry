@@ -14,6 +14,7 @@ from quarry.describer import ClaudeDescriber
 from quarry.describer_loop import DescriberLoop
 from quarry.library import LibraryError, scan_library
 from quarry.media_probe import FfmpegMissing
+from quarry.pinterest import import_pinterest
 from quarry.rater import rater_status
 from quarry.publish import check_stale, publish
 from quarry.seed import seed_from_deck_builder
@@ -197,6 +198,12 @@ def main(argv=None) -> int:
     im.add_argument("export", type=Path, help="the export .zip, or the unzipped folder")
     im.add_argument("--inspiration-dir", default=None, type=Path,
                     help="inspiration folder (default: QUARRY_INSPIRATION_DIR or config.toml)")
+    ip = sub.add_parser("import-pinterest",
+                        help="file a folder of pinterest-dl output (images, pin JSON, fetched MP4s) as inspiration")
+    ip.add_argument("folder", type=Path, help="the folder pinterest-dl wrote into")
+    ip.add_argument("--board", required=True, help="the board or section URL the folder came from")
+    ip.add_argument("--inspiration-dir", default=None, type=Path,
+                    help="inspiration folder (default: QUARRY_INSPIRATION_DIR or config.toml)")
     ic = sub.add_parser("import-captures",
                         help="file finished browser captures from the downloads folder into the inspiration store")
     ic.add_argument("--inspiration-dir", default=None, type=Path,
@@ -299,6 +306,20 @@ def main(argv=None) -> int:
             print(f"warning: {w}", file=sys.stderr)
         print(f"created {len(res.created)}, updated {len(res.updated)}, unchanged {len(res.unchanged)}")
         print(f"images pending: the export has links only; files are in {root}/instagram/")
+        return 0
+    if args.command == "import-pinterest":
+        try:
+            root = _config_value(lambda: inspiration_root(args.inspiration_dir))
+            res = import_pinterest(args.folder, args.board, root)
+        except (ValueError, NoInspirationRoot, FfmpegMissing) as exc:
+            print(f"error: {exc}", file=sys.stderr)
+            return 2
+        for pin, why in res.skipped:
+            print(f"skipped {pin}: {why}", file=sys.stderr)
+        for w in res.warnings:
+            print(f"warning: {w}", file=sys.stderr)
+        print(f"created {len(res.created)}, updated {len(res.updated)}, unchanged {len(res.unchanged)}, "
+              f"skipped {len(res.skipped)}")
         return 0
     if args.command == "import-captures":
         try:

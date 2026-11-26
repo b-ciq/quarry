@@ -42,6 +42,7 @@ def _row(rec: dict, vocab: dict) -> dict:
     owner = rec.get("owner") if isinstance(rec.get("owner"), dict) else {}
     media = still_images(rec)
     caption = rec.get("caption") if isinstance(rec.get("caption"), str) else ""
+    source = rec.get("source") if isinstance(rec.get("source"), dict) else {}
     return {
         "id": rec["id"],
         "status": rec.get("status"),
@@ -51,7 +52,10 @@ def _row(rec: dict, vocab: dict) -> dict:
         "style": [t for t in rec.get("style") or [] if t in vocab["style"]],
         "concepts": [t for t in rec.get("concepts") or [] if t in vocab["concepts"]],
         "source_url": rec.get("source_url") or "",
-        "saved_at": (rec.get("source") or {}).get("saved_at"),
+        "saved_at": source.get("saved_at"),
+        "ingested_at": source.get("ingested_at"),
+        "origin": source.get("origin") or "",
+        "collections": list(rec.get("collections") or []),
         "media": [f"/inspiration-media/{rec['id']}/{name}" for name in media],
         "bot": _bot(rec),
         "describe_error": _describe_error(rec),
@@ -214,7 +218,7 @@ def mount(app: FastAPI) -> None:
         scan = store.scan()
         vocab = load_vocabulary(app.state.repo_root)
         out, warnings = [], list(scan.warnings)
-        for id_ in scan.by_shortcode.values():
+        for id_ in scan.readable:
             try:
                 rec = store.read_cached(id_)
             except (OSError, ValueError) as e:
@@ -223,7 +227,7 @@ def mount(app: FastAPI) -> None:
             row = _row(rec, vocab)
             if row["media"]:
                 out.append(row)
-        out.sort(key=lambda r: r["saved_at"] or "", reverse=True)
+        out.sort(key=lambda r: r["saved_at"] or r["ingested_at"] or "", reverse=True)
         return out, warnings
 
     @router.get("/api/inspiration")

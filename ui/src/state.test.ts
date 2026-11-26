@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { applyFilters, facetCounts, nextImgSrc, ReloadGuard, resolveHits, vocabCounts, type Asset } from './state'
+import { applyFilters, facetCounts, nextImgSrc, ReloadGuard, resolveHits, vocabCounts, vocabGroups, type Asset } from './state'
 
 const mk = (o: Partial<Asset> & { id: string }): Asset => ({
   file: `${o.id}.png`,
@@ -105,6 +105,20 @@ describe('vocabCounts', () => {
   it('filters on categories/verticals/style axes', () => {
     const d = mk({ id: 'd', style: ['flat'] })
     expect(ids(applyFilters([d, A], { style: ['flat'] }, ''))).toEqual(['d'])
+  })
+})
+
+describe('vocabGroups', () => {
+  it('splits style into facets in facet order, strips the prefix, keeps strays under Other', () => {
+    const rows = ['color-duotone', 'medium-photo', 'odd-one', 'comp-macro-detail', 'medium-line-art'].map((slug) => ({ slug, count: 0 }))
+    const g = vocabGroups('style', rows)
+    expect(g.map((x) => x.label)).toEqual(['Medium', 'Color', 'Composition', 'Other'])
+    expect(g[0].rows.map((r) => [r.slug, r.label])).toEqual([['medium-photo', 'photo'], ['medium-line-art', 'line-art']])
+    expect(g[3].rows[0].label).toBe('odd-one')
+  })
+  it('leaves other axes as one unlabeled group', () => {
+    const g = vocabGroups('concepts', [{ slug: 'hpc', count: 3 }])
+    expect(g).toEqual([{ label: null, rows: [{ slug: 'hpc', count: 3, label: 'hpc' }] }])
   })
 })
 

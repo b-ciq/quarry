@@ -1,6 +1,7 @@
-"""Storage layer for the inspiration corpus (Instagram saves) in a folder outside the repo.
+"""Storage layer for the inspiration corpus in a folder outside the repo.
 
-Layout: <root>/instagram/<id>/save.json plus media `NN.<ext>` and `NN-poster.jpg`.
+Layout: <root>/<source folder>/<id>/save.json plus media `NN.<ext>` and `NN-poster.jpg`. The id prefix
+picks the folder (`schema.SOURCES`): `ig-` lives in `instagram/`, `pin-` in `pinterest/`.
 """
 from __future__ import annotations
 
@@ -17,7 +18,7 @@ import tomllib
 from dataclasses import dataclass, field
 from pathlib import Path
 
-from quarry.schema import INSPIRATION_ID_RE, MEDIA_NAME_RE, validate_inspiration_record
+from quarry.schema import INSPIRATION_ID_RE, MEDIA_NAME_RE, SOURCES, source_for_id, validate_inspiration_record
 
 DEFAULT_DAILY_CAP = 40
 
@@ -155,9 +156,15 @@ def atomic_move(src: Path, dest: Path) -> None:
 
 @dataclass
 class Scan:
-    by_shortcode: dict[str, str] = field(default_factory=dict)
+    by_source: dict[str, dict[str, str]] = field(default_factory=lambda: {o: {} for o in SOURCES})
     ids: set[str] = field(default_factory=set)
+    readable: list[str] = field(default_factory=list)  # ids whose save.json parsed, every source
     warnings: list[str] = field(default_factory=list)
+
+    @property
+    def by_shortcode(self) -> dict[str, str]:
+        """Instagram records by shortcode (the Instagram-only lookups use this)."""
+        return self.by_source["instagram"]
 
 
 class Store:
@@ -172,15 +179,25 @@ class Store:
             self._cache[key] = json.loads(path.read_text())
         return self._cache[key]
 
+    def folder(self, id: str) -> Path:
+        """The save folder for `id`, under its source's folder."""
+        return self.root / source_for_id(id).folder / id
+
     def scan(self) -> Scan:
         s = Scan()
-        if not self.dir.is_dir():
-            return s
-        for entry in sorted(self.dir.iterdir()):
+        for origin, src in SOURCES.items():
+            self._scan_source(s, origin, src)
+        return s
+
+    def _scan_source(self, s: Scan, origin: str, src) -> None:
+        base = self.root / src.folder
+        if not base.is_dir():
+            return
+        for entry in sorted(base.iterdir()):
             if entry.name.startswith("."):
                 continue  # Finder's .DS_Store and other hidden files
-            if not entry.is_dir() or not INSPIRATION_ID_RE.match(entry.name):
-                s.warnings.append(f"unexpected entry in instagram/: {entry.name}")
+            if not entry.is_dir() or not INSPIRATION_ID_RE.match(entry.name) or not entry.name.startswith(src.prefix):
+                s.warnings.append(f"unexpected entry in {src.folder}/: {entry.name}")
                 continue
             save = entry / "save.json"
             for child in sorted(entry.iterdir()):
@@ -194,29 +211,29 @@ class Store:
                 continue
             try:
                 rec = self._parse(save)
-                code = rec["source"]["shortcode"]
+                key = rec["source"][src.key]
             except (OSError, ValueError, KeyError, TypeError) as e:
                 s.warnings.append(f"unreadable {entry.name}/save.json: {e}")
                 continue
-            s.by_shortcode[code] = entry.name
-        return s
+            s.by_source[origin][key] = entry.name
+            s.readable.append(entry.name)
 
     def read(self, id: str) -> dict:
         if not INSPIRATION_ID_RE.match(id):
             raise ValueError(f"invalid id: {id!r}")
-        return json.loads((self.dir / id / "save.json").read_text())
+        return json.loads((self.folder(id) / "save.json").read_text())
 
     def read_cached(self, id: str) -> dict:
         """Like `read`, but reuses the parse `scan()` cached while save.json is unchanged. Do not mutate it."""
         if not INSPIRATION_ID_RE.match(id):
             raise ValueError(f"invalid id: {id!r}")
-        return self._parse(self.dir / id / "save.json")
+        return self._parse(self.folder(id) / "save.json")
 
     def write(self, record: dict) -> Path:
         errors = validate_inspiration_record(record)
         if errors:
             raise ValueError("invalid inspiration record: " + "; ".join(errors))
-        path = self.dir / record["id"] / "save.json"
+        path = self.folder(record["id"]) / "save.json"
         data = (json.dumps(record, indent=2, ensure_ascii=False) + "\n").encode()
         with store_lock():
             atomic_write_bytes(path, data)
@@ -274,7 +291,7 @@ class Store:
         candidate, n = base, 1
         while candidate in scan.ids:
             if candidate not in readable:
-                raise StoreUnreadable(f"{self.dir / candidate} has no readable save.json; "
+                raise StoreUnreadable(f"{self.folder(candidate)} has no readable save.json; "
                                       f"it may already be {shortcode}")
             n += 1
             candidate = f"{base}-{n}"
@@ -285,7 +302,7 @@ class Store:
             raise ValueError(f"invalid id: {id!r}")
         if not MEDIA_NAME_RE.match(filename):
             raise ValueError(f"invalid media file name: {filename!r}")
-        base = self.dir / id
+        base = self.folder(id)
         path = base / filename
         if path.resolve().parent != base.resolve():
             raise ValueError(f"path escapes the save folder: {filename!r}")

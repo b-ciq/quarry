@@ -127,6 +127,35 @@ export function vocabCounts(assets: Asset[], vocabulary: Record<string, string[]
   return out
 }
 
+/** Style-axis facets, in display order. The slug prefix is the facet (see taxonomy/visual-vocabulary.md). */
+export const STYLE_FACETS: [prefix: string, label: string][] = [
+  ['medium', 'Medium'],
+  ['light', 'Light'],
+  ['color', 'Color'],
+  ['form', 'Form'],
+  ['comp', 'Composition'],
+]
+
+export interface VocabGroup {
+  /** Facet heading, or null for an axis that is not faceted. */
+  label: string | null
+  /** Rows with `label` = the slug minus its facet prefix. */
+  rows: (VocabRow & { label: string })[]
+}
+
+/** Split an axis into facet groups for display; non-style axes come back as one unlabeled group. */
+export function vocabGroups(axis: string, rows: VocabRow[]): VocabGroup[] {
+  if (axis !== 'style') return [{ label: null, rows: rows.map((r) => ({ ...r, label: r.slug })) }]
+  const groups: VocabGroup[] = STYLE_FACETS.map(([, label]) => ({ label, rows: [] }))
+  const other: VocabGroup = { label: 'Other', rows: [] }
+  for (const r of rows) {
+    const i = STYLE_FACETS.findIndex(([prefix]) => r.slug.startsWith(`${prefix}-`))
+    if (i < 0) other.rows.push({ ...r, label: r.slug })
+    else groups[i].rows.push({ ...r, label: r.slug.slice(STYLE_FACETS[i][0].length + 1) })
+  }
+  return [...groups, other].filter((g) => g.rows.length > 0)
+}
+
 /** Resolve index-search hits to live assets (fresh sidecar data), keeping hit order and dropping unknown ids. */
 export function resolveHits(hits: { id: string }[], assets: Asset[]): Asset[] {
   const byId = new Map(assets.map((a) => [a.id, a]))

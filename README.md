@@ -20,6 +20,7 @@ Library images use git LFS (`git lfs install`).
 - `quarry ingest DIR --class CLS --source ORIGIN [--license LIC] [--license-id ID] [--product P] [--anti-example]`
 - `quarry import-instagram EXPORT [--inspiration-dir]` (Instagram saves → the external inspiration root, metadata only)
 - `quarry import-captures [--inspiration-dir] [--downloads]` (file Quarry button captures into the inspiration root)
+- `quarry import-pinterest FOLDER --board URL [--inspiration-dir]` (one-time: file a folder of pinterest-dl output into the inspiration root)
 - `quarry index [--fake-embedder]`
 - `quarry search QUERY [--class] [--product] [--tone] [--all-statuses] [--anti] [--limit] [--fake-embedder]`
 - `quarry check-image PATH [--limit] [--fake-embedder]`

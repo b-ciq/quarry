@@ -7,7 +7,7 @@ const st = (extra: Partial<DescriberStatus> = {}): DescriberStatus => ({
 })
 const item = (extra: Partial<InspirationItem> = {}): InspirationItem => ({
   id: 'ig-x', status: 'proposed', owner: '', caption: '', description: '', style: [], concepts: [],
-  source_url: '', saved_at: null, media: [], bot: null, describe_error: null, ...extra,
+  source_url: '', saved_at: null, media: [], origin: 'instagram', collections: [], bot: null, describe_error: null, ...extra,
 })
 
 describe('describeStrip', () => {

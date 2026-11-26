@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import {
-  facetGroups, facetKey, filterItems, inboxOrder, inspirationFacets, libraryFacets, libraryText, nextAfter, SUGGESTED,
+  facetGroups, facetKey, filterItems, fromLine, inboxOrder, inspirationFacets, libraryFacets, libraryText, nextAfter, SUGGESTED,
   viewOf, type Faceting, type InspirationItem,
 } from './gallery'
 import type { Asset } from './state'
@@ -80,11 +80,26 @@ describe('facetGroups', () => {
   })
 })
 
+const save: InspirationItem = { id: 'ig-a', status: 'proposed', owner: 'bee', caption: '', description: '', style: ['grid'],
+  concepts: ['type'], source_url: '', saved_at: '2026-01-01T00:00:00Z', media: [], origin: 'instagram', collections: [], bot: null, describe_error: null }
+const pin: InspirationItem = { ...save, id: 'pin-1', owner: '', style: [], concepts: [], saved_at: null, origin: 'pinterest',
+  collections: ['animations'] }
+
 describe('inspirationFacets', () => {
-  it('uses owner, concepts and style', () => {
-    const i: InspirationItem = { id: 'ig-a', status: 'proposed', owner: 'bee', caption: '', description: '', style: ['grid'],
-      concepts: ['type'], source_url: '', saved_at: null, media: [], bot: null, describe_error: null }
-    expect(inspirationFacets(i)).toEqual([['From', '@bee'], ['Concepts', 'type'], ['Style', 'grid']])
+  it('uses source, owner, concepts and style', () => {
+    expect(inspirationFacets(save)).toEqual([['Source', 'Instagram'], ['From', '@bee'], ['Concepts', 'type'], ['Style', 'grid']])
+  })
+  it('labels pins as Pinterest', () => {
+    expect(inspirationFacets(pin)).toEqual([['Source', 'Pinterest']])
+  })
+})
+
+describe('fromLine', () => {
+  it('shows the owner and save date for an Instagram save', () => {
+    expect(fromLine(save)).toBe('@bee · saved 2026-01-01')
+  })
+  it('shows the source and board for a pin with no owner', () => {
+    expect(fromLine(pin)).toBe('Pinterest · animations')
   })
 })
 

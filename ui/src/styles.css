@@ -293,7 +293,7 @@ body {
   gap: var(--quantic-spacing-2);
 }
 
-/* Vocabulary panel */
+/* Vocabulary panel: terms read as a quiet list; row actions appear on hover or focus. */
 .vocab {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(var(--quantic-spacing-80), 1fr));
@@ -311,22 +311,39 @@ body {
 }
 
 .vocab-axis {
-  padding: var(--quantic-spacing-3) var(--quantic-spacing-4);
+  padding: var(--quantic-spacing-4);
   border: 1px solid var(--quantic-border-secondary);
   border-radius: var(--quantic-radius-lg);
   background: var(--quantic-bg-secondary);
 }
 
-.vocab-axis h2 {
-  text-transform: capitalize;
+/* Faceted axes (style) take the full width and lay their facets out as columns. */
+.vocab-axis--faceted {
+  grid-column: 1 / -1;
 }
 
 .vocab-axis h2 {
-  margin: 0 0 var(--quantic-spacing-2);
-  font-size: var(--quantic-font-size-body-md);
   display: flex;
   align-items: center;
   gap: var(--quantic-spacing-2);
+  margin: 0 0 var(--quantic-spacing-3);
+  font-size: var(--quantic-font-size-body-md);
+  text-transform: capitalize;
+}
+
+.vocab-axis--faceted .vocab-groups {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(var(--quantic-spacing-56), 1fr));
+  gap: var(--quantic-spacing-4) var(--quantic-spacing-6);
+}
+
+.vocab-group h3 {
+  margin: 0 0 var(--quantic-spacing-1);
+  padding: 0 var(--quantic-spacing-2);
+  color: var(--quantic-text-tertiary);
+  font-size: var(--quantic-font-size-body-xs);
+  font-weight: var(--quantic-font-weight-medium);
+  text-transform: uppercase;
 }
 
 .vocab-list {
@@ -336,18 +353,102 @@ body {
 }
 
 .vocab-row {
+  --row-bg: var(--quantic-bg-tertiary);
+  position: relative;
+  border-radius: var(--quantic-radius-md);
+}
+
+.vocab-row:is(:hover, :focus-within) {
+  background: var(--row-bg);
+}
+
+.vocab-term {
   display: flex;
-  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--quantic-spacing-3);
+  width: 100%;
+  padding: var(--quantic-spacing-1-5) var(--quantic-spacing-2);
+  border: 0;
+  border-radius: inherit;
+  background: none;
+  color: var(--quantic-text-primary);
+  font: inherit;
+  font-size: var(--quantic-font-size-body-sm);
+  text-align: left;
+  cursor: pointer;
+}
+
+.vocab-term:focus-visible {
+  outline: 2px solid var(--quantic-border-brand);
+  outline-offset: -2px;
+}
+
+.vocab-label {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.vocab-row.is-unused .vocab-label {
+  color: var(--quantic-text-tertiary);
+}
+
+/* Sits over the count, on the row's hover background, so nothing reflows. */
+.vocab-actions {
+  position: absolute;
+  inset-block: 0;
+  right: var(--quantic-spacing-1);
+  display: flex;
   align-items: center;
-  gap: var(--quantic-spacing-1);
-  padding: var(--quantic-spacing-0-5) 0;
-  border-bottom: 1px solid var(--quantic-border-secondary);
+  padding-left: var(--quantic-spacing-2);
+  background: var(--row-bg);
+  color: var(--quantic-text-secondary);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 120ms ease-out;
+}
+
+.vocab-row:is(:hover, :focus-within) .vocab-actions {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.vocab-action {
+  display: inline-flex;
+}
+
+/* No hover on touch: keep actions visible and leave room for them. */
+@media (hover: none) {
+  .vocab-actions {
+    opacity: 1;
+    pointer-events: auto;
+    background: none;
+  }
+
+  .vocab-term {
+    padding-right: var(--quantic-spacing-24);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .vocab-actions {
+    transition: none;
+  }
 }
 
 .vocab-add {
   display: flex;
   gap: var(--quantic-spacing-2);
-  margin-top: var(--quantic-spacing-2);
+  margin-top: var(--quantic-spacing-3);
+  padding-top: var(--quantic-spacing-3);
+  border-top: 1px solid var(--quantic-border-secondary);
+}
+
+.vocab-add quantic-text-input {
+  flex: 1;
+  max-width: var(--quantic-spacing-80);
 }
 
 /* Ingest */
