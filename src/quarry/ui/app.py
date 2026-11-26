@@ -10,7 +10,8 @@ from fastapi.staticfiles import StaticFiles
 
 from quarry.publish import check_stale, sidecar_digest
 from quarry.rater import Rater
-from quarry.ui import capture_api, gitops, ingest_api, jobs, rate_api, read_api, security, vocab_api, write_api
+from quarry.ui import (capture_api, gitops, ingest_api, inspiration_api, jobs, rate_api, read_api, security, vocab_api,
+                      write_api)
 
 STATIC_DIR = Path(__file__).parent / "static"
 SYNC_LOCK_WAIT = 5.0  # seconds /api/sync waits for an in-progress write before answering 409
@@ -105,6 +106,7 @@ def create_app(repo_root: Path, fake_embedder: bool = False, skill_dir: Path | N
     vocab_api.mount(app)
     ingest_api.mount(app)
     capture_api.mount(app)
+    inspiration_api.mount(app)
     jobs.mount(app)
 
     @app.get("/")

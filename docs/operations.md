@@ -18,7 +18,7 @@ After every curation session (and after any ingest or retire). `quarry publish [
 
 `quarry ingest DIR --class CLS --source ORIGIN [--license LIC] [--license-id ID] [--product P]`
 
-Ingest creates `status=proposed` sidecars. Then curate in the workbench review queue (or with the `tag-assets` skill). The workbench Ingest tab wraps the same funnel.
+Ingest creates `status=proposed` sidecars, which show in the workbench's Library Inbox (or curate with the `tag-assets` skill). The workbench's **+ Add images** wraps the same funnel.
 
 - Figma: export the designated frames (UI or API) to a drop directory. `--source figma` (or `designer`), `--class` per frame set.
 - Adobe Stock: download from license history into a drop directory. Pass `--source adobe-stock --license-id <stock asset id>`.
@@ -53,11 +53,11 @@ Inspiration lives outside the repo, in a synced Drive folder, so images stay off
 
 ### Capture session
 
-1. `quarry ui`, then open the Capture page.
-2. Click **Open next**. It opens the next pending post in Instagram.
+1. `quarry ui`, then open **Inspiration**.
+2. Click **Open next post** in the strip at the top of the Inbox. It opens the next pending post in Instagram.
 3. Click the Quarry button (or Option+Shift+Q). Wait for the checkmark badge.
-4. Repeat. The page sweeps `~/Downloads/quarry/` into the store as you go.
-5. After 40 posts opened in a day, Open next turns off until tomorrow. Change the number with `capture_daily_cap`.
+4. Repeat. The workbench sweeps `~/Downloads/quarry/` into the store as you go, and the images appear in the Inspiration Inbox. **Manage saves** lists every save with its capture status.
+5. After 40 posts opened in a day, Open next post turns off until tomorrow. Change the number with `capture_daily_cap`.
 
 To sweep without the UI: `quarry import-captures [--inspiration-dir DIR] [--downloads DIR]`.
 
@@ -90,9 +90,9 @@ Set `"status": "retired"` in the sidecar. Never delete files. Then publish.
 ## Workbench notes
 
 - Vocabulary rename/merge rewrites all carrier sidecars and `taxonomy/vocabulary.json` in one commit. It is blocked with HTTP 422 if any carrier sidecar is already invalid (or would become invalid); fix that asset first, then retry. Delete is refused with 409 while any asset uses the slug.
-- Edits are local commits; the Sync button pulls (rebase) and pushes. On conflict nothing is pushed and edits are kept in the latest git stash.
-- Rate view: the bot needs `ANTHROPIC_API_KEY` (or `ant auth login`) and the `rate` extra; model defaults to `claude-opus-5-5`, override with `QUARRY_RATER_MODEL`. `QUARRY_FAKE_RATER=1` swaps in a fake rater for UI testing (dev only). Each verdict is a `rate: ...` commit. CLI fallback: set `status` (and `rating.human`, see `skills/tag-assets/SKILL.md`) in the sidecar.
-- Publish/Re-index buttons run the same code as `quarry publish` / `quarry index`.
+- Edits are local commits; Publish pulls (rebase), publishes and pushes (Get updates only pulls, shown when you have nothing to publish). On conflict nothing is pushed and edits are kept in the latest git stash.
+- Rating bot (describes, tags and rates the Library Inbox): needs `ANTHROPIC_API_KEY` (or `ant auth login`) and the `rate` extra; model defaults to `claude-opus-5-5`, override with `QUARRY_RATER_MODEL`. `QUARRY_FAKE_RATER=1` swaps in a fake rater for UI testing (dev only). Each verdict is a `rate: ...` commit. CLI fallback: set `status` (and `rating.human`, see `skills/tag-assets/SKILL.md`) in the sidecar.
+- The Publish button runs the same code as `quarry publish`, wrapped in a sync. Re-index alone: `quarry index`.
 
 ## Index and exports
 

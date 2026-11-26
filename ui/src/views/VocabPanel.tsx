@@ -67,6 +67,7 @@ export function VocabPanel({ assets, vocabulary, onChanged, onOpenInGrid }: Prop
           )}
         </Alert>
       )}
+      <p className="vocab-lead">One vocabulary for the Library and Inspiration. Claude tags with these terms; click a term to see its images.</p>
       {message && <p className="editor-message" role="status">{message}</p>}
       {Object.entries(counts).map(([axis, rows]) => (
         <section key={axis} className="vocab-axis" aria-label={`${axis} vocabulary`}>
@@ -84,9 +85,9 @@ export function VocabPanel({ assets, vocabulary, onChanged, onOpenInGrid }: Prop
                 </Button>
                 <span className="facet-count" aria-label={`${count} assets`}>{count}</span>
                 <span className="ops-spacer" />
-                <Button size="sm" variant="outline" disabled={busy} aria-label={`Rename ${slug}`} onClick={() => { setTarget(slug); setPending({ kind: 'rename', axis, slug }) }}>Rename</Button>
-                <Button size="sm" variant="outline" disabled={busy} aria-label={`Merge ${slug}`} onClick={() => setPending({ kind: 'merge', axis, slug })}>Merge</Button>
-                <Button size="sm" variant="outline" disabled={busy || count > 0} aria-label={`Delete ${slug}`}
+                <Button size="xs" variant="ghost" disabled={busy} aria-label={`Rename ${slug}`} onClick={() => { setTarget(slug); setPending({ kind: 'rename', axis, slug }) }}>Rename</Button>
+                <Button size="xs" variant="ghost" disabled={busy} aria-label={`Merge ${slug}`} onClick={() => setPending({ kind: 'merge', axis, slug })}>Merge</Button>
+                <Button size="xs" variant="ghost" disabled={busy || count > 0} aria-label={`Delete ${slug}`}
                   title={count > 0 ? `In use by ${count} asset(s); merge it instead` : undefined}
                   onClick={() => setPending({ kind: 'delete', axis, slug })}>Delete</Button>
               </li>
