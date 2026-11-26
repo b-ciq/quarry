@@ -1,7 +1,8 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Alert, Badge, Button, SplitterGroup, SplitterPane } from '@ctrliq/quantic-react'
-import { fetchCapture, fetchInspiration, markOpened, setInspirationStatus, type InspirationList } from '../api'
+import { fetchCapture, fetchInspiration, markOpened, requestDescribe, setInspirationStatus, type InspirationList } from '../api'
 import { CAP_MESSAGE, capReached, nextPending, type CaptureList } from '../capture'
+import { botDate, describeStrip, placeholderText, type DescriberStatus } from '../describe'
 import { FilterRail } from '../components/FilterRail'
 import { ThumbGrid } from '../components/ThumbGrid'
 import {
@@ -32,13 +33,14 @@ export function InspirationArea({ active, q, onInboxCount }: { active: boolean; 
   const [selectedId, setSelectedId] = useState<string | null>(null)
   const [showSaves, setShowSaves] = useState(false)
   const [notice, setNotice] = useState<Notice | null>(null)
+  const [nowSec, setNowSec] = useState(() => Math.floor(Date.now() / 1000))
   const [busy, setBusy] = useState(false)
   const undoStack = useRef<UndoEntry[]>([])
   const [undoLabel, setUndoLabel] = useState<string | null>(null)
 
   const load = useCallback(() => {
     void Promise.all([fetchInspiration(), fetchCapture()]).then(([r, c]) => {
-      if (r.ok) { setData(r.data); setLoadError(null) } else setLoadError(r.error)
+      if (r.ok) { setData(r.data); setNowSec(Math.floor(Date.now() / 1000)); setLoadError(null) } else setLoadError(r.error)
       if (c.ok) setCapture(c.data)
     })
   }, [])
@@ -150,6 +152,16 @@ export function InspirationArea({ active, q, onInboxCount }: { active: boolean; 
   const notPulled = capture ? capture.counts.pending + capture.counts.partial : 0
   const next = capture ? nextPending(capture.items) : null
   const atCap = capture ? capReached(capture.today) : false
+  const strip = view === 'inbox' && data?.describer ? describeStrip(data.describer, nowSec) : null
+  const tryAgain = (id: string | undefined) => {
+    if (!id) return
+    void requestDescribe(id).then((r) => {
+      if (!r.ok) setNotice({ kind: 'error', text: `Could not ask Claude to try again: ${r.error}` })
+      load()
+    })
+  }
+  const stripTarget = () =>
+    (items.find((i) => i.describe_error?.gave_up) ?? items.find((i) => viewOf(i.status) === 'inbox' && !i.bot))?.id
   const opened = (shortcode: string) => {
     void markOpened(shortcode).then((r) => { if (!r.ok) setNotice({ kind: 'error', text: `${shortcode}: ${r.error}` }) })
   }
@@ -192,6 +204,13 @@ export function InspirationArea({ active, q, onInboxCount }: { active: boolean; 
           <Button size="sm" variant="ghost" onClick={() => setShowSaves(true)}>Manage saves</Button>
         </div>
       )}
+      {strip && (
+        <div className="area-strip">
+          <span>{strip.text}</span>
+          <span className="spacer" />
+          {strip.tryAgain && <Button size="sm" onClick={() => tryAgain(stripTarget())}>Try again</Button>}
+        </div>
+      )}
       {data && data.warnings.length > 0 && view === 'inbox' && (
         <div className="notice-bar"><Alert type="warning">{plural(data.warnings.length, 'warning')}: {data.warnings.slice(0, 3).join('; ')}</Alert></div>
       )}
@@ -217,6 +236,7 @@ export function InspirationArea({ active, q, onInboxCount }: { active: boolean; 
               </SplitterPane>
               <SplitterPane collapsed={!current} minSize={25} maxSize={70}>
                 {current && <InspirationDetail key={current.id} item={current} view={view} busy={busy}
+                  describer={data?.describer} onTryAgain={() => tryAgain(current.id)}
                   onDecide={(v) => void decide(v, [current.id])} onSkip={() => move(1)} />}
               </SplitterPane>
             </SplitterGroup>
@@ -227,8 +247,10 @@ export function InspirationArea({ active, q, onInboxCount }: { active: boolean; 
   )
 }
 
-function InspirationDetail({ item, view, busy, onDecide, onSkip }: {
+function InspirationDetail({ item, view, busy, describer, onTryAgain, onDecide, onSkip }: {
   item: InspirationItem
+  describer: DescriberStatus | undefined
+  onTryAgain: () => void
   view: View
   busy: boolean
   onDecide: (v: 'yes' | 'no') => void
@@ -236,6 +258,8 @@ function InspirationDetail({ item, view, busy, onDecide, onSkip }: {
 }) {
   const [slide, setSlide] = useState(0)
   const tags = [...item.concepts, ...item.style]
+  const ph = placeholderText(item, describer)
+  const suggested = [...(item.bot?.suggested_slugs.style ?? []), ...(item.bot?.suggested_slugs.concepts ?? [])]
   return (
     <aside className="detail" aria-label="Save details">
       <div className="editor">
@@ -281,15 +305,27 @@ function InspirationDetail({ item, view, busy, onDecide, onSkip }: {
             </div>
           )}
           <div className="field">
-            <span className="field-label">Description</span>
-            <p className={item.description ? undefined : 'strip-dim'}>
-              {item.description || 'Not described yet. Claude does not describe or tag inspiration yet; that comes next.'}
-            </p>
+            <span className="field-label">
+              Description
+              {item.bot && botDate(item.bot.at) && <span className="strip-dim"> described by Claude · {botDate(item.bot.at)}</span>}
+            </span>
+            {item.description ? <p>{item.description}</p> : (
+              <>
+                <p className="strip-dim">{ph.text}</p>
+                {ph.tryAgain && <Button size="sm" variant="outline" onClick={onTryAgain}>Try again</Button>}
+              </>
+            )}
           </div>
           {tags.length > 0 && (
             <div className="field">
               <span className="field-label">Tags</span>
               <p>{tags.map((t) => <Badge key={t} size="sm" color="gray">{t}</Badge>)}</p>
+            </div>
+          )}
+          {suggested.length > 0 && (
+            <div className="field">
+              <span className="field-label">Claude suggests new terms</span>
+              {suggested.map((t) => <p key={t.slug}>{t.slug}: {t.definition}</p>)}
             </div>
           )}
         </div>

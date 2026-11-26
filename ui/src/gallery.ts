@@ -63,7 +63,14 @@ export interface InspirationItem {
   saved_at: string | null
   /** Image URLs (video slides as their poster), slide order. */
   media: string[]
+  bot: {
+    model: string
+    at: string
+    suggested_slugs: { style: SuggestedSlug[]; concepts: SuggestedSlug[] }
+  } | null
+  describe_error: { message: string; tries: number; gave_up: boolean } | null
 }
+export interface SuggestedSlug { slug: string; definition: string }
 
 export function inspirationFacets(i: InspirationItem): Facet[] {
   const out: Facet[] = []

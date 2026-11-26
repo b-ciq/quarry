@@ -83,7 +83,7 @@ describe('facetGroups', () => {
 describe('inspirationFacets', () => {
   it('uses owner, concepts and style', () => {
     const i: InspirationItem = { id: 'ig-a', status: 'proposed', owner: 'bee', caption: '', description: '', style: ['grid'],
-      concepts: ['type'], source_url: '', saved_at: null, media: [] }
+      concepts: ['type'], source_url: '', saved_at: null, media: [], bot: null, describe_error: null }
     expect(inspirationFacets(i)).toEqual([['From', '@bee'], ['Concepts', 'type'], ['Style', 'grid']])
   })
 })
