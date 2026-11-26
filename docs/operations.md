@@ -82,7 +82,7 @@ Pinterest is not an ongoing source; a Quarry pinner replaces it later. Pins live
 
 1. Download each board or section with the Pinterest board extractor (`~/Documents/GitHub/Pinterest board  extractor`, `pinterest-dl` with its saved login): `pinterest-dl scrape <section URL> -o ~/.cache/quarry/pinterest/<section> -c cookies.json -n 1000 --delay 1 --caption json`. This gives `<pin id>.json` plus the image.
 2. Videos: **do not use `pinterest-dl --video`.** Pinterest serves each video as one file read in byte ranges; pinterest-dl appends the whole file once per range (a 14 s clip came out 96 s) and can hang. Instead, for each JSON with `media_stream.video.url`, read the HLS master playlist, take the highest-resolution variant, download the single file its `#EXT-X-MAP` names, and remux it: `ffmpeg -i <file> -c copy -movflags +faststart <pin id>.mp4`. About 720 px is the best Pinterest offers.
-3. `quarry import-pinterest ~/.cache/quarry/pinterest/<section> --board <section URL> [--inspiration-dir DIR]`. Re-running is safe: existing pins only gain the board in `collections`. Video pins without an MP4 come in as their still image, with a warning.
+3. `quarry import-pinterest ~/.cache/quarry/pinterest/<section> --board <section URL> [--inspiration-dir DIR]`. Re-running is safe: existing pins only gain the board in `collections`. Video pins without an MP4 come in as their still image, with a warning; a re-run won't upgrade them, so fetch the MP4, delete `pinterest/pin-<id>/`, and re-run.
 
 Pinterest's terms disallow automated access. Keep to one pass per board, 1 s apart.
 

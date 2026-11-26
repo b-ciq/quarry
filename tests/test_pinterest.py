@@ -120,7 +120,8 @@ def test_video_pin_without_mp4_falls_back_to_image(folder, root):
     res = import_pinterest(folder, BOARD, root)
     [it] = Store(root).read("pin-222")["capture"]["items"]
     assert it["type"] == "image" and it["file"] == "01.jpg"
-    assert any("222" in w and "video" in w for w in res.warnings)
+    [w] = [w for w in res.warnings if "222" in w]
+    assert "video" in w and "pinterest/pin-222" in w and "delete" in w  # says how to get the video in later
 
 
 def test_missing_media_is_skipped(folder, root):

@@ -135,7 +135,9 @@ def _import_one(store: Store, folder: Path, data: dict, board_url: str, result: 
                 item, files = _stage_video(image, None, tmp)
             else:
                 if wants_video:
-                    result.warnings.append(f"{pin_id}: video pin has no {pin_id}.mp4; imported its image")
+                    result.warnings.append(
+                        f"{pin_id}: video pin has no {pin_id}.mp4; imported its image. To get the video in, fetch "
+                        f"the MP4, delete pinterest/pin-{pin_id}/ from the inspiration folder, and re-run")
                 item, files = _stage_image(image, tmp)
         except (MediaError, OSError) as e:
             result.skipped.append((pin_id, f"unreadable media: {e}"))
