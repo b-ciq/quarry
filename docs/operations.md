@@ -37,9 +37,11 @@ Inspiration lives outside the repo, in a synced Drive folder, so images stay off
    inspiration_dir = "~/Library/CloudStorage/GoogleDrive-bchristensen@ciq.com/My Drive/Quarry inspiration saves"
    # capture_daily_cap = 40                 # optional, default 40
    # capture_downloads_dir = "~/Downloads/quarry"   # optional, default shown
+   # describe_inspiration = false           # optional, false turns the background describer off
+   # describe_daily_cap = 150               # optional, default 150 Claude calls a day
    ```
 
-   `QUARRY_INSPIRATION_DIR` overrides `inspiration_dir`.
+   `QUARRY_INSPIRATION_DIR` overrides `inspiration_dir`. `QUARRY_DESCRIBE_INSPIRATION=0` also turns the describer off.
 2. `pip install -e ".[inspiration]"` (adds ffmpeg for video).
 3. Load the Chrome extension: `chrome://extensions` → Developer mode → Load unpacked → select `extension/`. Details in `extension/README.md`.
 4. Load it from a stable Quarry checkout, not a Conductor workspace. Chrome keeps pointing at the folder, and an archived workspace deletes it.
@@ -60,6 +62,12 @@ Inspiration lives outside the repo, in a synced Drive folder, so images stay off
 5. After 40 posts opened in a day, Open next post turns off until tomorrow. Change the number with `capture_daily_cap`.
 
 To sweep without the UI: `quarry import-captures [--inspiration-dir DIR] [--downloads DIR]`.
+
+### Describing saves
+
+The workbench has Claude describe and tag saves in the background (needs the same credentials as the rater). One process at a time holds `~/.config/quarry/describer.lock`; other windows show "describing in another Quarry window".
+
+`quarry describe-inspiration [--repo] [--inspiration-dir] [--limit N] [--redo ID]` runs the same work from the command line and stops when nothing is waiting. `--limit N` stops after N Claude calls, `--redo ID` describes that save again. It ignores `describe_inspiration` and the env off switch because you ran it on purpose, but still obeys `describe_daily_cap`. It exits 2 if another window is describing or setup is wrong (no inspiration folder, no credentials), and 0 otherwise, even when it stops early (paused, capped).
 
 ### Fixing a capture
 
