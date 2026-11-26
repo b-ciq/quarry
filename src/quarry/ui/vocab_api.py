@@ -48,10 +48,7 @@ def _has_slug(rec: dict, axis: str, slug: str) -> bool:
     return slug in (rec.get(axis) or []) or (isinstance(applied_list, list) and slug in applied_list)
 
 
-def inspiration_carriers(store, axis: str, slug: str) -> list[str]:
-    """Ids of Inspiration saves tagged with `slug` (in the tag list or Claude's applied reference)."""
-    if store is None or axis not in INSPIRATION_AXES:
-        return []
+def _carriers_in(store, axis: str, slug: str) -> list[str]:
     found = []
     for id_ in store.scan().ids:
         try:
@@ -62,13 +59,26 @@ def inspiration_carriers(store, axis: str, slug: str) -> list[str]:
     return found
 
 
-def rewrite_inspiration(store, axis: str, slug: str, target: str | None) -> list[str]:
-    """Swap `slug` for `target` (None drops it) in each carrier. Returns failures as "id: error"."""
+def inspiration_carriers(store, axis: str, slug: str) -> list[str]:
+    """Ids of Inspiration saves tagged with `slug` (in the tag list or Claude's applied reference).
+
+    An unavailable store (Drive offline) means no carriers: vocabulary operations keep working."""
+    if store is None or axis not in INSPIRATION_AXES:
+        return []
+    try:
+        return _carriers_in(store, axis, slug)
+    except OSError:
+        return []
+
+
+def rewrite_inspiration(store, axis: str, slug: str, target: str | None) -> tuple[list[str], list[str]]:
+    """Swap `slug` for `target` (None drops it) in each carrier. Returns (rewritten ids, "id: error" failures)."""
+    rewritten: list[str] = []
     failures: list[str] = []
     if store is None or axis not in INSPIRATION_AXES:
-        return failures
+        return rewritten, failures
     with store_lock():
-        for id_ in inspiration_carriers(store, axis, slug):
+        for id_ in _carriers_in(store, axis, slug):
             try:
                 rec = store.read(id_)
                 if isinstance(rec.get(axis), list):
@@ -77,9 +87,10 @@ def rewrite_inspiration(store, axis: str, slug: str, target: str | None) -> list
                 if isinstance(applied, dict) and isinstance(applied.get(axis), list):
                     applied[axis] = _swap(applied[axis], slug, target)
                 store.write(rec)
+                rewritten.append(id_)
             except (OSError, ValueError) as exc:
                 failures.append(f"{id_}: {exc}")
-    return failures
+    return rewritten, failures
 
 
 def mount(app: FastAPI) -> None:
@@ -127,7 +138,6 @@ def mount(app: FastAPI) -> None:
                     return _err(409, f"{slug!r} already exists in {axis}")
                 vdata[axis] = members + [slug]
                 carrier_list = []
-                insp_ids = []
             else:
                 if slug not in members:
                     return _err(404, f"unknown {axis} slug {slug!r}")
@@ -176,12 +186,16 @@ def mount(app: FastAPI) -> None:
                 app.state.library_cache.invalidate()
                 return _err(500, f"vocabulary {action} failed and was rolled back: {exc}")
             app.state.library_cache.invalidate()
+            insp_done: list[str] = []
             insp_failed: list[str] = []
-            if insp_ids:  # after the commit: failures are reported, never rolled back
-                insp_failed = rewrite_inspiration(app.state.inspiration_store, axis, slug, target)
+            if action in ("rename", "merge"):  # after the commit: nothing here may fail the change
+                try:
+                    insp_done, insp_failed = rewrite_inspiration(
+                        getattr(app.state, "inspiration_store", None), axis, slug, target)
+                except Exception as exc:
+                    insp_failed = [f"inspiration: {exc}"]
         return JSONResponse({"commit": sha, "rewritten": [c[0] for c in carrier_list],
-                             "inspiration_rewritten": [i for i in insp_ids
-                                                       if not any(f.startswith(f"{i}:") for f in insp_failed)],
+                             "inspiration_rewritten": insp_done,
                              "inspiration_failed": insp_failed})
 
     async def _body(request: Request):

@@ -214,3 +214,59 @@ def test_list_hides_unknown_slugs(git_repo, tmp_path, monkeypatch):
     (store.dir / id_ / "01.jpg").write_bytes(b"img")
     items = _client(git_repo.root).get("/api/inspiration").json()["items"]
     assert items[0]["style"] == ["form-wave-flow"]
+
+
+def test_post_commit_inspiration_crash_still_succeeds(git_repo, tmp_path, monkeypatch):
+    store, id_ = _insp(git_repo, tmp_path, monkeypatch)
+    c = _client(git_repo.root)
+    real = vocab_api._carriers_in
+    calls = []
+
+    def flaky(*a):
+        calls.append(1)
+        if len(calls) > 1:  # first call is the pre-commit check
+            raise RuntimeError("drive vanished")
+        return real(*a)
+    monkeypatch.setattr(vocab_api, "_carriers_in", flaky)
+    r = c.post("/api/vocabulary/style/form-wave-flow/rename", json={"new": "form-ripple"})
+    assert r.status_code == 200, r.text
+    assert r.json()["commit"]
+    assert r.json()["inspiration_failed"]
+    assert git_repo.git("log", "-1", "--format=%s") == "vocab: rename form-wave-flow to form-ripple\n"
+
+
+def test_unavailable_store_scan_does_not_block_vocab_ops(git_repo, tmp_path, monkeypatch):
+    store, _ = _insp(git_repo, tmp_path, monkeypatch)
+    c = _client(git_repo.root)
+    monkeypatch.setattr(type(store), "scan", lambda self: (_ for _ in ()).throw(OSError("offline")))
+    r = c.post("/api/vocabulary/style/form-wave-flow/rename", json={"new": "form-ripple"})
+    assert r.status_code == 200, r.text
+    assert r.json()["inspiration_rewritten"] == []
+    assert r.json()["inspiration_failed"]  # the post-commit rewrite could not scan
+
+
+def test_failed_record_write_is_reported_not_rolled_back(git_repo, tmp_path, monkeypatch):
+    store, id_ = _insp(git_repo, tmp_path, monkeypatch)
+    c = _client(git_repo.root)
+
+    def boom(self, rec):
+        raise OSError("disk full")
+    monkeypatch.setattr(type(store), "write", boom)
+    r = c.post("/api/vocabulary/style/form-wave-flow/rename", json={"new": "form-ripple"})
+    assert r.status_code == 200, r.text
+    assert r.json()["inspiration_failed"] == [f"{id_}: disk full"]
+    assert r.json()["inspiration_rewritten"] == []
+    assert "form-ripple" in (git_repo.root / "taxonomy" / "vocabulary.json").read_text()
+
+
+def test_rename_concepts_axis_rewrites_inspiration(git_repo, tmp_path, monkeypatch):
+    store, id_ = _insp(git_repo, tmp_path, monkeypatch, style=())
+    rec = store.read(id_)
+    rec["concepts"] = ["research"]
+    rec["bot"]["applied"]["concepts"] = ["research"]
+    store.write(rec)
+    r = _client(git_repo.root).post("/api/vocabulary/concepts/research/rename", json={"new": "inquiry"})
+    assert r.status_code == 200, r.text
+    assert r.json()["inspiration_rewritten"] == [id_]
+    rec = store.read(id_)
+    assert rec["concepts"] == ["inquiry"] and rec["bot"]["applied"]["concepts"] == ["inquiry"]
