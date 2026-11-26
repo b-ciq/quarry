@@ -149,3 +149,155 @@ def test_sync_conflict_409(sandbox):
     r = _client(a).post("/api/vocabulary/concepts", json={"slug": "other"})
     assert r.status_code == 409 and "agent" in r.json()["error"]
     assert git(a, "status", "--porcelain") == ""
+
+
+# --- Inspiration tags follow vocabulary changes ---
+
+def _insp(git_repo, tmp_path, monkeypatch, *, style=("form-wave-flow",), on=True):
+    from inspiration_helpers import make_record
+    from quarry.inspiration_store import Store
+    if not on:
+        return None, None
+    r = tmp_path / "insp_root"
+    r.mkdir()
+    monkeypatch.setenv("QUARRY_INSPIRATION_DIR", str(r))
+    store = Store(r)
+    rec = make_record("AAA")
+    rec["style"] = list(style)
+    rec["bot"] = {"applied": {"description": "", "style": list(style), "concepts": []}}
+    store.write(rec)
+    return store, rec["id"]
+
+
+def test_rename_rewrites_inspiration_and_bot_applied(git_repo, tmp_path, monkeypatch):
+    store, id_ = _insp(git_repo, tmp_path, monkeypatch)
+    r = _client(git_repo.root).post("/api/vocabulary/style/form-wave-flow/rename", json={"new": "form-ripple"})
+    assert r.status_code == 200, r.text
+    assert r.json()["inspiration_rewritten"] == [id_]
+    assert r.json()["inspiration_failed"] == []
+    rec = store.read(id_)
+    assert rec["style"] == ["form-ripple"]
+    assert rec["bot"]["applied"]["style"] == ["form-ripple"]
+
+
+def test_merge_rewrites_inspiration(git_repo, tmp_path, monkeypatch):
+    store, id_ = _insp(git_repo, tmp_path, monkeypatch, style=("form-wave-flow", "form-light-trails"))
+    r = _client(git_repo.root).post("/api/vocabulary/style/form-wave-flow/merge", json={"into": "form-light-trails"})
+    assert r.status_code == 200, r.text
+    rec = store.read(id_)
+    assert rec["style"] == ["form-light-trails"]
+    assert rec["bot"]["applied"]["style"] == ["form-light-trails"]
+
+
+def test_delete_blocked_by_inspiration_usage(git_repo, tmp_path, monkeypatch):
+    store, id_ = _insp(git_repo, tmp_path, monkeypatch)
+    r = _client(git_repo.root).delete("/api/vocabulary/style/form-wave-flow")
+    assert r.status_code == 409
+    assert id_ in r.json()["usage"]
+    assert "form-wave-flow" in (git_repo.root / "taxonomy" / "vocabulary.json").read_text()
+
+
+def test_inspiration_off_vocab_ops_still_work(git_repo):
+    r = _client(git_repo.root).post("/api/vocabulary/style/form-wave-flow/rename", json={"new": "form-ripple"})
+    assert r.status_code == 200, r.text
+    assert r.json()["inspiration_rewritten"] == []
+    assert r.json()["inspiration_failed"] == []
+
+
+def test_list_hides_unknown_slugs(git_repo, tmp_path, monkeypatch):
+    from inspiration_helpers import item
+    store, id_ = _insp(git_repo, tmp_path, monkeypatch, style=("form-wave-flow", "form-gone"))
+    rec = store.read(id_)
+    rec["capture"]["items"] = [item(1)]
+    rec["capture"]["status"] = "captured"
+    store.write(rec)
+    (store.dir / id_ / "01.jpg").write_bytes(b"img")
+    items = _client(git_repo.root).get("/api/inspiration").json()["items"]
+    assert items[0]["style"] == ["form-wave-flow"]
+
+
+def test_post_commit_inspiration_crash_still_succeeds(git_repo, tmp_path, monkeypatch):
+    store, id_ = _insp(git_repo, tmp_path, monkeypatch)
+    c = _client(git_repo.root)
+    real = vocab_api._carriers_in
+    calls = []
+
+    def flaky(*a):
+        calls.append(1)
+        if len(calls) > 1:  # first call is the pre-commit check
+            raise RuntimeError("drive vanished")
+        return real(*a)
+    monkeypatch.setattr(vocab_api, "_carriers_in", flaky)
+    r = c.post("/api/vocabulary/style/form-wave-flow/rename", json={"new": "form-ripple"})
+    assert r.status_code == 200, r.text
+    assert r.json()["commit"]
+    assert r.json()["inspiration_failed"]
+    assert git_repo.git("log", "-1", "--format=%s") == "vocab: rename form-wave-flow to form-ripple\n"
+
+
+def test_unavailable_store_scan_does_not_block_vocab_ops(git_repo, tmp_path, monkeypatch):
+    store, _ = _insp(git_repo, tmp_path, monkeypatch)
+    c = _client(git_repo.root)
+    monkeypatch.setattr(type(store), "scan", lambda self: (_ for _ in ()).throw(OSError("offline")))
+    r = c.post("/api/vocabulary/style/form-wave-flow/rename", json={"new": "form-ripple"})
+    assert r.status_code == 200, r.text
+    assert r.json()["inspiration_rewritten"] == []
+    assert r.json()["inspiration_failed"]  # the post-commit rewrite could not scan
+
+
+def test_failed_record_write_is_reported_not_rolled_back(git_repo, tmp_path, monkeypatch):
+    store, id_ = _insp(git_repo, tmp_path, monkeypatch)
+    c = _client(git_repo.root)
+
+    def boom(self, rec):
+        raise OSError("disk full")
+    monkeypatch.setattr(type(store), "write", boom)
+    r = c.post("/api/vocabulary/style/form-wave-flow/rename", json={"new": "form-ripple"})
+    assert r.status_code == 200, r.text
+    assert r.json()["inspiration_failed"] == [f"{id_}: disk full"]
+    assert r.json()["inspiration_rewritten"] == []
+    assert "form-ripple" in (git_repo.root / "taxonomy" / "vocabulary.json").read_text()
+
+
+def test_rename_concepts_axis_rewrites_inspiration(git_repo, tmp_path, monkeypatch):
+    store, id_ = _insp(git_repo, tmp_path, monkeypatch, style=())
+    rec = store.read(id_)
+    rec["concepts"] = ["research"]
+    rec["bot"]["applied"]["concepts"] = ["research"]
+    store.write(rec)
+    r = _client(git_repo.root).post("/api/vocabulary/concepts/research/rename", json={"new": "inquiry"})
+    assert r.status_code == 200, r.text
+    assert r.json()["inspiration_rewritten"] == [id_]
+    rec = store.read(id_)
+    assert rec["concepts"] == ["inquiry"] and rec["bot"]["applied"]["concepts"] == ["inquiry"]
+
+
+def _damage(store):
+    """Two hand-damaged saves next to the good one: a non-object and a non-JSON save.json."""
+    for code, text in (("ig-lst", "[]"), ("ig-bad", "{not json")):
+        (store.dir / code).mkdir()
+        (store.dir / code / "save.json").write_text(text)
+
+
+def test_malformed_save_does_not_break_rename(git_repo, tmp_path, monkeypatch):
+    store, id_ = _insp(git_repo, tmp_path, monkeypatch)
+    _damage(store)
+    r = _client(git_repo.root).post("/api/vocabulary/style/form-wave-flow/rename", json={"new": "form-ripple"})
+    assert r.status_code == 200, r.text
+    assert r.json()["inspiration_rewritten"] == [id_]
+    failed = r.json()["inspiration_failed"]
+    assert len(failed) == 2 and {f.split(":")[0] for f in failed} == {"ig-lst", "ig-bad"}
+    assert store.read(id_)["style"] == ["form-ripple"]
+
+
+def test_malformed_save_does_not_break_merge_or_delete(git_repo, tmp_path, monkeypatch):
+    store, id_ = _insp(git_repo, tmp_path, monkeypatch, style=("form-wave-flow", "form-light-trails"))
+    _damage(store)
+    c = _client(git_repo.root)
+    r = c.post("/api/vocabulary/style/form-wave-flow/merge", json={"into": "form-light-trails"})
+    assert r.status_code == 200, r.text
+    assert r.json()["inspiration_rewritten"] == [id_]
+    r = c.delete("/api/vocabulary/concepts/science")
+    assert r.status_code == 200, r.text
+    r = c.delete("/api/vocabulary/style/form-light-trails")
+    assert r.status_code == 409 and r.json()["usage"] == [id_]

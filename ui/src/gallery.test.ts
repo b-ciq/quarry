@@ -81,7 +81,7 @@ describe('facetGroups', () => {
 })
 
 const save: InspirationItem = { id: 'ig-a', status: 'proposed', owner: 'bee', caption: '', description: '', style: ['grid'],
-  concepts: ['type'], source_url: '', saved_at: '2026-01-01T00:00:00Z', media: [], origin: 'instagram', collections: [] }
+  concepts: ['type'], source_url: '', saved_at: '2026-01-01T00:00:00Z', media: [], origin: 'instagram', collections: [], bot: null, describe_error: null }
 const pin: InspirationItem = { ...save, id: 'pin-1', owner: '', style: [], concepts: [], saved_at: null, origin: 'pinterest',
   collections: ['animations'] }
 

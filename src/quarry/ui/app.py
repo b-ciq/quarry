@@ -8,6 +8,7 @@ from fastapi import FastAPI
 from fastapi.responses import FileResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 
+from quarry.describer import Describer
 from quarry.publish import check_stale, sidecar_digest
 from quarry.rater import Rater
 from quarry.ui import (capture_api, gitops, ingest_api, inspiration_api, jobs, rate_api, read_api, security, vocab_api,
@@ -37,12 +38,13 @@ def _embedder_mode(repo_root: Path) -> str | None:
 
 
 def create_app(repo_root: Path, fake_embedder: bool = False, skill_dir: Path | None = None,
-               rater: Rater | None = None) -> FastAPI:
+               rater: Rater | None = None, describer: Describer | None = None) -> FastAPI:
     repo_root = Path(repo_root)
     app = FastAPI(title="quarry workbench")
     security.install(app)
     app.state.repo_root = repo_root
     app.state.rater = rater  # injected (tests); rate_api builds a ClaudeRater lazily otherwise
+    app.state.describer = describer  # injected (tests); start_describer builds a ClaudeDescriber otherwise
     app.state.embedder_mode = lambda: _embedder_mode(repo_root)
     app.state.fake_embedder = fake_embedder
     env_skill = os.environ.get("QUARRY_DECK_SKILL_DIR")
@@ -135,4 +137,6 @@ def serve(repo_root: Path, port: int = 8787, fake_embedder: bool = False) -> Non
     skill = Path(os.environ.get("QUARRY_DECK_SKILL_DIR", "~/.claude/skills/quantic-deck-builder")).expanduser()
     app = create_app(repo_root, fake_embedder, skill_dir=skill, rater=dev_rater())
     capture_api.start_sweeper(app)  # files downloaded captures; does nothing without an inspiration root
+    # Claude describes Inspiration saves; never under QUARRY_FAKE_RATER=1 or the off switch
+    inspiration_api.start_describer(app, port=port)
     uvicorn.run(app, host="127.0.0.1", port=port)

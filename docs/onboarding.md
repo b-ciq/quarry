@@ -48,11 +48,11 @@ Every gallery has the same filter rail on the left (OR within a group, AND acros
 
 1. Library: click **+ Add images** (or drag files onto the window). Pick a class and source; screenshots need a product. Tick **These are anti-examples** to mark a whole drop.
 2. Claude then describes, tags and rates each new image automatically (when the bot is on, see below). A strip at the top of the Inbox shows progress, or "N images haven't been described and rated by Claude yet" with a button to start it.
-3. Inspiration: the strip at the top of the Inbox shows how many Instagram saves aren't pulled in yet. **Open next post**, then click the Quarry button in Chrome; the images land in the Inbox within a few seconds. **Manage saves** opens the full capture list (failed captures, add or remove files).
+3. Inspiration: the strip at the top of the Inbox shows how many Instagram saves aren't pulled in yet. **Open next post**, then click the Quarry button in Chrome; the images land in the Inbox within a few seconds, and Claude then describes and tags them (see "Claude on Inspiration"). **Manage saves** opens the full capture list (failed captures, add or remove files).
 
 ### Deciding
 
-1. Click an image. The panel on the right shows it large, what **Claude says** (keep, reject or maybe, confident or unsure, and why), and the description and tags, which you can edit.
+1. Click an image. The panel on the right shows it large, what **Claude says** (keep, reject or maybe, confident or unsure, and why), and the description and tags, which you can edit. Inspiration panels have no verdict, only the description and tags.
 2. **A** approves, **X** rejects, **S** skips. The next image opens by itself. Left/Right arrows move, Esc closes the panel, **Z** undoes the last decision. Shortcuts are ignored while typing and with Cmd/Ctrl/Alt held.
 3. Approve saves your edits first. If something required is missing (for example a background's tone, a license, a screenshot's version, or an anti-example's reason), your Yes is recorded but the image stays in the Inbox with a **NEEDS DETAILS** badge and the missing fields marked. Fill them in and approve again.
 4. Badges on the thumbnails show Claude's call: **KEEP**, **REJECT**, **MAYBE**, with **?** when it is unsure. Claude's confident calls are listed first.
@@ -68,7 +68,17 @@ Claude (the rating bot) proposes a verdict, a description and tags for each new 
 1. Turn it on: set `ANTHROPIC_API_KEY` in the environment that starts the workbench, or run `ant auth login`. Cost is about 4-5 cents per image.
 2. It learns from you. It sees your past verdicts on look-alike images (needs an index built with real embeddings, `quarry index` without `--fake-embedder`; otherwise your most recent verdicts). Its rubric is `taxonomy/rating-guide.md`; it is yours, so edit it when the bot keeps getting something wrong.
 3. A run stops by itself after 5 identical failures in a row (for example a bad key). Results are saved 20 at a time.
-4. Claude does not describe or tag Inspiration yet.
+4. Inspiration works differently: Claude describes and tags every Inspiration save automatically, with no verdict. See "Claude on Inspiration" below.
+
+### Claude on Inspiration
+
+1. Nothing to click. New saves get a description plus style and concept tags within a few minutes, as long as a workbench is open. Rejected saves are skipped.
+2. Only one Quarry window describes at a time. Any other window says "Claude is describing in another Quarry window" and how many saves are waiting.
+3. The strip at the top of the Inspiration Inbox says what Claude is doing: **describing N saves**, **paused** (it retries by itself and shows the minutes left), **stopped** after 5 failed answers in a row, **reached today's limit** (150 saves a day by default; it continues tomorrow), or **off** with the reason.
+4. **Try again** appears when Claude stopped or gave up on a save. In the strip it restarts a stopped Claude. In a save's panel it has Claude describe that save again.
+5. Claude never overwrites your edits. It fills empty fields and updates only what it wrote itself.
+6. Terms Claude wanted but the vocabulary lacks show under **Claude suggests new terms** in that save's panel. Use them as ideas for the Vocabulary tab.
+7. Turn it off with `describe_inspiration = false` in `~/.config/quarry/config.toml`, or start the workbench with `QUARRY_DESCRIBE_INSPIRATION=0`.
 
 Every Library decision is a git commit (`rate: yes <id>`, `rate: accept N strong no`, `rate: bot rated N assets`, `rate: undo ...`). The line under the top tabs says whether agents have your latest approvals. When it says they don't, click **Publish**: it pulls teammates' changes, validates, rebuilds search, regenerates `exports/`, updates the deck-builder and shares your changes. Inspiration decisions are saved straight to the Drive folder (`status` in each `save.json`), not to git.
 

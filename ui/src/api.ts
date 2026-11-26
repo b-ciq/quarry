@@ -2,6 +2,7 @@ import type { Asset } from './state'
 import type { Agreement, Verdict } from './rating'
 import type { CaptureItem, CaptureList, CaptureToday } from './capture'
 import type { InspirationItem } from './gallery'
+import type { DescriberStatus } from './describe'
 
 export interface GitStatus {
   ahead: number
@@ -219,6 +220,8 @@ export interface InspirationList {
   setup: string | null
   items: InspirationItem[]
   warnings: string[]
+  /** Absent when inspiration is not enabled. */
+  describer?: DescriberStatus
 }
 export interface InspirationStatusResult {
   applied: { id: string; from: string }[]
@@ -228,3 +231,7 @@ export interface InspirationStatusResult {
 export const fetchInspiration = () => call<InspirationList>('GET', '/api/inspiration')
 export const setInspirationStatus = (status: 'proposed' | 'confirmed' | 'retired', ids: string[]) =>
   call<InspirationStatusResult>('POST', '/api/inspiration/status', { json: { status, ids } })
+export const requestDescribe = (id: string) =>
+  call<{ ok: boolean }>('POST', `/api/inspiration/${encodeURIComponent(id)}/describe`)
+/** Clears a stopped describer without queueing any save (the strip's Try again). */
+export const resumeDescriber = () => call<{ ok: boolean }>('POST', '/api/inspiration/describer/resume')

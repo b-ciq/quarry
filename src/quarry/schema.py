@@ -155,6 +155,10 @@ def source_for_id(id: str) -> Source:
 MEDIA_NAME_RE = re.compile(r"^\d{2}(-poster)?\.(jpg|jpeg|png|webp|mp4|mov|webm)$")
 
 
+def _str_list(v) -> bool:
+    return isinstance(v, list) and all(isinstance(x, str) for x in v)
+
+
 def validate_inspiration_record(rec: dict) -> list[str]:
     errors: list[str] = []
     if not isinstance(rec.get("id"), str) or not INSPIRATION_ID_RE.match(rec["id"]):
@@ -182,6 +186,46 @@ def validate_inspiration_record(rec: dict) -> list[str]:
         errors.append("source_url: must be a non-empty string")
     if "license" in rec:
         errors.append("license: not allowed on inspiration records")
+    if "description" in rec and not isinstance(rec["description"], str):
+        errors.append("description: must be a string")
+    for key in ("style", "concepts"):
+        if key in rec and not _str_list(rec[key]):
+            errors.append(f"{key}: must be a list of strings")
+    bot = rec.get("bot")
+    if "bot" in rec:
+        if not isinstance(bot, dict):
+            errors.append("bot: must be an object")
+        else:
+            for key in ("model", "at", "media", "vocab"):
+                if key in bot and not isinstance(bot[key], str):
+                    errors.append(f"bot.{key}: must be a string")
+            if "images" in bot and (not isinstance(bot["images"], int) or isinstance(bot["images"], bool)):
+                errors.append("bot.images: must be an int")
+            for part in ("applied", "answer"):
+                if part not in bot:
+                    continue
+                block = bot[part]
+                if not isinstance(block, dict):
+                    errors.append(f"bot.{part}: must be an object")
+                    continue
+                if "description" in block and not isinstance(block["description"], str):
+                    errors.append(f"bot.{part}.description: must be a string")
+                for key in ("style", "concepts"):
+                    if key in block and not _str_list(block[key]):
+                        errors.append(f"bot.{part}.{key}: must be a list of strings")
+            sug = bot.get("suggested_slugs")
+            if "suggested_slugs" in bot and not (
+                    isinstance(sug, dict) and all(
+                        isinstance(v, list) and all(isinstance(x, dict) for x in v) for v in sug.values())):
+                errors.append("bot.suggested_slugs: must map axes to lists of objects")
+    err = rec.get("describe_error")
+    if "describe_error" in rec:
+        if not isinstance(err, dict):
+            errors.append("describe_error: must be an object")
+        elif not isinstance(err.get("tries"), int) or isinstance(err.get("tries"), bool):
+            errors.append("describe_error.tries: must be an int")
+    if "describe_requested_at" in rec and not isinstance(rec["describe_requested_at"], str):
+        errors.append("describe_requested_at: must be a string")
     capture = rec.get("capture")
     if not isinstance(capture, dict):
         errors.append("capture: must be an object")

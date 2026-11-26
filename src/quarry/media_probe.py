@@ -111,6 +111,25 @@ def make_poster(video: Path, dest: Path) -> None:
               "-c:v", "mjpeg"], dest)
 
 
+def video_frames(video: Path, fractions: tuple[float, ...], dest_dir: Path) -> list[Path]:
+    """One JPEG per fraction of the video's length, named `<stem>-<i>.jpg` in `dest_dir`."""
+    duration = probe_video(video).duration_s
+    dest_dir = Path(dest_dir)
+    dest_dir.mkdir(parents=True, exist_ok=True)
+    out: list[Path] = []
+    try:
+        for i, frac in enumerate(fractions):
+            dest = dest_dir / f"{Path(video).stem}-{i}.jpg"
+            _convert(["-ss", f"{duration * frac:.3f}", "-i", str(video), "-map", "0:v:0", "-frames:v", "1",
+                      "-q:v", "2", "-f", "image2", "-c:v", "mjpeg"], dest)
+            out.append(dest)
+    except MediaError:
+        for p in out:
+            p.unlink(missing_ok=True)
+        raise
+    return out
+
+
 def assemble_mp4(video: Path, audio: Path | None, dest: Path) -> None:
     """Write an MP4 with H.264 video and, when there is audio, AAC audio.
 

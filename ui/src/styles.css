@@ -198,6 +198,18 @@ body {
   text-transform: uppercase;
 }
 
+/* A field label with a note beside it, e.g. "described by Claude · Nov 25": the note keeps normal case. */
+.field-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--quantic-spacing-2);
+}
+
+.field-note {
+  font-size: var(--quantic-font-size-body-xs);
+}
+
 .chips {
   display: flex;
   flex-wrap: wrap;

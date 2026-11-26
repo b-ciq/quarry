@@ -144,3 +144,30 @@ def test_rating_block_shape_checked(repo):
     assert "rating.bot.strength: invalid value 'very'" in schema.validate_sidecar(s, vocab)
     s["rating"] = "yes"
     assert "rating: must be an object" in schema.validate_sidecar(s, vocab)
+
+
+def _insp(**extra):
+    from tests.inspiration_helpers import make_record
+    return {**make_record("AbC123"), **extra}
+
+
+def test_inspiration_bot_shape():
+    bot = {"model": "m", "at": "t", "applied": {"description": "d", "style": ["a"], "concepts": []},
+           "answer": {"description": "d", "style": ["a"], "concepts": []},
+           "suggested_slugs": {"style": [{"slug": "x", "definition": "y"}], "concepts": []},
+           "images": 2, "media": "abc", "vocab": "def"}
+    rec = _insp(bot=bot, describe_error={"code": "x", "tries": 1}, describe_requested_at="2026-11-25T00:00:00Z",
+                description="d", style=["a"], concepts=[])
+    assert schema.validate_inspiration_record(rec) == []
+
+
+def test_inspiration_bad_bot_and_describe_fields_fail():
+    def errs(**kw):
+        return schema.validate_inspiration_record(_insp(**kw))
+    assert any(e.startswith("bot:") for e in errs(bot="x"))
+    assert errs(bot={"applied": {"style": "x"}})
+    assert errs(bot={"applied": {"style": [1]}})
+    assert errs(describe_error={"code": "x"})
+    assert errs(describe_requested_at=5)
+    assert errs(description=3)
+    assert errs(style="x")

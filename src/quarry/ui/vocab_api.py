@@ -5,6 +5,7 @@ from pathlib import Path
 from fastapi import APIRouter, Depends, FastAPI, Request
 from fastapi.responses import JSONResponse
 
+from quarry.inspiration_store import store_lock
 from quarry.schema import KEBAB_RE, validate_sidecar
 from quarry.ui import gitops
 from quarry.ui.write_api import require_clean_managed
@@ -36,6 +37,69 @@ def _swap(values: list, old: str, new: str | None) -> list:
             continue  # dropped (merge/delete) or deduped
         out.append(v)
     return out
+
+
+INSPIRATION_AXES = ("style", "concepts")
+
+
+def _has_slug(rec, axis: str, slug: str) -> bool:
+    if not isinstance(rec, dict):
+        raise ValueError("save.json is not a JSON object")
+    bot = rec.get("bot")
+    applied = bot.get("applied") if isinstance(bot, dict) else None
+    lists = (rec.get(axis), applied.get(axis) if isinstance(applied, dict) else None)
+    return any(isinstance(v, list) and slug in v for v in lists)
+
+
+def _carriers_in(store, axis: str, slug: str) -> tuple[list[str], list[str]]:
+    """(carrier ids, "id: error" for saves that could not be checked). One bad save.json never stops the scan."""
+    found, bad = [], []
+    for id_ in store.scan().ids:
+        try:
+            if _has_slug(store.read(id_), axis, slug):
+                found.append(id_)
+        except Exception as exc:  # unreadable or hand-damaged: skip it, the caller decides whether to report it
+            bad.append(f"{id_}: unreadable save.json: {exc}")
+    return found, bad
+
+
+def inspiration_carriers(store, axis: str, slug: str) -> list[str]:
+    """Ids of Inspiration saves tagged with `slug` (in the tag list or Claude's applied reference).
+
+    An unavailable store (Drive offline) means no carriers, and unreadable saves are skipped (the
+    gallery reports them): vocabulary operations keep working."""
+    if store is None or axis not in INSPIRATION_AXES:
+        return []
+    try:
+        return _carriers_in(store, axis, slug)[0]
+    except OSError:
+        return []
+
+
+def rewrite_inspiration(store, axis: str, slug: str, target: str | None) -> tuple[list[str], list[str]]:
+    """Swap `slug` for `target` (None drops it) in each carrier. Returns (rewritten ids, "id: error" failures).
+
+    Saves that could not be read or checked are reported as failures, since they may still carry `slug`."""
+    rewritten: list[str] = []
+    failures: list[str] = []
+    if store is None or axis not in INSPIRATION_AXES:
+        return rewritten, failures
+    with store_lock():
+        found, failures = _carriers_in(store, axis, slug)
+        for id_ in found:
+            try:
+                rec = store.read(id_)
+                if isinstance(rec.get(axis), list):
+                    rec[axis] = _swap(rec[axis], slug, target)
+                bot = rec.get("bot")
+                applied = bot.get("applied") if isinstance(bot, dict) else None
+                if isinstance(applied, dict) and isinstance(applied.get(axis), list):
+                    applied[axis] = _swap(applied[axis], slug, target)
+                store.write(rec)
+                rewritten.append(id_)
+            except Exception as exc:  # one bad save never fails the (already committed) change
+                failures.append(f"{id_}: {exc}")
+    return rewritten, failures
 
 
 def mount(app: FastAPI) -> None:
@@ -87,11 +151,12 @@ def mount(app: FastAPI) -> None:
                 if slug not in members:
                     return _err(404, f"unknown {axis} slug {slug!r}")
                 carrier_list = carriers(axis, slug)
+                insp_ids = inspiration_carriers(getattr(app.state, "inspiration_store", None), axis, slug)
                 if action == "delete":
-                    if carrier_list:
-                        return _err(409, f"{slug!r} is used by {len(carrier_list)} asset(s); "
+                    if carrier_list or insp_ids:
+                        return _err(409, f"{slug!r} is used by {len(carrier_list) + len(insp_ids)} asset(s); "
                                          "merge it into another slug instead",
-                                    usage=[c[0] for c in carrier_list])
+                                    usage=[c[0] for c in carrier_list] + insp_ids)
                     vdata[axis] = _swap(members, slug, None)
                 elif action == "rename":
                     if target in members:
@@ -130,7 +195,17 @@ def mount(app: FastAPI) -> None:
                 app.state.library_cache.invalidate()
                 return _err(500, f"vocabulary {action} failed and was rolled back: {exc}")
             app.state.library_cache.invalidate()
-        return JSONResponse({"commit": sha, "rewritten": [c[0] for c in carrier_list]})
+            insp_done: list[str] = []
+            insp_failed: list[str] = []
+            if action in ("rename", "merge"):  # after the commit: nothing here may fail the change
+                try:
+                    insp_done, insp_failed = rewrite_inspiration(
+                        getattr(app.state, "inspiration_store", None), axis, slug, target)
+                except Exception as exc:
+                    insp_failed = [f"inspiration: {exc}"]
+        return JSONResponse({"commit": sha, "rewritten": [c[0] for c in carrier_list],
+                             "inspiration_rewritten": insp_done,
+                             "inspiration_failed": insp_failed})
 
     async def _body(request: Request):
         try:
