@@ -8,6 +8,7 @@ from __future__ import annotations
 from fastapi import APIRouter, Depends, FastAPI
 from fastapi.responses import FileResponse, JSONResponse
 
+from quarry.describer import still_images
 from quarry.inspiration_store import NoInspirationRoot, Store, inspiration_root, store_lock
 from quarry.schema import INSPIRATION_ID_RE
 from quarry.ui.write_api import json_body
@@ -19,20 +20,9 @@ def _err(status: int, message: str) -> JSONResponse:
     return JSONResponse({"error": message}, status_code=status)
 
 
-def _media(rec: dict) -> list[str]:
-    """Still images to show for a save, in slide order: an image file, else a video's poster."""
-    out = []
-    items = (rec.get("capture") or {}).get("items") or []
-    for it in sorted((i for i in items if isinstance(i, dict)), key=lambda i: i.get("slide") or 0):
-        name = it.get("poster") if it.get("type") == "video" else it.get("file")
-        if isinstance(name, str):
-            out.append(name)
-    return out
-
-
 def _row(rec: dict) -> dict:
     owner = rec.get("owner") if isinstance(rec.get("owner"), dict) else {}
-    media = _media(rec)
+    media = still_images(rec)
     caption = rec.get("caption") if isinstance(rec.get("caption"), str) else ""
     return {
         "id": rec["id"],
