@@ -154,3 +154,21 @@ def test_describe_endpoint_off_without_root(repo):
     assert set(d) == DESCRIBER_KEYS and d["state"] == "off" and d["waiting"] == 0
     assert d["reason"] == client.get("/api/inspiration").json()["setup"]
     assert "No inspiration folder" in d["reason"]
+
+
+def test_resume_endpoint_off_without_root(repo):
+    client = TestClient(create_app(repo.root))
+    assert client.post("/api/inspiration/describer/resume").status_code == 409
+
+
+def test_list_normalizes_a_partial_bot_block(client, store):
+    rec = seed(store, "AAA", [item(1)])
+    rec["bot"] = {"model": "claude-opus-5-5"}
+    store.write(rec)
+    rec2 = seed(store, "BBB", [item(1)])
+    rec2["bot"] = {"model": "m", "at": "2026-11-25T10:00:00Z", "suggested_slugs": {"style": "junk"}}
+    (store.dir / "ig-bbb" / "save.json").write_text(json.dumps(rec2))  # hand-damaged: skip the validator
+    by_id = {r["id"]: r for r in client.get("/api/inspiration").json()["items"]}
+    assert by_id["ig-aaa"]["bot"] == {"model": "claude-opus-5-5", "at": None,
+                                      "suggested_slugs": {"style": [], "concepts": []}}
+    assert by_id["ig-bbb"]["bot"]["suggested_slugs"] == {"style": [], "concepts": []}

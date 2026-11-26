@@ -67,7 +67,7 @@ To sweep without the UI: `quarry import-captures [--inspiration-dir DIR] [--down
 
 The workbench has Claude describe and tag saves in the background (needs the same credentials as the rater). One process at a time holds `~/.config/quarry/describer.lock`; other windows show "describing in another Quarry window".
 
-`quarry describe-inspiration [--repo] [--inspiration-dir] [--limit N] [--redo ID]` runs the same work from the command line and stops when nothing is waiting. `--limit N` stops after N Claude calls, `--redo ID` describes that save again. It ignores `describe_inspiration` and the env off switch because you ran it on purpose, but still obeys `describe_daily_cap`. It exits 2 if another window is describing or setup is wrong (no inspiration folder, no credentials), and 0 otherwise, even when it stops early (paused, capped).
+`quarry describe-inspiration [--repo] [--inspiration-dir] [--limit N] [--redo ID]` runs the same work from the command line and stops when nothing is waiting. `--limit N` (1 or more) stops after N Claude calls, `--redo ID` describes that save again. It ignores `describe_inspiration` and the env off switch because you ran it on purpose, but still obeys `describe_daily_cap`. It exits 2 if another window is describing or setup is wrong (no inspiration folder, no credentials), and 0 otherwise, even when it stops early (paused, capped).
 
 ### Fixing a capture
 

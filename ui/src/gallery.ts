@@ -65,7 +65,7 @@ export interface InspirationItem {
   media: string[]
   bot: {
     model: string
-    at: string
+    at: string | null
     suggested_slugs: { style: SuggestedSlug[]; concepts: SuggestedSlug[] }
   } | null
   describe_error: { message: string; tries: number; gave_up: boolean } | null

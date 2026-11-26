@@ -251,3 +251,31 @@ def test_serve_starts_the_describer(repo, monkeypatch):
     monkeypatch.setattr(uvicorn, "run", lambda app, host, port: calls.append("run"))
     app_module.serve(repo.root, port=8790)
     assert calls == ["sweeper", ("describer", 8790), "run"]
+
+
+def test_resume_endpoint_resumes_without_touching_saves(repo, store):
+    rec = seed(store, "AAA")
+    rec["describe_error"] = {"code": "refusal", "message": "no", "tries": 3, "at": "2026-11-25T10:00:00Z",
+                             "gave_up": True}
+    store.write(rec)
+    before = (store.dir / "ig-aaa" / "save.json").read_bytes()
+    app = create_app(repo.root)
+
+    class Loop:
+        resumed = 0
+
+        def resume(self):
+            self.resumed += 1
+
+    app.state.describer_loop = loop = Loop()
+    client = TestClient(app)
+    r = client.post("/api/inspiration/describer/resume")
+    assert r.status_code == 200 and r.json() == {"ok": True}
+    assert loop.resumed == 1
+    assert (store.dir / "ig-aaa" / "save.json").read_bytes() == before  # no paid retry is queued
+
+
+def test_resume_endpoint_ok_without_a_loop(repo, store):
+    app = create_app(repo.root)
+    assert app.state.describer_loop is None
+    assert TestClient(app).post("/api/inspiration/describer/resume").json() == {"ok": True}

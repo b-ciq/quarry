@@ -75,9 +75,9 @@ Claude (the rating bot) proposes a verdict, a description and tags for each new 
 1. Nothing to click. New saves get a description plus style and concept tags within a few minutes, as long as a workbench is open. Rejected saves are skipped.
 2. Only one Quarry window describes at a time. Any other window says "Claude is describing in another Quarry window" and how many saves are waiting.
 3. The strip at the top of the Inspiration Inbox says what Claude is doing: **describing N saves**, **paused** (it retries by itself and shows the minutes left), **stopped** after 5 failed answers in a row, **reached today's limit** (150 saves a day by default; it continues tomorrow), or **off** with the reason.
-4. **Try again** appears when Claude stopped or gave up on a save. Click it in the strip or in that save's panel.
+4. **Try again** appears when Claude stopped or gave up on a save. In the strip it restarts a stopped Claude. In a save's panel it has Claude describe that save again.
 5. Claude never overwrites your edits. It fills empty fields and updates only what it wrote itself.
-6. Terms Claude wanted but the vocabulary lacks show as **Claude suggested (not in vocabulary)**. Use them as ideas for the Vocabulary tab.
+6. Terms Claude wanted but the vocabulary lacks show under **Claude suggests new terms** in that save's panel. Use them as ideas for the Vocabulary tab.
 7. Turn it off with `describe_inspiration = false` in `~/.config/quarry/config.toml`, or start the workbench with `QUARRY_DESCRIBE_INSPIRATION=0`.
 
 Every Library decision is a git commit (`rate: yes <id>`, `rate: accept N strong no`, `rate: bot rated N assets`, `rate: undo ...`). The line under the top tabs says whether agents have your latest approvals. When it says they don't, click **Publish**: it pulls teammates' changes, validates, rebuilds search, regenerates `exports/`, updates the deck-builder and shares your changes. Inspiration decisions are saved straight to the Drive folder (`status` in each `save.json`), not to git.

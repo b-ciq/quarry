@@ -42,53 +42,62 @@ def _swap(values: list, old: str, new: str | None) -> list:
 INSPIRATION_AXES = ("style", "concepts")
 
 
-def _has_slug(rec: dict, axis: str, slug: str) -> bool:
-    applied = (rec.get("bot") or {}).get("applied")
-    applied_list = applied.get(axis) if isinstance(applied, dict) else None
-    return slug in (rec.get(axis) or []) or (isinstance(applied_list, list) and slug in applied_list)
+def _has_slug(rec, axis: str, slug: str) -> bool:
+    if not isinstance(rec, dict):
+        raise ValueError("save.json is not a JSON object")
+    bot = rec.get("bot")
+    applied = bot.get("applied") if isinstance(bot, dict) else None
+    lists = (rec.get(axis), applied.get(axis) if isinstance(applied, dict) else None)
+    return any(isinstance(v, list) and slug in v for v in lists)
 
 
-def _carriers_in(store, axis: str, slug: str) -> list[str]:
-    found = []
+def _carriers_in(store, axis: str, slug: str) -> tuple[list[str], list[str]]:
+    """(carrier ids, "id: error" for saves that could not be checked). One bad save.json never stops the scan."""
+    found, bad = [], []
     for id_ in store.scan().ids:
         try:
             if _has_slug(store.read(id_), axis, slug):
                 found.append(id_)
-        except (OSError, ValueError):
-            continue  # unreadable saves are reported by the gallery, not here
-    return found
+        except Exception as exc:  # unreadable or hand-damaged: skip it, the caller decides whether to report it
+            bad.append(f"{id_}: unreadable save.json: {exc}")
+    return found, bad
 
 
 def inspiration_carriers(store, axis: str, slug: str) -> list[str]:
     """Ids of Inspiration saves tagged with `slug` (in the tag list or Claude's applied reference).
 
-    An unavailable store (Drive offline) means no carriers: vocabulary operations keep working."""
+    An unavailable store (Drive offline) means no carriers, and unreadable saves are skipped (the
+    gallery reports them): vocabulary operations keep working."""
     if store is None or axis not in INSPIRATION_AXES:
         return []
     try:
-        return _carriers_in(store, axis, slug)
+        return _carriers_in(store, axis, slug)[0]
     except OSError:
         return []
 
 
 def rewrite_inspiration(store, axis: str, slug: str, target: str | None) -> tuple[list[str], list[str]]:
-    """Swap `slug` for `target` (None drops it) in each carrier. Returns (rewritten ids, "id: error" failures)."""
+    """Swap `slug` for `target` (None drops it) in each carrier. Returns (rewritten ids, "id: error" failures).
+
+    Saves that could not be read or checked are reported as failures, since they may still carry `slug`."""
     rewritten: list[str] = []
     failures: list[str] = []
     if store is None or axis not in INSPIRATION_AXES:
         return rewritten, failures
     with store_lock():
-        for id_ in _carriers_in(store, axis, slug):
+        found, failures = _carriers_in(store, axis, slug)
+        for id_ in found:
             try:
                 rec = store.read(id_)
                 if isinstance(rec.get(axis), list):
                     rec[axis] = _swap(rec[axis], slug, target)
-                applied = (rec.get("bot") or {}).get("applied")
+                bot = rec.get("bot")
+                applied = bot.get("applied") if isinstance(bot, dict) else None
                 if isinstance(applied, dict) and isinstance(applied.get(axis), list):
                     applied[axis] = _swap(applied[axis], slug, target)
                 store.write(rec)
                 rewritten.append(id_)
-            except (OSError, ValueError) as exc:
+            except Exception as exc:  # one bad save never fails the (already committed) change
                 failures.append(f"{id_}: {exc}")
     return rewritten, failures
 

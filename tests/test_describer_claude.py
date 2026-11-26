@@ -7,8 +7,8 @@ import pytest
 from PIL import Image
 
 from quarry import describer
-from quarry.describer import (ClaudeDescriber, DescribeResult, FakeDescriber, describe_schema, load_vocab_doc,
-                              media_fingerprint, media_inputs)
+from quarry.describer import (ClaudeDescriber, DescribeResult, FakeDescriber, apply_description, describe_schema,
+                              load_vocab_doc, media_fingerprint, media_inputs)
 from quarry.inspiration_store import Store
 from quarry.media_probe import FfmpegMissing
 from quarry.rater import BETAS, RaterError
@@ -126,12 +126,78 @@ def test_video_frames_follow_poster_and_are_cleaned(tmp_path, monkeypatch):
         return out
     monkeypatch.setattr(describer.media_probe, "video_frames", fake_frames)
     frames_dir = tmp_path / "cache" / "describe-frames"
-    inputs, total = media_inputs(rec, store, frames_dir)
-    assert total == 2 and len(inputs) == 5
+    inputs, sent, total = media_inputs(rec, store, frames_dir)
+    assert sent == total == 2 and len(inputs) == 5
     assert [l for _, l in inputs[:4]] == ["frames from a video"] * 4 and inputs[4][1] == ""
     assert inputs[1][0].name == "ig-abc-01-0.jpg"
     ClaudeDescriber(StubClient()).describe(rec, store, VOCAB, "")
     assert list(frames_dir.glob("*.jpg")) == []
+
+
+def real_frames(video, fractions, dest):
+    """Stands in for ffmpeg: one real JPEG per fraction."""
+    out = []
+    for i, _ in enumerate(fractions):
+        p = dest / f"tmp-{video.stem}-{i}.jpg"
+        Image.new("RGB", (60, 40), "blue").save(p)
+        out.append(p)
+    return out
+
+
+def sent_images(client):
+    content = client.last["messages"][0]["content"]
+    return content, sum(b["type"] == "image" for b in content)
+
+
+def test_videos_with_frames_keep_every_slide_of_a_short_post(tmp_path, monkeypatch):
+    # four video slides: posters come first, frames only fill what is left of the 10
+    store, rec = seed(tmp_path, monkeypatch, n=4, videos=(1, 2, 3, 4))
+    monkeypatch.setattr(describer.media_probe, "video_frames", real_frames)
+    inputs, sent, total = media_inputs(rec, store, tmp_path / "cache" / "describe-frames")
+    assert (sent, total, len(inputs)) == (4, 4, 10)
+    posters = [p.name for p, _ in inputs if p.name.endswith("-poster.jpg")]
+    assert posters == ["01-poster.jpg", "02-poster.jpg", "03-poster.jpg", "04-poster.jpg"]
+    client = StubClient()
+    res = ClaudeDescriber(client).describe(rec, store, VOCAB, "")
+    content, n_images = sent_images(client)
+    assert n_images == 10 and res.images == 10
+    assert "first" not in content[-1]["text"]
+
+
+def test_videos_with_frames_mixed_post_fills_ten(tmp_path, monkeypatch):
+    store, rec = seed(tmp_path, monkeypatch, n=6, videos=(1, 2))
+    monkeypatch.setattr(describer.media_probe, "video_frames", real_frames)
+    inputs, sent, total = media_inputs(rec, store, tmp_path / "cache" / "describe-frames")
+    assert (sent, total, len(inputs)) == (6, 6, 10)
+    names = [p.name for p, _ in inputs]
+    # slide order: video 1 poster + 3 frames, video 2 poster + the 1 frame left, then the 4 stills
+    assert names[0] == "01-poster.jpg" and names[4] == "02-poster.jpg" and names[6:] == [
+        "03.jpg", "04.jpg", "05.jpg", "06.jpg"]
+    assert [l for _, l in inputs[:6]] == ["frames from a video"] * 6
+
+
+def test_videos_with_frames_long_post_counts_slides_not_images(tmp_path, monkeypatch):
+    store, rec = seed(tmp_path, monkeypatch, n=13, videos=(2, 5, 8))
+    monkeypatch.setattr(describer.media_probe, "video_frames", real_frames)
+    client = StubClient()
+    ClaudeDescriber(client).describe(rec, store, VOCAB, "")
+    content, n_images = sent_images(client)
+    assert n_images == 10
+    assert "These are the first 10 of 13 slides." in content[-1]["text"]
+    inputs, sent, total = media_inputs(rec, store, tmp_path / "cache" / "describe-frames")
+    assert (sent, total) == (10, 13)
+    assert [p.name.split("-")[0].split(".")[0] for p, _ in inputs] == [f"{i:02d}" for i in range(1, 11)]
+
+
+def test_slide_without_a_still_is_reported(tmp_path, monkeypatch):
+    store, rec = seed(tmp_path, monkeypatch, n=3, videos=(3,))
+    del rec["capture"]["items"][2]["poster"]
+    monkeypatch.setattr(describer.media_probe, "video_frames", real_frames)
+    client = StubClient()
+    ClaudeDescriber(client).describe(rec, store, VOCAB, "")
+    content, n_images = sent_images(client)
+    assert n_images == 2
+    assert "These are the first 2 of 3 slides." in content[-1]["text"]
 
 
 @pytest.mark.parametrize("n,px", [(5, 512), (4, 768)])
@@ -151,14 +217,29 @@ def test_empty_description_is_bad_output(tmp_path, monkeypatch):
     assert e.value.code == "bad_output"
 
 
-def test_output_trimmed_and_parsed(tmp_path, monkeypatch):
+def test_output_parsed_raw_then_applied_filtered_and_trimmed(tmp_path, monkeypatch):
     store, rec = seed(tmp_path, monkeypatch)
-    out = {**VALID, "tags": {"style": ["medium-photo", "medium-3d-render", "color-blue", "color-red",
-                                       "color-green"], "concepts": []}}
+    raw = ["medium-photo", "medium-3d-render", "color-blue", "color-red", "color-green"]
+    out = {**VALID, "description": "  A thing.  ", "tags": {"style": raw, "concepts": []}}
     res = ClaudeDescriber(StubClient(out, model="claude-x")).describe(rec, store, VOCAB, "")
-    assert res.style == ["medium-photo", "color-blue", "color-red"]
+    assert res.style == raw and res.description == "  A thing.  "  # Claude's raw answer
     assert res.images == 2 and res.model == "claude-x"
     assert res.suggested_slugs["style"] == [{"slug": "form-x", "definition": "d"}]
+    saved = apply_description(rec, res, vocab=VOCAB, model="m", now="2026-11-25T00:00:00Z")
+    assert saved["bot"]["answer"] == {"description": "  A thing.  ", "style": raw, "concepts": []}
+    assert saved["bot"]["applied"]["style"] == saved["style"] == ["medium-photo", "color-blue", "color-red"]
+    assert saved["bot"]["applied"]["description"] == saved["description"] == "A thing."
+
+
+def test_filter_runs_before_trim(tmp_path, monkeypatch):
+    # the vocabulary lost medium-3d-render during the call: the next medium- slug still applies
+    store, rec = seed(tmp_path, monkeypatch)
+    out = {**VALID, "tags": {"style": ["medium-3d-render", "medium-photo"], "concepts": []}}
+    res = ClaudeDescriber(StubClient(out)).describe(rec, store, VOCAB, "")
+    vocab = {**VOCAB, "style": [s for s in VOCAB["style"] if s != "medium-3d-render"]}
+    saved = apply_description(rec, res, vocab=vocab, model="m", now="2026-11-25T00:00:00Z")
+    assert saved["style"] == ["medium-photo"]
+    assert saved["bot"]["answer"]["style"] == ["medium-3d-render", "medium-photo"]
 
 
 @pytest.mark.parametrize("bad", [

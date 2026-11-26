@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { botDate, describeStrip, placeholderText, type DescriberStatus } from './describe'
+import { botDate, describeStrip, placeholderText, suggestedTerms, type DescriberStatus } from './describe'
 import type { InspirationItem } from './gallery'
 
 const st = (extra: Partial<DescriberStatus> = {}): DescriberStatus => ({
@@ -39,11 +39,28 @@ describe('describeStrip', () => {
   it('idle with nothing waiting is silent', () => {
     expect(describeStrip(st({ state: 'idle', waiting: 0 }), 0)).toBeNull()
   })
+  it('idle after an error says why', () => {
+    expect(describeStrip(st({ state: 'idle', waiting: 2, reason: 'ValueError: bad describer counter' }), 0))
+      .toEqual({ text: 'Claude: ValueError: bad describer counter', tryAgain: false })
+  })
+  it('a reason only speaks when idle', () => {
+    expect(describeStrip(st({ state: 'running', waiting: 0, reason: 'old' }), 0)).toBeNull()
+  })
 })
 
 describe('placeholderText', () => {
   it('current item', () => {
     expect(placeholderText(item(), st({ current: 'ig-x' }))).toEqual({ text: 'Claude is describing this…', tryAgain: false })
+  })
+  it('current item wins over an earlier error', () => {
+    const err = { message: 'bad json', tries: 1, gave_up: false }
+    expect(placeholderText(item({ describe_error: err }), st({ current: 'ig-x' })))
+      .toEqual({ text: 'Claude is describing this…', tryAgain: false })
+  })
+  it('a gave-up item being described again (after Try again) says so', () => {
+    const err = { message: 'bad json', tries: 3, gave_up: true }
+    expect(placeholderText(item({ describe_error: err }), st({ current: 'ig-x' })))
+      .toEqual({ text: 'Claude is describing this…', tryAgain: false })
   })
   it('running', () => {
     expect(placeholderText(item(), st()).text).toBe('Waiting for Claude.')
@@ -61,6 +78,22 @@ describe('placeholderText', () => {
   it('gave up', () => {
     expect(placeholderText(item({ describe_error: { message: 'bad json', tries: 3, gave_up: true } }), st()))
       .toEqual({ text: 'Claude gave up: bad json.', tryAgain: true })
+  })
+})
+
+describe('suggestedTerms', () => {
+  const bot = (suggested_slugs: unknown) => ({ model: 'm', at: '2026-11-25T00:00:00Z', suggested_slugs }) as InspirationItem['bot']
+  it('lists both axes, keyed by axis', () => {
+    const terms = suggestedTerms(item({ bot: bot({ style: [{ slug: 'x', definition: 'a' }], concepts: [{ slug: 'x', definition: 'b' }] }) }))
+    expect(terms.map((t) => t.key)).toEqual(['style:x', 'concepts:x'])
+    expect(terms[1]).toEqual({ key: 'concepts:x', axis: 'concepts', slug: 'x', definition: 'b' })
+  })
+  it('never crashes on a partial bot block', () => {
+    expect(suggestedTerms(item())).toEqual([])
+    expect(suggestedTerms(item({ bot: bot(undefined) }))).toEqual([])
+    expect(suggestedTerms(item({ bot: bot(null) }))).toEqual([])
+    expect(suggestedTerms(item({ bot: bot({ style: 'junk' }) }))).toEqual([])
+    expect(suggestedTerms(item({ bot: bot({ concepts: [null, { slug: 'y', definition: 'd' }] }) })).map((t) => t.slug)).toEqual(['y'])
   })
 })
 

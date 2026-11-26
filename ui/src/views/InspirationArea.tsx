@@ -1,8 +1,10 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Alert, Badge, Button, SplitterGroup, SplitterPane } from '@ctrliq/quantic-react'
-import { fetchCapture, fetchInspiration, markOpened, requestDescribe, setInspirationStatus, type InspirationList } from '../api'
+import {
+  fetchCapture, fetchInspiration, markOpened, requestDescribe, resumeDescriber, setInspirationStatus, type InspirationList,
+} from '../api'
 import { CAP_MESSAGE, capReached, nextPending, type CaptureList } from '../capture'
-import { botDate, describeStrip, placeholderText, type DescriberStatus } from '../describe'
+import { botDate, describeStrip, placeholderText, suggestedTerms, type DescriberStatus } from '../describe'
 import { FilterRail } from '../components/FilterRail'
 import { ThumbGrid } from '../components/ThumbGrid'
 import {
@@ -153,15 +155,13 @@ export function InspirationArea({ active, q, onInboxCount }: { active: boolean; 
   const next = capture ? nextPending(capture.items) : null
   const atCap = capture ? capReached(capture.today) : false
   const strip = view === 'inbox' && data?.describer ? describeStrip(data.describer, nowSec) : null
-  const tryAgain = (id: string | undefined) => {
-    if (!id) return
-    void requestDescribe(id).then((r) => {
+  // Panel: re-describe this save. Strip: only clear the stop; no save is queued, so nothing is spent on one.
+  const tryAgain = (ask: () => ReturnType<typeof resumeDescriber>) => {
+    void ask().then((r) => {
       if (!r.ok) setNotice({ kind: 'error', text: `Could not ask Claude to try again: ${r.error}` })
       load()
     })
   }
-  const stripTarget = () =>
-    (items.find((i) => i.describe_error?.gave_up) ?? items.find((i) => viewOf(i.status) === 'inbox' && !i.bot))?.id
   const opened = (shortcode: string) => {
     void markOpened(shortcode).then((r) => { if (!r.ok) setNotice({ kind: 'error', text: `${shortcode}: ${r.error}` }) })
   }
@@ -208,7 +208,7 @@ export function InspirationArea({ active, q, onInboxCount }: { active: boolean; 
         <div className="area-strip">
           <span>{strip.text}</span>
           <span className="spacer" />
-          {strip.tryAgain && <Button size="sm" onClick={() => tryAgain(stripTarget())}>Try again</Button>}
+          {strip.tryAgain && <Button size="sm" onClick={() => tryAgain(resumeDescriber)}>Try again</Button>}
         </div>
       )}
       {data && data.warnings.length > 0 && view === 'inbox' && (
@@ -236,7 +236,7 @@ export function InspirationArea({ active, q, onInboxCount }: { active: boolean; 
               </SplitterPane>
               <SplitterPane collapsed={!current} minSize={25} maxSize={70}>
                 {current && <InspirationDetail key={current.id} item={current} view={view} busy={busy}
-                  describer={data?.describer} onTryAgain={() => tryAgain(current.id)}
+                  describer={data?.describer} onTryAgain={() => tryAgain(() => requestDescribe(current.id))}
                   onDecide={(v) => void decide(v, [current.id])} onSkip={() => move(1)} />}
               </SplitterPane>
             </SplitterGroup>
@@ -259,7 +259,8 @@ function InspirationDetail({ item, view, busy, describer, onTryAgain, onDecide, 
   const [slide, setSlide] = useState(0)
   const tags = [...item.concepts, ...item.style]
   const ph = placeholderText(item, describer)
-  const suggested = [...(item.bot?.suggested_slugs.style ?? []), ...(item.bot?.suggested_slugs.concepts ?? [])]
+  const suggested = suggestedTerms(item)
+  const describedOn = item.bot?.at ? botDate(item.bot.at) : ''
   return (
     <aside className="detail" aria-label="Save details">
       <div className="editor">
@@ -305,10 +306,10 @@ function InspirationDetail({ item, view, busy, describer, onTryAgain, onDecide, 
             </div>
           )}
           <div className="field">
-            <span className="field-label">
-              Description
-              {item.bot && botDate(item.bot.at) && <span className="strip-dim"> described by Claude · {botDate(item.bot.at)}</span>}
-            </span>
+            <div className="field-head">
+              <span className="field-label">Description</span>
+              {describedOn && <span className="strip-dim field-note">described by Claude · {describedOn}</span>}
+            </div>
             {item.description ? <p>{item.description}</p> : (
               <>
                 <p className="strip-dim">{ph.text}</p>
@@ -325,7 +326,7 @@ function InspirationDetail({ item, view, busy, describer, onTryAgain, onDecide, 
           {suggested.length > 0 && (
             <div className="field">
               <span className="field-label">Claude suggests new terms</span>
-              {suggested.map((t) => <p key={t.slug}>{t.slug}: {t.definition}</p>)}
+              {suggested.map((t) => <p key={t.key}>{t.slug}: {t.definition}</p>)}
             </div>
           )}
         </div>

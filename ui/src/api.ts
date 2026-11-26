@@ -233,3 +233,5 @@ export const setInspirationStatus = (status: 'proposed' | 'confirmed' | 'retired
   call<InspirationStatusResult>('POST', '/api/inspiration/status', { json: { status, ids } })
 export const requestDescribe = (id: string) =>
   call<{ ok: boolean }>('POST', `/api/inspiration/${encodeURIComponent(id)}/describe`)
+/** Clears a stopped describer without queueing any save (the strip's Try again). */
+export const resumeDescriber = () => call<{ ok: boolean }>('POST', '/api/inspiration/describer/resume')

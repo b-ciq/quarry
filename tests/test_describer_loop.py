@@ -274,6 +274,32 @@ def test_unexpected_exception_is_a_local_failure(env):
     assert fake.calls == [rid, rid]
 
 
+def test_unexpected_exceptions_count_toward_the_streak(env):
+    # the call was counted (maybe paid), so a systematic bug after it must stop the describer too
+    ids = [seed(env.store, code) for code in ("A", "B", "C", "D", "E", "F")]
+
+    class Broken(FakeDescriber):
+        def describe(self, rec, store, vocab, vocab_doc):
+            self.calls.append(rec["id"])
+            raise OSError("frame cleanup failed")
+
+    fake = Broken()
+    loop = env.make(fake)
+    loop.tick()
+    env.t[0] = 61
+    for _ in range(4):
+        loop.tick()
+    assert len(fake.calls) == 4 and loop.status()["state"] != "stopped"
+    loop.tick()
+    assert len(fake.calls) == 5
+    assert loop.status()["state"] == "stopped"
+    assert "frame cleanup failed" in loop.status()["reason"]
+    env.t[0] += 3601
+    loop.tick()
+    assert len(fake.calls) == 5
+    assert all(env.store.read(rid).get("describe_error") is None for rid in ids)
+
+
 def test_paid_streak_stops_until_resume(env):
     ids = [seed(env.store, code) for code in ("A", "B", "C", "D", "E", "F")]
     fake = FakeDescriber(fail={rid: "bad_output" for rid in ids})

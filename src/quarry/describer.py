@@ -95,6 +95,7 @@ def vocab_digest(vocab: dict) -> str:
 
 @dataclass
 class DescribeResult:
+    """Claude's raw answer: `apply_description` filters to the vocabulary, then trims, for what it applies."""
     description: str
     style: list[str]
     concepts: list[str]
@@ -177,31 +178,49 @@ def load_vocab_doc(repo_root: Path) -> str:
     return p.read_text() if p.exists() else ""
 
 
-def media_inputs(rec: dict, store: Store, frames_dir: Path) -> tuple[list[tuple[Path, str]], int]:
-    """(path, label) pairs in slide order, capped at MAX_IMAGES, plus the total slide count."""
+def _frame_fractions(budget: int) -> tuple[float, ...]:
+    """Which video frames to take when only `budget` image slots are left (1 -> the middle)."""
+    if budget >= len(FRAME_FRACTIONS):
+        return FRAME_FRACTIONS
+    return {1: (0.5,), 2: (0.25, 0.75)}.get(budget, ())
+
+
+def media_inputs(rec: dict, store: Store, frames_dir: Path) -> tuple[list[tuple[Path, str]], int, int]:
+    """(path, label) pairs in slide order, capped at MAX_IMAGES; the slides sent; the total slide count.
+
+    Every slide's still (an image, or a video's poster) comes first: the first MAX_IMAGES slides with a
+    still are sent. Only the image slots left over go to video frames, in slide order, so frames never
+    push a later slide out.
+    """
     items = sorted(_items(rec), key=lambda i: i.get("slide") or 0)
-    out: list[tuple[Path, str]] = []
+    slides: list[tuple[dict, tuple[Path, str]]] = []
     for it in items:
-        if len(out) >= MAX_IMAGES:
+        if len(slides) >= MAX_IMAGES:
             break
         if it.get("type") == "video":
-            if not isinstance(it.get("poster"), str):
-                continue
-            out.append((store.media_path(rec["id"], it["poster"]), VIDEO_LABEL))
-            try:
-                video = store.media_path(rec["id"], it["file"])
-                frames_dir.mkdir(parents=True, exist_ok=True)
-                frames = media_probe.video_frames(video, FRAME_FRACTIONS, frames_dir)
-            except (MediaError, FfmpegMissing, OSError, ValueError, KeyError, TypeError):
-                continue
-            slide = it.get("slide") or 0
-            for i, f in enumerate(frames):
-                named = frames_dir / f"{rec['id']}-{slide:02d}-{i}.jpg"
-                f.replace(named)
-                out.append((named, VIDEO_LABEL))
+            if isinstance(it.get("poster"), str):
+                slides.append((it, (store.media_path(rec["id"], it["poster"]), VIDEO_LABEL)))
         elif isinstance(it.get("file"), str):
-            out.append((store.media_path(rec["id"], it["file"]), ""))
-    return out[:MAX_IMAGES], len(items)
+            slides.append((it, (store.media_path(rec["id"], it["file"]), "")))
+    budget = MAX_IMAGES - len(slides)
+    out: list[tuple[Path, str]] = []
+    for it, still in slides:
+        out.append(still)
+        if it.get("type") != "video" or budget <= 0:
+            continue
+        try:
+            video = store.media_path(rec["id"], it["file"])
+            frames_dir.mkdir(parents=True, exist_ok=True)
+            frames = media_probe.video_frames(video, _frame_fractions(budget), frames_dir)
+        except (MediaError, FfmpegMissing, OSError, ValueError, KeyError, TypeError):
+            continue
+        slide = it.get("slide") or 0
+        for i, f in enumerate(frames[:budget]):
+            named = frames_dir / f"{rec['id']}-{slide:02d}-{i}.jpg"
+            f.replace(named)
+            out.append((named, VIDEO_LABEL))
+        budget -= min(len(frames), budget)
+    return out, len(slides), len(items)
 
 
 INSTRUCTIONS = """You describe one saved piece of visual inspiration for CIQ's design team and tag it.
@@ -267,7 +286,7 @@ class ClaudeDescriber:
             self._client = anthropic.Anthropic()
         return self._client
 
-    def _messages(self, rec: dict, inputs: list[tuple[Path, str]], total: int) -> list[dict]:
+    def _messages(self, rec: dict, inputs: list[tuple[Path, str]], sent: int, total: int) -> list[dict]:
         max_px = 512 if len(inputs) > 4 else 768
         content: list[dict] = []
         for path, label in inputs:
@@ -279,8 +298,8 @@ class ClaudeDescriber:
         handle = owner.get("username")
         by = f" by @{handle}" if handle else ""
         lines = [f"Source: {str(src.get('origin') or 'instagram').capitalize()} {src.get('kind') or 'post'}{by}."]
-        if total > MAX_IMAGES:
-            lines.append(f"These are the first {MAX_IMAGES} of {total} slides.")
+        if sent < total:
+            lines.append(f"These are the first {sent} of {total} slides.")
         lines.append(f"Caption (the poster's own words): {rec.get('caption') or 'none'}")
         tags = " ".join(rec.get("hashtags") or []) or "none"
         lines.append(f"Hashtags (the poster's own words): {tags}")
@@ -295,8 +314,8 @@ class ClaudeDescriber:
         frames_dir = cache_dir() / "describe-frames"
         try:
             try:
-                inputs, total = media_inputs(rec, store, frames_dir)
-                messages = self._messages(rec, inputs, total)
+                inputs, sent, total = media_inputs(rec, store, frames_dir)
+                messages = self._messages(rec, inputs, sent, total)
                 msg = self.client.beta.messages.create(
                     model=self.model,
                     max_tokens=16000,
@@ -328,12 +347,12 @@ class ClaudeDescriber:
                 raise TypeError("description must be a string")
             tags = d.get("tags") or {}
             sug = d.get("suggested_slugs") or {}
-            style = trim_style(_str_list(tags.get("style") or []))
+            style = _str_list(tags.get("style") or [])
             concepts = _str_list(tags.get("concepts") or [])
             suggested = {a: _suggestions(sug.get(a) or []) for a in _AXES}
         except (json.JSONDecodeError, KeyError, TypeError, AttributeError) as e:
             raise RaterError(f"unparseable JSON from Claude: {e}", code="bad_output") from e
         if not description.strip():
             raise RaterError("Claude returned an empty description", code="bad_output")
-        return DescribeResult(description.strip(), style, concepts, suggested, len(inputs),
+        return DescribeResult(description, style, concepts, suggested, len(inputs),
                               getattr(msg, "model", None))

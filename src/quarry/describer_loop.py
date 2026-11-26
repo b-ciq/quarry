@@ -172,8 +172,12 @@ class DescriberLoop:
                 self._api_failure(code, str(e), now)
             return
         except Exception as e:
+            # the call was counted and may have been paid for, so a bug here must not bill every item forever
             log.exception("describer: unexpected failure on %s", rec["id"])
             self._local_failure((rec["id"], fp), f"{type(e).__name__}: {e}", now)
+            with self._mu:
+                self.paid_streak += 1
+                self._check_stop()
             return
         self._answered((rec["id"], fp), result, now)
 

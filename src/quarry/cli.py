@@ -79,6 +79,16 @@ class DescribeUnavailable(ValueError):
     """Claude can't be used for describing right now."""
 
 
+def _positive_int(text: str) -> int:
+    try:
+        n = int(text)
+    except ValueError:
+        raise argparse.ArgumentTypeError(f"{text!r} is not a whole number") from None
+    if n < 1:
+        raise argparse.ArgumentTypeError(f"must be 1 or more, not {n}")
+    return n
+
+
 def _make_describer():
     """The real describer; tests replace this hook."""
     st = rater_status()
@@ -197,7 +207,7 @@ def main(argv=None) -> int:
     dc.add_argument("--repo", default=".", type=Path)
     dc.add_argument("--inspiration-dir", default=None, type=Path,
                     help="inspiration folder (default: QUARRY_INSPIRATION_DIR or config.toml)")
-    dc.add_argument("--limit", type=int, default=None, help="stop after this many Claude calls")
+    dc.add_argument("--limit", type=_positive_int, default=None, help="stop after this many Claude calls (1 or more)")
     dc.add_argument("--redo", default=None, metavar="ID", help="describe this save again")
     ix = sub.add_parser("index", help="build the search index (FTS5, vectors, thumbnails)")
     ix.add_argument("--repo", default=".", type=Path)

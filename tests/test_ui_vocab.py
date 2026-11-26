@@ -270,3 +270,34 @@ def test_rename_concepts_axis_rewrites_inspiration(git_repo, tmp_path, monkeypat
     assert r.json()["inspiration_rewritten"] == [id_]
     rec = store.read(id_)
     assert rec["concepts"] == ["inquiry"] and rec["bot"]["applied"]["concepts"] == ["inquiry"]
+
+
+def _damage(store):
+    """Two hand-damaged saves next to the good one: a non-object and a non-JSON save.json."""
+    for code, text in (("ig-lst", "[]"), ("ig-bad", "{not json")):
+        (store.dir / code).mkdir()
+        (store.dir / code / "save.json").write_text(text)
+
+
+def test_malformed_save_does_not_break_rename(git_repo, tmp_path, monkeypatch):
+    store, id_ = _insp(git_repo, tmp_path, monkeypatch)
+    _damage(store)
+    r = _client(git_repo.root).post("/api/vocabulary/style/form-wave-flow/rename", json={"new": "form-ripple"})
+    assert r.status_code == 200, r.text
+    assert r.json()["inspiration_rewritten"] == [id_]
+    failed = r.json()["inspiration_failed"]
+    assert len(failed) == 2 and {f.split(":")[0] for f in failed} == {"ig-lst", "ig-bad"}
+    assert store.read(id_)["style"] == ["form-ripple"]
+
+
+def test_malformed_save_does_not_break_merge_or_delete(git_repo, tmp_path, monkeypatch):
+    store, id_ = _insp(git_repo, tmp_path, monkeypatch, style=("form-wave-flow", "form-light-trails"))
+    _damage(store)
+    c = _client(git_repo.root)
+    r = c.post("/api/vocabulary/style/form-wave-flow/merge", json={"into": "form-light-trails"})
+    assert r.status_code == 200, r.text
+    assert r.json()["inspiration_rewritten"] == [id_]
+    r = c.delete("/api/vocabulary/concepts/science")
+    assert r.status_code == 200, r.text
+    r = c.delete("/api/vocabulary/style/form-light-trails")
+    assert r.status_code == 409 and r.json()["usage"] == [id_]

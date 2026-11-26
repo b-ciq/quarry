@@ -108,3 +108,15 @@ def test_cli_claude_unavailable_exits_2(store, monkeypatch, capsys):
     monkeypatch.setattr("quarry.cli.rater_status", lambda: {"available": False, "reason": "no key"})
     assert cli.main(["describe-inspiration", "--repo", str(ROOT), "--inspiration-dir", str(store.root)]) == 2
     assert "no key" in capsys.readouterr().err
+
+
+@pytest.mark.parametrize("bad", ["0", "-1", "x"])
+def test_cli_limit_must_be_positive(store, monkeypatch, capsys, bad):
+    seed(store, "A")
+    fake = FakeDescriber()
+    monkeypatch.setattr(cli, "_make_describer", lambda: fake)
+    with pytest.raises(SystemExit) as exc:
+        cli.main(["describe-inspiration", "--repo", str(ROOT), "--inspiration-dir", str(store.root), "--limit", bad])
+    assert exc.value.code == 2
+    assert fake.calls == []
+    assert "--limit" in capsys.readouterr().err

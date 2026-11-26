@@ -62,7 +62,13 @@ def _bot(rec: dict) -> dict | None:
     bot = rec.get("bot")
     if not isinstance(bot, dict):
         return None
-    return {"model": bot.get("model"), "at": bot.get("at"), "suggested_slugs": bot.get("suggested_slugs")}
+    sug = bot.get("suggested_slugs") if isinstance(bot.get("suggested_slugs"), dict) else {}
+    suggested = {}
+    for axis in ("style", "concepts"):
+        listed = sug.get(axis) if isinstance(sug.get(axis), list) else []
+        suggested[axis] = [s for s in listed if isinstance(s, dict)]
+    at = bot.get("at")
+    return {"model": bot.get("model"), "at": at if isinstance(at, str) and at else None, "suggested_slugs": suggested}
 
 
 def _describe_error(rec: dict) -> dict | None:
@@ -292,6 +298,16 @@ def mount(app: FastAPI) -> None:
                 store.write(rec)
             except (OSError, ValueError) as e:
                 return _err(500, f"could not save {id}: {e}")
+        loop = getattr(app.state, "describer_loop", None)
+        if loop is not None:
+            loop.resume()
+        return {"ok": True}
+
+    @router.post("/api/inspiration/describer/resume")
+    def resume_describer():
+        """Clear a stopped describer (the strip's Try again). Queues no save, so it spends nothing by itself."""
+        if store is None:
+            return _err(409, setup)
         loop = getattr(app.state, "describer_loop", None)
         if loop is not None:
             loop.resume()
