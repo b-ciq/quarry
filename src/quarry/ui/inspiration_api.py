@@ -34,6 +34,7 @@ def _row(rec: dict) -> dict:
     owner = rec.get("owner") if isinstance(rec.get("owner"), dict) else {}
     media = _media(rec)
     caption = rec.get("caption") if isinstance(rec.get("caption"), str) else ""
+    source = rec.get("source") if isinstance(rec.get("source"), dict) else {}
     return {
         "id": rec["id"],
         "status": rec.get("status"),
@@ -43,7 +44,10 @@ def _row(rec: dict) -> dict:
         "style": list(rec.get("style") or []),
         "concepts": list(rec.get("concepts") or []),
         "source_url": rec.get("source_url") or "",
-        "saved_at": (rec.get("source") or {}).get("saved_at"),
+        "saved_at": source.get("saved_at"),
+        "ingested_at": source.get("ingested_at"),
+        "origin": source.get("origin") or "",
+        "collections": list(rec.get("collections") or []),
         "media": [f"/inspiration-media/{rec['id']}/{name}" for name in media],
     }
 
@@ -61,7 +65,7 @@ def mount(app: FastAPI) -> None:
     def rows() -> tuple[list[dict], list[str]]:
         scan = store.scan()
         out, warnings = [], list(scan.warnings)
-        for id_ in scan.by_shortcode.values():
+        for id_ in scan.readable:
             try:
                 rec = store.read_cached(id_)
             except (OSError, ValueError) as e:
@@ -70,7 +74,7 @@ def mount(app: FastAPI) -> None:
             row = _row(rec)
             if row["media"]:
                 out.append(row)
-        out.sort(key=lambda r: r["saved_at"] or "", reverse=True)
+        out.sort(key=lambda r: r["saved_at"] or r["ingested_at"] or "", reverse=True)
         return out, warnings
 
     @router.get("/api/inspiration")

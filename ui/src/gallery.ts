@@ -63,10 +63,27 @@ export interface InspirationItem {
   saved_at: string | null
   /** Image URLs (video slides as their poster), slide order. */
   media: string[]
+  /** Where the item came from: 'instagram' or 'pinterest'. */
+  origin: string
+  /** Instagram collections or Pinterest boards it was saved to. */
+  collections: string[]
+}
+
+const SOURCE_LABELS: Record<string, string> = { instagram: 'Instagram', pinterest: 'Pinterest' }
+
+export const sourceLabel = (origin: string): string => SOURCE_LABELS[origin] ?? origin
+
+/** The detail panel's From line: owner and save date, or the source and board when there's no owner. */
+export function fromLine(i: InspirationItem): string {
+  const parts = [i.owner ? `@${i.owner}` : i.origin === 'pinterest' ? sourceLabel(i.origin) : 'unknown']
+  if (i.saved_at) parts.push(`saved ${i.saved_at.slice(0, 10)}`)
+  if (!i.owner && i.origin === 'pinterest' && i.collections.length) parts.push(i.collections.join(', '))
+  return parts.join(' · ')
 }
 
 export function inspirationFacets(i: InspirationItem): Facet[] {
   const out: Facet[] = []
+  if (i.origin) out.push(['Source', sourceLabel(i.origin)])
   if (i.owner) out.push(['From', `@${i.owner}`])
   for (const v of i.concepts) out.push(['Concepts', v])
   for (const v of i.style) out.push(['Style', v])

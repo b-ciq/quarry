@@ -3,7 +3,7 @@ import json
 import pytest
 from fastapi.testclient import TestClient
 
-from inspiration_helpers import item, make_record
+from inspiration_helpers import item, make_pin, make_record
 from quarry.inspiration_store import Store
 from quarry.ui.app import create_app
 
@@ -94,3 +94,32 @@ def test_disabled_without_root(repo):
     body = client.get("/api/inspiration").json()
     assert body["enabled"] is False and body["items"] == []
     assert client.post("/api/inspiration/status", json={"status": "confirmed", "ids": ["ig-a"]}).status_code == 409
+
+
+def seed_pin(store, pin_id):
+    rec = make_pin(pin_id)
+    rec["capture"]["items"] = [item(1)]
+    rec["capture"]["status"] = "captured"
+    store.write(rec)
+    (store.folder(rec["id"]) / "01.jpg").write_bytes(b"pin")
+    return rec
+
+
+def test_lists_pins_with_instagram_saves(client, store):
+    seed(store, "AAA", [item(1)], saved_at="2026-01-01T00:00:00Z")
+    seed_pin(store, "123")
+    items = client.get("/api/inspiration").json()["items"]
+    assert [r["id"] for r in items] == ["pin-123", "ig-aaa"]
+    pin, save = items
+    assert pin["origin"] == "pinterest" and save["origin"] == "instagram"
+    assert pin["collections"] == ["s"]
+    assert pin["media"] == ["/inspiration-media/pin-123/01.jpg"]
+    r = client.get(pin["media"][0])
+    assert r.status_code == 200 and r.content == b"pin"
+
+
+def test_set_status_on_a_pin(client, store):
+    seed_pin(store, "123")
+    r = client.post("/api/inspiration/status", json={"status": "confirmed", "ids": ["pin-123"]})
+    assert r.json()["applied"] == [{"id": "pin-123", "from": "proposed"}]
+    assert store.read("pin-123")["status"] == "confirmed"
