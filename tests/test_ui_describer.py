@@ -1,4 +1,5 @@
 """The workbench's describer thread: guards (fake rater, off switch, bad config), wiring, and status."""
+import threading
 import time
 
 import pytest
@@ -27,13 +28,24 @@ def store(root):
     return Store(root)
 
 
+def stop_and_join(app, stop):
+    """Stop the describer thread and wait for it, so no tick can run after the temp dirs are restored."""
+    stop.set()
+    thread = getattr(app.state, "describer_thread", None)
+    if thread is not None:
+        thread.join(timeout=2)
+        assert not thread.is_alive(), "describer thread did not exit"
+
+
 @pytest.fixture
 def stops():
-    """Events from start_describer; set at teardown so no thread outlives its test."""
-    events = []
-    yield events
-    for e in events:
+    """(app, event) pairs from start_describer; stopped and joined at teardown."""
+    started = []
+    yield started
+    for _, e in started:
         e.set()
+    for app, e in started:
+        stop_and_join(app, e)
 
 
 def seed(store, code):
@@ -69,7 +81,7 @@ def test_fake_rater_env_never_starts_describer(repo, store, stops, monkeypatch):
     fake = FakeDescriber()
     app = create_app(repo.root, describer=fake)
     stop = inspiration_api.start_describer(app, interval=0.01, settle_s=0)
-    stops.append(stop)
+    stops.append((app, stop))
     assert stop.is_set()
     time.sleep(0.05)
     assert app.state.describer_loop is None
@@ -88,7 +100,7 @@ def test_env_off_switch(repo, store, stops, monkeypatch, how):
     fake = FakeDescriber()
     app = create_app(repo.root, describer=fake)
     stop = inspiration_api.start_describer(app, interval=0.01, settle_s=0)
-    stops.append(stop)
+    stops.append((app, stop))
     assert stop.is_set()
     time.sleep(0.05)
     assert app.state.describer_loop is None and fake.calls == []
@@ -111,7 +123,7 @@ def test_bad_config_reports_off_not_crash(repo, store, stops, tmp_path):
     fake = FakeDescriber()
     app = create_app(repo.root, describer=fake)  # must not raise
     stop = inspiration_api.start_describer(app, interval=0.01, settle_s=0)
-    stops.append(stop)
+    stops.append((app, stop))
     assert stop.is_set() and app.state.describer_loop is None and fake.calls == []
     d = describer_status(app)
     assert d["state"] == "off" and "config.toml" in d["reason"]
@@ -124,7 +136,7 @@ def test_bad_config_without_env_root_still_starts(repo, tmp_path, monkeypatch, s
     write_config(f'inspiration_dir = "{tmp_path / "root"}"\ndescribe_inspiration = [\n')
     app = create_app(repo.root, describer=FakeDescriber())
     stop = inspiration_api.start_describer(app, interval=0.01)
-    stops.append(stop)
+    stops.append((app, stop))
     assert stop.is_set()
     r = TestClient(app).get("/api/inspiration")
     assert r.status_code == 200 and r.json()["describer"]["state"] == "off"
@@ -142,7 +154,7 @@ def test_injected_describer_runs_one_tick(repo, store, stops):
     fake = FakeDescriber()
     app = create_app(repo.root, describer=fake)
     stop = inspiration_api.start_describer(app, interval=0.01, settle_s=0)
-    stops.append(stop)
+    stops.append((app, stop))
     assert not stop.is_set()
     assert wait_for(lambda: isinstance(store.read("ig-aaa").get("bot"), dict))
     assert fake.calls == ["ig-aaa"]
@@ -164,7 +176,7 @@ def test_unavailable_claude_waits_and_reports_off(repo, store, stops, monkeypatc
     seed(store, "AAA")
     app = create_app(repo.root)
     stop = inspiration_api.start_describer(app, interval=0.01, settle_s=0)
-    stops.append(stop)
+    stops.append((app, stop))
     assert wait_for(lambda: checks)
     time.sleep(0.05)
     assert len(checks) == 1  # re-checks once a minute, not every tick
@@ -178,15 +190,35 @@ def test_start_describer_without_root_does_nothing(repo, monkeypatch, stops):
     monkeypatch.delenv("QUARRY_FAKE_RATER", raising=False)
     app = create_app(repo.root, describer=FakeDescriber())
     stop = inspiration_api.start_describer(app, interval=0.01)
-    stops.append(stop)
+    stops.append((app, stop))
     assert stop.is_set() and app.state.describer_loop is None
 
 
 def test_second_start_does_not_add_a_thread(repo, store, stops):
-    app = create_app(repo.root, describer=FakeDescriber())
-    first = inspiration_api.start_describer(app, interval=0.01)
-    stops.append(first)
+    entered, release = threading.Event(), threading.Event()
+
+    class Blocking(FakeDescriber):
+        def describe(self, rec, store, vocab, vocab_doc):
+            entered.set()
+            release.wait(2)
+            return super().describe(rec, store, vocab, vocab_doc)
+
+    seed(store, "AAA")
+    app = create_app(repo.root, describer=Blocking())
+    first = inspiration_api.start_describer(app, interval=0.01, settle_s=0)
+    stops.append((app, first))
+    thread = app.state.describer_thread
     assert inspiration_api.start_describer(app, interval=0.01) is first
+    assert entered.wait(2)
+    first.set()  # stopped, but the thread is still mid-tick
+    assert inspiration_api.start_describer(app, interval=0.01) is first
+    assert app.state.describer_thread is thread
+    release.set()
+    stop_and_join(app, first)
+    # once the old thread has exited, a new start may run (and is joined by the fixture)
+    second = inspiration_api.start_describer(app, interval=0.01)
+    stops.append((app, second))
+    assert second is not first and app.state.describer_thread is not thread
 
 
 def test_describe_endpoint_resumes_the_loop(repo, store):

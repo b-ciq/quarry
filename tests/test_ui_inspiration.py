@@ -152,3 +152,5 @@ def test_describe_endpoint_off_without_root(repo):
     assert client.post("/api/inspiration/ig-aaa/describe").status_code == 409
     d = client.get("/api/inspiration").json()["describer"]
     assert set(d) == DESCRIBER_KEYS and d["state"] == "off" and d["waiting"] == 0
+    assert d["reason"] == client.get("/api/inspiration").json()["setup"]
+    assert "No inspiration folder" in d["reason"]

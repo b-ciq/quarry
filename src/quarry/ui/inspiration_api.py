@@ -113,7 +113,7 @@ def describer_status(app: FastAPI) -> dict:
     store = getattr(app.state, "inspiration_store", None)
     reason = getattr(app.state, "describer_reason", None)
     if store is None:
-        return _off_status(reason or getattr(app.state, "inspiration_setup", None), 0)
+        return _off_status(getattr(app.state, "inspiration_setup", None) or reason, 0)
     try:
         waiting = waiting_count(store)
     except Exception as e:  # e.g. Drive offline: still answer
@@ -130,9 +130,10 @@ def start_describer(app: FastAPI, interval: float = 10.0, port: int | None = Non
     event that is already set. Until Claude is available (or a describer was injected) the thread
     re-checks `rater_status()` every minute and the status reports `off` with the reason.
     """
-    existing = getattr(app.state, "describer_stop", None)
-    if existing is not None and not existing.is_set():
-        return existing  # one describer thread per app: exactly one caller of tick()
+    thread = getattr(app.state, "describer_thread", None)
+    if thread is not None and thread.is_alive():
+        # one describer thread per app (exactly one caller of tick()), even while a stopped one finishes
+        return app.state.describer_stop
     stop = threading.Event()
     store = getattr(app.state, "inspiration_store", None)
     if store is None:
@@ -181,7 +182,9 @@ def start_describer(app: FastAPI, interval: float = 10.0, port: int | None = Non
             if loop is not None:
                 loop.close()
 
-    threading.Thread(target=run, name="quarry-describer", daemon=True).start()
+    thread = threading.Thread(target=run, name="quarry-describer", daemon=True)
+    app.state.describer_thread = thread  # tests join it so no tick outlives its temp dirs
+    thread.start()
     return stop
 
 
