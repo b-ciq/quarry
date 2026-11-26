@@ -14,12 +14,13 @@ import fcntl
 import json
 import logging
 import os
+import threading
 import time
 from collections.abc import Callable
 from pathlib import Path
 
 from quarry.describer import (ITEM_CODES, LOCAL_CODES, Describer, apply_description, is_describe_target,
-                              load_vocab_doc, media_fingerprint, target_order)
+                              capture_time, load_vocab_doc, media_fingerprint, target_order)
 from quarry.inspiration_store import Store, atomic_write_bytes, cache_dir, config_dir, store_lock
 from quarry.rater import RaterError
 from quarry.schema import validate_inspiration_record
@@ -45,19 +46,32 @@ def _epoch(stamp) -> float | None:
         return None
 
 
-def _records(store: Store) -> list[dict]:
-    """Every readable record; unreadable ones are skipped (the Inbox reports them)."""
-    out = []
-    for id_ in store.scan().by_shortcode.values():
+def _scan_store(store: Store) -> tuple[dict[str, str], list[tuple[dict, str]]]:
+    """({id: fingerprint} for every usable record, [(record, fingerprint)] targets in describe order).
+
+    Enumerates folder ids (not shortcodes, which can repeat). Unreadable or malformed records are
+    skipped one by one so a single bad save.json can't stall the describer.
+    """
+    current: dict[str, str] = {}
+    targets: list[tuple[dict, str]] = []
+    for id_ in sorted(store.scan().ids):
         try:
-            out.append(store.read_cached(id_))
-        except (OSError, ValueError):
+            rec = store.read_cached(id_)
+            if not isinstance(rec, dict) or rec.get("id") != id_:
+                continue
+            fp = media_fingerprint(rec)
+            is_target = is_describe_target(rec)
+            capture_time(rec)
+        except Exception:
             continue
-    return out
+        current[id_] = fp
+        if is_target:
+            targets.append((rec, fp))
+    return current, [(r, current[r["id"]]) for r in target_order([r for r, _ in targets])]
 
 
 def waiting_count(store: Store) -> int:
-    return sum(1 for rec in _records(store) if is_describe_target(rec))
+    return len(_scan_store(store)[1])
 
 
 class DescriberLoop:
@@ -93,6 +107,7 @@ class DescriberLoop:
         self._current: str | None = None
         self._holder: dict | None = None
         self._calls_today = 0
+        self._mu = threading.Lock()  # guards the state above; never held across a Claude call
 
     # -- public --------------------------------------------------------------
 
@@ -101,25 +116,31 @@ class DescriberLoop:
             self._tick()
         except Exception as e:  # never let one bad tick kill the thread
             log.exception("describer tick failed")
-            self._reason = f"{type(e).__name__}: {e}"
+            with self._mu:
+                self._state = "idle"
+                self._reason = f"{type(e).__name__}: {e}"
         finally:
-            self._current = None
+            with self._mu:
+                self._current = None
 
     def status(self) -> dict:
-        paused = self._state == "paused"
-        return {"state": self._state, "reason": self._reason, "waiting": self._waiting,
-                "current": self._current, "holder": self._holder, "today": self._calls_today,
-                "cap": self.cap, "retry_at": self.pause_until if paused else None}
+        with self._mu:
+            paused = self._state == "paused"
+            return {"state": self._state, "reason": self._reason, "waiting": self._waiting,
+                    "current": self._current, "holder": self._holder, "today": self._calls_today,
+                    "cap": self.cap, "retry_at": self.pause_until if paused else None}
 
     def resume(self) -> None:
-        self.stopped = False
-        self.paid_streak = 0
-        if self._state == "stopped":
-            self._state = "idle"
-            self._reason = None
+        with self._mu:
+            self.stopped = False
+            self.paid_streak = 0
+            if self._state == "stopped":
+                self._state = "idle"
+                self._reason = None
 
     def close(self) -> None:
-        fd, self._fd = self._fd, None
+        with self._mu:
+            fd, self._fd = self._fd, None
         if fd is None:
             return
         try:
@@ -131,44 +152,67 @@ class DescriberLoop:
     # -- one tick ------------------------------------------------------------
 
     def _tick(self) -> None:
+        """Store I/O and the Claude call run outside `_mu`; decisions and state changes run inside it."""
         now = self.clock()
-        targets = self._scan(now)
+        current, targets = _scan_store(self.store)
+        with self._mu:
+            job = self._plan(current, targets, now)
+        if job is None:
+            return
+        rec, fp, vocab, vocab_doc = job
+        try:
+            result = self.describer.describe(copy.deepcopy(rec), self.store, vocab, vocab_doc)
+        except RaterError as e:
+            code = e.code or "api"
+            if code in ITEM_CODES:
+                self._paid_failure((rec["id"], fp), code, str(e), now)
+            elif code in LOCAL_CODES:
+                self._local_failure((rec["id"], fp), str(e), now)
+            else:
+                self._api_failure(code, str(e), now)
+            return
+        except Exception as e:
+            log.exception("describer: unexpected failure on %s", rec["id"])
+            self._local_failure((rec["id"], fp), f"{type(e).__name__}: {e}", now)
+            return
+        self._answered((rec["id"], fp), result, now)
+
+    def _plan(self, current: dict[str, str], targets: list[tuple[dict, str]], now: float):
+        """Under `_mu`: update the maps and state; return (rec, fp, vocab, vocab_doc) to describe, or None."""
+        self._waiting = len(targets)
+        for rec, fp in targets:
+            self.first_seen.setdefault((rec["id"], fp), now)
+        # forget removed items, older fingerprints, and expired backoffs, so the maps stay small
+        self.first_seen = {k: v for k, v in self.first_seen.items() if current.get(k[0]) == k[1]}
+        self.backoff = {k: v for k, v in self.backoff.items() if v > now}
         if not self._hold_lock(now):
             self._state = "elsewhere"
-            return
+            return None
         self._calls_today = self._read_calls()
         if self.stopped:
             self._state = "stopped"
-            return
+            return None
         if self.pause_until is not None and now < self.pause_until:
             self._state = "paused"
-            return
+            return None
         if self._calls_today >= self.cap:
             self._state, self._reason = "capped", None
-            return
-        rec = self._pick(targets, now)
-        if rec is None:
-            settling = any(now - self.first_seen[(r["id"], media_fingerprint(r))] < self.settle_s
-                           for r in targets)
+            return None
+        pick = self._pick(targets, now)
+        if pick is None:
+            settling = any(now - self.first_seen[(r["id"], fp)] < self.settle_s for r, fp in targets)
             self._state = "running" if settling else "idle"
-            return
-        self._describe(rec, now)
+            return None
+        rec, fp = pick
+        vocab = load_vocabulary(self.repo_root)
+        vocab_doc = load_vocab_doc(self.repo_root)
+        self._count_call()  # before the call, so a crash mid-call still counts
+        self._state, self._current = "running", rec["id"]
+        return rec, fp, vocab, vocab_doc
 
-    def _scan(self, now: float) -> list[dict]:
-        recs = _records(self.store)
-        current = {r["id"]: media_fingerprint(r) for r in recs}
-        targets = target_order([r for r in recs if is_describe_target(r)])
-        self._waiting = len(targets)
-        for r in targets:
-            self.first_seen.setdefault((r["id"], current[r["id"]]), now)
-        # forget older fingerprints of known items, and expired backoffs, so the maps stay small
-        self.first_seen = {k: v for k, v in self.first_seen.items() if current.get(k[0], k[1]) == k[1]}
-        self.backoff = {k: v for k, v in self.backoff.items() if v > now}
-        return targets
-
-    def _pick(self, targets: list[dict], now: float) -> dict | None:
-        for rec in targets:
-            key = (rec["id"], media_fingerprint(rec))
+    def _pick(self, targets: list[tuple[dict, str]], now: float) -> tuple[dict, str] | None:
+        for rec, fp in targets:
+            key = (rec["id"], fp)
             if now - self.first_seen[key] < self.settle_s:
                 continue
             if self.backoff.get(key, now) > now:
@@ -181,7 +225,7 @@ class DescriberLoop:
                 self._reason = f"{rec['id']}: invalid record: " + "; ".join(errors)
                 log.warning("describer: skipping %s", self._reason)
                 continue
-            return rec
+            return rec, fp
         return None
 
     def _waiting_to_retry(self, rec: dict, now: float) -> bool:
@@ -196,39 +240,24 @@ class DescriberLoop:
         failed_at = _epoch(at)
         return failed_at is not None and now < failed_at + self.backoff_s
 
-    def _describe(self, rec: dict, now: float) -> None:
-        rid, fp = rec["id"], media_fingerprint(rec)
-        key = (rid, fp)
-        vocab = load_vocabulary(self.repo_root)
-        vocab_doc = load_vocab_doc(self.repo_root)
-        self._count_call()  # before the call, so a crash mid-call still counts
-        self._state, self._current = "running", rid
-        try:
-            result = self.describer.describe(copy.deepcopy(rec), self.store, vocab, vocab_doc)
-        except RaterError as e:
-            code = e.code or "api"
-            if code in ITEM_CODES:
-                self._paid_failure(key, code, str(e), now)
-            elif code in LOCAL_CODES:
-                self._local_failure(key, str(e), now)
-            else:
-                self._api_failure(code, str(e), now)
-            return
-        except Exception as e:
-            log.exception("describer: unexpected failure on %s", rid)
-            self._local_failure(key, f"{type(e).__name__}: {e}", now)
-            return
-        self.paid_streak = 0
-        self.pause_s, self.pause_until = 0.0, None
-        self._reason = None
-        self._save(key, now, lambda fresh: apply_description(
-            fresh, result, vocab=load_vocabulary(self.repo_root), model=self.describer.model, now=_utc(now)))
-
     # -- outcomes ------------------------------------------------------------
 
+    def _answered(self, key: tuple[str, str], result, now: float) -> None:
+        outcome = self._save(key, lambda fresh: apply_description(
+            fresh, result, vocab=load_vocabulary(self.repo_root), model=self.describer.model, now=_utc(now)))
+        with self._mu:
+            self.pause_s, self.pause_until = 0.0, None  # the API answered
+            self._state = "running"
+            if outcome == "saved":
+                self.paid_streak, self._reason = 0, None
+                return
+            self.backoff[key] = now + self.backoff_s  # a changed item has a new key, so it isn't blocked
+            if outcome != "discarded":  # a paid answer we could not save: a merge or write bug must stop us
+                self.paid_streak += 1
+                self._reason = outcome
+                self._check_stop()
+
     def _paid_failure(self, key: tuple[str, str], code: str, message: str, now: float) -> None:
-        self.paid_streak += 1
-        self._reason = message
         log.warning("describer: %s failed (%s): %s", key[0], code, message)
 
         def with_error(fresh: dict) -> dict:
@@ -238,39 +267,55 @@ class DescriberLoop:
             return {**fresh, "describe_error": {"code": code, "message": message[:500], "tries": tries,
                                                 "at": _utc(now), "gave_up": tries >= self.max_tries}}
 
-        self._save(key, now, with_error)
+        outcome = self._save(key, with_error)
+        with self._mu:
+            self.pause_s, self.pause_until = 0.0, None  # the API answered
+            self._state = "running"
+            self.paid_streak += 1
+            self._reason = message
+            if outcome != "saved":
+                self.backoff[key] = now + self.backoff_s
+                if outcome != "discarded":
+                    self._reason = outcome
+            self._check_stop()
+
+    def _check_stop(self) -> None:
         if self.paid_streak >= self.stop_streak:
             self.stopped = True
             self._state = "stopped"
             log.warning("describer: stopped after %d failed answers in a row", self.paid_streak)
 
     def _local_failure(self, key: tuple[str, str], message: str, now: float) -> None:
-        self.backoff[key] = now + self.backoff_s
-        self._reason = f"{key[0]}: {message}"
         log.warning("describer: %s backed off: %s", key[0], message)
+        with self._mu:
+            self.backoff[key] = now + self.backoff_s
+            self._reason = f"{key[0]}: {message}"
 
     def _api_failure(self, code: str, message: str, now: float) -> None:
-        self.pause_s = min(self.pause_s * 2, self.pause_max_s) if self.pause_s else self.pause_min_s
-        self.pause_until = now + self.pause_s
-        self._state = "paused"
-        self._reason = code.replace("_", " ")
+        with self._mu:
+            self.pause_s = min(self.pause_s * 2, self.pause_max_s) if self.pause_s else self.pause_min_s
+            self.pause_until = now + self.pause_s
+            self._state = "paused"
+            self._reason = code.replace("_", " ")
         log.warning("describer: paused %ds (%s): %s", self.pause_s, code, message)
 
-    def _save(self, key: tuple[str, str], now: float, change: Callable[[dict], dict]) -> None:
-        """Re-read under the store lock; write only if it is still a target with the media we sent."""
+    def _save(self, key: tuple[str, str], change: Callable[[dict], dict]) -> str:
+        """Re-read under the store lock; write only if it is still a target with the media we sent.
+
+        Returns "saved", "discarded" (changed during the call), or the error text when it could not save.
+        """
         rid, fp = key
         try:
             with store_lock():
                 fresh = self.store.read(rid)
                 if not is_describe_target(fresh) or media_fingerprint(fresh) != fp:
                     log.info("describer: discarded the answer for %s (changed during the call)", rid)
-                    self.backoff[key] = now + self.backoff_s  # a changed item has a new key
-                    return
+                    return "discarded"
                 self.store.write(change(fresh))
+            return "saved"
         except Exception as e:
-            self.backoff[key] = now + self.backoff_s
-            self._reason = f"{rid}: could not save: {e}"
-            log.warning("describer: %s", self._reason)
+            log.warning("describer: %s could not save: %s", rid, e)
+            return f"{rid}: could not save: {e}"
 
     # -- lock and counter ----------------------------------------------------
 

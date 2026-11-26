@@ -1,5 +1,7 @@
 import json
 import os
+import shutil
+import threading
 from pathlib import Path
 from types import SimpleNamespace
 
@@ -448,3 +450,125 @@ def test_status_shape(env):
     assert loop.status() == {"state": "idle", "reason": None, "waiting": 0, "current": None, "holder": None,
                              "today": 0, "cap": 7, "retry_at": None}
     assert (loop.settle_s, loop.backoff_s, loop.max_tries, loop.stop_streak) == (60, 3600, 3, 5)
+
+
+# -- robustness fixes --------------------------------------------------------
+
+def test_unsaveable_answers_count_toward_the_streak(env, monkeypatch):
+    ids = [seed(env.store, code) for code in ("A", "B", "C", "D", "E", "F")]
+    fake = FakeDescriber()
+
+    def broken(self, record):
+        raise OSError("Drive is offline")
+
+    monkeypatch.setattr(Store, "write", broken)
+    loop = env.make(fake)
+    loop.tick()
+    env.t[0] = 61
+    for _ in range(6):
+        loop.tick()
+    assert len(fake.calls) == 5
+    assert loop.status()["state"] == "stopped"
+    assert set(fake.calls) < set(ids)
+
+
+def test_any_answer_from_the_api_resets_the_pause(env):
+    seed(env.store, "A", captured="2026-11-24T00:00:00Z")
+    seed(env.store, "B", captured="2026-11-23T00:00:00Z")
+    seed(env.store, "C", captured="2026-11-22T00:00:00Z")
+    codes = ["overloaded", "overloaded", "bad_output", "overloaded"]
+
+    class Sequenced(FakeDescriber):
+        def describe(self, rec, store, vocab, vocab_doc):
+            self.calls.append(rec["id"])
+            raise RaterError("x", code=codes[len(self.calls) - 1])
+
+    loop = env.make(Sequenced())
+    loop.tick()
+    env.t[0] = 61
+    loop.tick()
+    assert loop.status()["retry_at"] - env.t[0] == 60
+    env.t[0] = loop.status()["retry_at"]
+    loop.tick()
+    assert loop.status()["retry_at"] - env.t[0] == 120
+    env.t[0] = loop.status()["retry_at"]
+    loop.tick()  # bad_output: Claude answered, so the API is fine
+    assert loop.status()["state"] == "running"
+    assert loop.status()["retry_at"] is None
+    loop.tick()
+    assert loop.status()["retry_at"] - env.t[0] == 60
+
+
+def test_duplicate_shortcodes_and_malformed_records(env):
+    a = seed(env.store, "A", captured="2026-11-20T00:00:00Z")
+    dup = make_record("A")
+    dup["id"] = "ig-a-2"
+    dup["capture"]["items"] = [{**item(1), "sha256": "dup", "captured_at": "2026-11-21T00:00:00Z"}]
+    env.store.write(dup)
+    for rid, capture in (("ig-bad", ["not", "a", "dict"]),
+                         ("ig-mixed", {"items": [{"slide": 1, "type": "image", "file": "01.jpg"},
+                                                 {"slide": "2", "type": "image", "file": "02.jpg"}]})):
+        (env.store.dir / rid).mkdir()
+        (env.store.dir / rid / "save.json").write_text(json.dumps(
+            {**make_record(rid[3:].upper()), "id": rid, "capture": capture}))
+    assert waiting_count(env.store) == 2
+    fake = FakeDescriber()
+    loop = env.make(fake)
+    loop.tick()
+    env.t[0] = 61
+    loop.tick()
+    loop.tick()
+    assert fake.calls == ["ig-a-2", a]
+    assert loop.status()["reason"] is None
+
+
+def test_tick_exception_reports_idle(env, monkeypatch):
+    seed(env.store, "A")
+    loop = env.make(FakeDescriber())
+    loop.tick()
+    assert loop.status()["state"] == "running"  # settling
+
+    def broken(self):
+        raise RuntimeError("scan exploded")
+
+    monkeypatch.setattr(Store, "scan", broken)
+    loop.tick()
+    assert loop.status()["state"] == "idle"
+    assert "scan exploded" in loop.status()["reason"]
+
+
+def test_first_seen_forgets_removed_items(env):
+    rid = seed(env.store, "A")
+    seed(env.store, "B")
+    loop = env.make(FakeDescriber())
+    loop.tick()
+    assert {k[0] for k in loop.first_seen} == {rid, "ig-b"}
+    shutil.rmtree(env.store.dir / rid)
+    loop.tick()
+    assert {k[0] for k in loop.first_seen} == {"ig-b"}
+
+
+def test_status_and_resume_work_from_another_thread_during_a_call(env):
+    rid = seed(env.store, "A")
+    seen = []
+
+    class Watching(FakeDescriber):
+        def describe(self, rec, store, vocab, vocab_doc):
+            def other():
+                seen.append(loop.status())
+                loop.resume()
+                seen.append(loop.status())
+            th = threading.Thread(target=other)
+            th.start()
+            th.join(timeout=2)
+            assert not th.is_alive(), "status()/resume() blocked during the Claude call"
+            return super().describe(rec, store, vocab, vocab_doc)
+
+    loop = env.make(Watching())
+    loop.tick()
+    env.t[0] = 61
+    loop.tick()
+    assert [s["current"] for s in seen] == [rid, rid]
+    assert [s["state"] for s in seen] == ["running", "running"]
+    assert "bot" in env.store.read(rid)
+    assert loop.status()["current"] is None
