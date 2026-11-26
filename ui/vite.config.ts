@@ -27,7 +27,7 @@ export default defineConfig({
   ],
   build: { outDir: '../src/quarry/ui/static', emptyOutDir: true },
   server: {
-    proxy: { '/api': API, '/thumbs': API, '/files': API, '/assets': API },
+    proxy: { '/api': API, '/thumbs': API, '/files': API, '/inspiration-media': API, '/assets': API },
   },
   test: { environment: 'node' },
 })

@@ -26,61 +26,71 @@ quarry index --fake-embedder
 - Conductor: run the `ui` action (it serves on `$CONDUCTOR_PORT`).
 - Terminal: `quarry ui [--port 8787] [--fake-embedder]`, then open the printed `http://127.0.0.1:<port>`. It only listens on localhost. Use `--fake-embedder` if your index was built with it.
 
-## 4. Rate (the fast way)
+## 4. The layout
 
-A bot (Claude) rates proposed images **Yes**, **No** or **Maybe-yes** and tags them. You check its work in the **Rate (N)** button in the top bar.
+Three tabs across the top:
 
-- **Yes**: confirmed. **No**: retired. **Maybe-yes**: parked, out of the library until you upgrade it to Yes or drop it to No.
-- Screenshots never go in the grid; you see them one by one.
+- **Library**: CIQ's sanctioned brand images, the ones agents use.
+- **Inspiration**: outside work you saved (Instagram for now), kept apart from the Library for copyright reasons.
+- **Vocabulary**: the shared tag list (see section 7).
 
-Tabs: **To review**, **Needs details**, **Parked**.
+Library and Inspiration each have two galleries, plus a third out of the way:
 
-1. **Bot is sure** lane: a grid, split by the bot's verdict (**Strong Yes**, **Strong No**, **Strong Maybe-yes**), up to 24 images per screen. Click an image (or press Space) to mark it "bot is wrong". Arrows move. Press **Enter** to accept all the rest; the "bot is wrong" images move to the unsure lane.
-2. **Bot is unsure** lane: one card at a time. **Y** yes, **N** no, **M** maybe-yes, **T** tags, **D** description, **E** editor, **Z** undo, Left/Right arrows move. Holding a key does not repeat the action.
-3. When you overrule the bot, a **why?** line appears. Type a short reason and press Enter (empty is fine), or Esc to cancel. Reasons teach the bot the most.
-4. **Needs details**: your Yes is recorded, but the asset cannot be confirmed yet because it is missing something the card cannot edit: for example a license, a screenshot's version or capture date, Midjourney details, or an anti-example's reason. It stays proposed and the exact errors are listed. Click **Open in editor**, fill in the missing field, then **Confirm**.
-5. **Parked**: Maybe-yes images, one card at a time. Only **Y** (yes) and **N** (no) apply here. The editor also offers **Confirm** and **Retire** for a parked image.
+- **Inbox**: new images waiting for your call. The number on the top tab is the Inbox count.
+- **Approved**: the sanctioned gallery. In the Library, this is what agents can search once you **Publish**.
+- **Rejected** (button on the right of the view bar): images you turned down. Open one and click **Approve instead** to bring it back.
 
-The bot learns from you. It sees your past verdicts on look-alike images (needs an index built with real embeddings, `quarry index` without `--fake-embedder`; otherwise it sees your most recent verdicts). An agreement score shows how often you and the bot match. The bot's rubric is `taxonomy/rating-guide.md`; it is yours, so edit it when the bot keeps getting something wrong.
+Every gallery has the same filter rail on the left (OR within a group, AND across groups) and the search box at the top.
 
-### Turning the bot on
+## 5. Clearing the Inbox
 
-1. Set `ANTHROPIC_API_KEY` in the environment that starts the workbench, or run `ant auth login`.
-2. Click **Auto-rate**. The count shows "N waiting for the bot". Cost is about 4-5 cents per image (183 images is about $9).
-3. **Re-rate unsure** asks the bot again about its unsure calls that nobody has judged yet (useful after you edit the rubric or have given it more verdicts to learn from).
-4. The run stops by itself after 5 identical failures in a row (for example a bad key). Results are saved 20 at a time: stopping the server mid-run discards results not yet saved (up to 19) plus any calls still in flight, and those images stay waiting for the bot.
+### Adding images
 
-Every verdict is a git commit (`rate: yes <id>`, `rate: accept N strong yes`, `rate: bot rated N assets`, `rate: undo ...`). **Sync** shares them (during Auto-rate it waits for the save in progress; if it says busy, try again). Confirming, retiring or restoring in the Review queue or the editor also records your rating.
+1. Library: click **+ Add images** (or drag files onto the window). Pick a class and source; screenshots need a product. Tick **These are anti-examples** to mark a whole drop.
+2. Claude then describes, tags and rates each new image automatically (when the bot is on, see below). A strip at the top of the Inbox shows progress, or "N images haven't been described and rated by Claude yet" with a button to start it.
+3. Inspiration: the strip at the top of the Inbox shows how many Instagram saves aren't pulled in yet. **Open next post**, then click the Quarry button in Chrome; the images land in the Inbox within a few seconds. **Manage saves** opens the full capture list (failed captures, add or remove files).
 
-## 5. First review session
+### Deciding
 
-1. Open the **Review queue (N)** button in the top bar. N is the count of `proposed` assets; it is disabled at 0.
-2. Each asset opens in the editor. Fix tags (products, categories, verticals, concepts, style) from the controlled vocabulary.
-3. Backgrounds need a **tone** (dark or light) before they can be confirmed.
-4. Keys: Right/Left arrows move between assets, **C** confirms the current asset and moves on, Esc exits the queue. Shortcuts are ignored with Cmd/Ctrl/Alt held.
-5. Confirming validates the sidecar; errors show beside the field. Unsaved edits prompt before you navigate away.
-6. When the queue is done, click **Publish** (validates, re-indexes, regenerates `exports/`, updates the deck-builder). **Re-index** only rebuilds the search index.
+1. Click an image. The panel on the right shows it large, what **Claude says** (keep, reject or maybe, confident or unsure, and why), and the description and tags, which you can edit.
+2. **A** approves, **X** rejects, **S** skips. The next image opens by itself. Left/Right arrows move, Esc closes the panel, **Z** undoes the last decision. Shortcuts are ignored while typing and with Cmd/Ctrl/Alt held.
+3. Approve saves your edits first. If something required is missing (for example a background's tone, a license, a screenshot's version, or an anti-example's reason), your Yes is recorded but the image stays in the Inbox with a **NEEDS DETAILS** badge and the missing fields marked. Fill them in and approve again.
+4. Badges on the thumbnails show Claude's call: **KEEP**, **REJECT**, **MAYBE**, with **?** when it is unsure. Claude's confident calls are listed first.
 
-Other tabs: Library (grid, facets, search), Vocabulary, Ingest (drop images, pick class and source; screenshots need a product).
+### Bulk decisions
+
+Filter the Inbox first, for example **Claude says: reject** plus **Claude's confidence: strong**, or a style Claude suggested. Then use **Reject all N shown** or **Approve all N shown...** (approve asks you to confirm). One **Undo** reverses the whole batch.
+
+### The bot
+
+Claude (the rating bot) proposes a verdict, a description and tags for each new Library image.
+
+1. Turn it on: set `ANTHROPIC_API_KEY` in the environment that starts the workbench, or run `ant auth login`. Cost is about 4-5 cents per image.
+2. It learns from you. It sees your past verdicts on look-alike images (needs an index built with real embeddings, `quarry index` without `--fake-embedder`; otherwise your most recent verdicts). Its rubric is `taxonomy/rating-guide.md`; it is yours, so edit it when the bot keeps getting something wrong.
+3. A run stops by itself after 5 identical failures in a row (for example a bad key). Results are saved 20 at a time.
+4. Claude does not describe or tag Inspiration yet.
+
+Every Library decision is a git commit (`rate: yes <id>`, `rate: accept N strong no`, `rate: bot rated N assets`, `rate: undo ...`). The line under the top tabs says whether agents have your latest approvals. When it says they don't, click **Publish**: it pulls teammates' changes, validates, rebuilds search, regenerates `exports/`, updates the deck-builder and shares your changes. Inspiration decisions are saved straight to the Drive folder (`status` in each `save.json`), not to git.
 
 ### Anti-examples (what not to do)
 
-Some images are kept to show styles CIQ avoids. Tick **Anti-example** in the editor and write **Why to avoid it** (required before confirming; a license is not). On the Ingest tab, tick **These are anti-examples** to mark a whole drop.
+Some images are kept to show styles CIQ avoids. Tick **Anti-example** in the editor and write **Why to avoid it** (required before approving; a license is not). In **+ Add images**, tick **These are anti-examples** to mark a whole drop.
 
-- Anti-examples never appear in normal search, the deck-builder export, or `get_asset`. They show a red **avoid** badge in the grid; filter with **Use: anti-example**.
+- Anti-examples never appear in normal search, the deck-builder export, or `get_asset`. They show an **AVOID** badge in the gallery; filter with **Use: anti-example**.
 - Agents read them through `search_anti_examples`, `get_anti_example`, and `check_against_anti_examples` (compares any image's visual style to the set). CLI: `quarry search --anti`, `quarry check-image PATH`.
 - Write the reason so an agent can act on it: name the trait to avoid and what to do instead.
 
 ## 6. How saving works (git sync)
 
 - Every edit you save is its own git commit under your git identity, touching only `library/`, `taxonomy/`, or `exports/`.
-- Nothing reaches teammates until you press **Sync** (pull with rebase, then push). The status area shows ahead/behind counts.
+- Nothing reaches teammates or agents until you press **Publish** (pull with rebase, publish, push). If teammates have changes and you have none, the button reads **Get updates**.
 - Writes are refused while managed files have uncommitted changes from outside the workbench; commit or discard them first.
-- If Sync reports a **conflict**, nothing was pushed and your uncommitted edits are saved in the latest `git stash` entry. Ask your agent to "resolve the quarry sync conflict", then Sync again.
+- If Publish reports a **conflict**, nothing was pushed and your uncommitted edits are saved in the latest `git stash` entry. Ask your agent to "resolve the quarry sync conflict", then Publish again.
+- If the line turns red ("library files changed outside Quarry"), saving is paused until those files are committed or discarded.
 
 ## 7. The vocabulary
 
-The controlled vocabulary lives in `taxonomy/vocabulary.json` (one list per axis). Use the **Vocabulary** tab to:
+The controlled vocabulary lives in `taxonomy/vocabulary.json` (one list per axis). Use the **Vocabulary** tab to (click a term to see its images in the Library):
 
 - add a slug (kebab-case),
 - rename a slug (rewrites every asset that uses it, one commit),

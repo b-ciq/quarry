@@ -1,62 +1,49 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { Button, ButtonBar, ButtonBarItem, Dialog, DialogTitle, TextInput } from '@ctrliq/quantic-react'
 import {
-  Alert, Button, ButtonBar, ButtonBarItem, LucideIconPanelLeftClose, LucideIconPanelLeftOpen, LucideIconX,
-  SplitterGroup, SplitterPane, TextInput,
-} from '@ctrliq/quantic-react'
-import {
-  fetchAssets, fetchRateSummary, fetchStatus, fetchVocabulary, searchIndex, startAutoRate,
+  fetchAssets, fetchRateSummary, fetchStatus, fetchVocabulary, startAutoRate,
   type Job, type RateSummary, type Status,
 } from './api'
 import { IngestDrop } from './components/IngestDrop'
-import { VocabPanel } from './views/VocabPanel'
-import { CaptureView } from './views/CaptureView'
-import { FacetRail } from './components/FacetRail'
 import { OpsBar } from './components/OpsBar'
-import { applyFilters, ReloadGuard, resolveHits, type Asset, type Axis, type Filters } from './state'
 import { canDiscard } from './editing'
-import { AssetEditor } from './components/AssetEditor'
-import { Grid } from './views/Grid'
-import { ReviewQueue } from './views/ReviewQueue'
-import { RateView, type RateJob } from './views/RateView'
+import { facetKey, libraryFacets, viewOf } from './gallery'
+import { ReloadGuard, type Asset } from './state'
+import { InspirationArea } from './views/InspirationArea'
+import { LibraryArea, type RateJob } from './views/LibraryArea'
+import { VocabPanel } from './views/VocabPanel'
 
-const RAIL_KEY = 'quarry.filters'
-type Page = 'library' | 'rate' | 'vocab' | 'ingest' | 'capture'
+type Area = 'library' | 'inspiration' | 'vocabulary'
+
+/** Vocabulary axis (as the Vocabulary page names it) to the Library filter group. */
+const AXIS_GROUP: Record<string, string> = {
+  product: 'Products', categories: 'Categories', verticals: 'Verticals', concepts: 'Concepts', style: 'Style',
+}
 
 export function App() {
+  const [area, setArea] = useState<Area>('library')
   const [assets, setAssets] = useState<Asset[]>([])
   const [loaded, setLoaded] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [status, setStatus] = useState<Status | null>(null)
   const [statusError, setStatusError] = useState<string | null>(null)
-  const [filters, setFilters] = useState<Filters>({})
-  const [q, setQ] = useState('')
   const [vocabulary, setVocabulary] = useState<Record<string, string[]>>({})
-  const [selectedId, setSelectedId] = useState<string | null>(null)
-  const [queueIds, setQueueIds] = useState<string[] | null>(null)
-
-  const [page, setPage] = useState<Page>('library')
+  const [q, setQ] = useState('')
   const [summary, setSummary] = useState<RateSummary | null>(null)
-  const [summaryError, setSummaryError] = useState<string | null>(null)
   const [rateJob, setRateJob] = useState<RateJob | null>(null)
   const [rateError, setRateError] = useState<string | null>(null)
-  const [railOpen, setRailOpen] = useState(() => localStorage.getItem(RAIL_KEY) !== 'closed')
-  const toggleRail = () => setRailOpen((o) => { localStorage.setItem(RAIL_KEY, o ? 'closed' : 'open'); return !o })
-
-  const [indexSearch, setIndexSearch] = useState<{ q: string; ids: { id: string }[]; stale: boolean } | null>(null)
-  const [searchError, setSearchError] = useState<string | null>(null)
-  const [searching, setSearching] = useState(false)
+  const [adding, setAdding] = useState(false)
+  const [inspirationInbox, setInspirationInbox] = useState(0)
+  const [openFilter, setOpenFilter] = useState<{ key: string; view: 'inbox' | 'approved'; n: number } | null>(null)
 
   const refreshStatus = useCallback(() => {
     fetchStatus().then((s) => { setStatus(s); setStatusError(null) }).catch((e: Error) => setStatusError(e.message))
   }, [])
-
   const refreshSummary = useCallback(() => {
-    fetchRateSummary().then((r) => {
-      if (r.ok) { setSummary(r.data); setSummaryError(null) } else setSummaryError(r.error)
-    })
+    fetchRateSummary().then((r) => { if (r.ok) setSummary(r.data) })
   }, [])
 
-  // A reload in flight when a verdict lands must not bring the decided card back.
+  // A reload in flight when a verdict lands must not bring the decided image back.
   const [reloads] = useState(() => new ReloadGuard())
   const reloadAssets = useCallback(() => {
     const ticket = reloads.begin()
@@ -82,46 +69,37 @@ export function App() {
     return () => clearInterval(t)
   }, [refreshStatus])
 
-  // Auto-rate commits in chunks: pull them in while it runs so the lanes fill up.
+  // Status and summary refresh once writes go quiet, not per keystroke verdict.
+  const refreshTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined)
+  const refreshAfterWrite = useCallback(() => {
+    clearTimeout(refreshTimer.current)
+    refreshTimer.current = setTimeout(() => { refreshSummary(); refreshStatus() }, 800)
+  }, [refreshSummary, refreshStatus])
+
+  // Claude commits in chunks: pull them in while it runs so the Inbox fills up.
   useEffect(() => {
     if (!rateJob?.running) return
     const t = setInterval(() => { void reloadAssets(); refreshSummary() }, 5000)
     return () => clearInterval(t)
   }, [rateJob?.running, reloadAssets, refreshSummary])
 
-  const startRate = useCallback(async (redo?: 'unsure') => {
+  const startRate = useCallback(async () => {
     setRateError(null)
-    const r = await startAutoRate(redo)
+    const r = await startAutoRate()
     if (r.ok) setRateJob({ id: r.data.job_id, running: true })
-    else setRateError(`Auto-rate did not start: ${r.error}`)
+    else setRateError(`Claude did not start: ${r.error}`)
   }, [])
   const rateFinished = useCallback((job: Job) => {
     setRateJob((cur) => (cur ? { ...cur, running: false, job } : cur))
     refresh()
   }, [refresh])
 
-  const visible = useMemo(
-    () => (indexSearch ? applyFilters(resolveHits(indexSearch.ids, assets), filters, '') : applyFilters(assets, filters, q)),
-    [assets, filters, q, indexSearch],
-  )
-
   const onAssetSaved = useCallback((a: Asset) => {
     reloads.saved(a.id)
     setAssets((xs) => xs.map((x) => (x.id === a.id ? a : x)))
   }, [reloads])
-  const onChanged = useCallback((a: Asset) => { onAssetSaved(a); refreshStatus() }, [onAssetSaved, refreshStatus])
+  const onChanged = useCallback((a: Asset) => { onAssetSaved(a); refreshAfterWrite() }, [onAssetSaved, refreshAfterWrite])
 
-  const runSearch = async () => {
-    const term = q.trim()
-    if (!term) return
-    setSearching(true)
-    setSearchError(null)
-    const r = await searchIndex(term)
-    setSearching(false)
-    if (!r.ok) { setIndexSearch(null); setSearchError(r.error); return }
-    setIndexSearch({ q: term, ids: r.hits, stale: r.stale })
-  }
-  const clearSearch = () => { setIndexSearch(null); setSearchError(null); setQ('') }
   const dirtyRef = useRef(false)
   const onDirtyChange = useCallback((d: boolean) => { dirtyRef.current = d }, [])
   const confirmDiscard = useCallback(() => {
@@ -134,197 +112,107 @@ export function App() {
     window.addEventListener('beforeunload', warn)
     return () => window.removeEventListener('beforeunload', warn)
   }, [])
-  const exitQueue = useCallback(() => setQueueIds(null), [])
-  const proposedCount = useMemo(() => assets.filter((a) => a.status === 'proposed').length, [assets])
-  const [toRate, setToRate] = useState(0)
-  const selected = assets.find((a) => a.id === selectedId)
-  const closeDetail = () => { if (confirmDiscard()) setSelectedId(null) }
-  const libraryView = queueIds === null && page === 'library'
 
-  const goPage = (p: Page) => {
-    if (queueIds === null && page === p) return
-    if (!confirmDiscard()) return
-    setSelectedId(null)
-    setQueueIds(null)
-    setPage(p)
+  // Dragging files over the Library opens Add images, so they can be dropped straight in.
+  useEffect(() => {
+    if (area !== 'library') return
+    const onDrag = (e: DragEvent) => { if (e.dataTransfer?.types.includes('Files')) setAdding(true) }
+    window.addEventListener('dragenter', onDrag)
+    return () => window.removeEventListener('dragenter', onDrag)
+  }, [area])
+
+  const libraryInbox = useMemo(() => assets.filter((a) => viewOf(a.status) === 'inbox').length, [assets])
+
+  const goArea = (a: Area) => {
+    if (a === area || !confirmDiscard()) return
+    setArea(a)
   }
-
-  const toggle = (axis: Axis, value: string, on: boolean) =>
-    setFilters((f) => {
-      const cur = f[axis] ?? []
-      return { ...f, [axis]: on ? [...cur.filter((v) => v !== value), value] : cur.filter((v) => v !== value) }
-    })
 
   return (
     <div className="app">
       <header className="topbar">
-        {libraryView && (
-          <Button icon size="sm" variant="ghost" onClick={toggleRail}>
-            {railOpen ? <LucideIconPanelLeftClose size="xs" /> : <LucideIconPanelLeftOpen size="xs" />}
-            <span className="sr-only">{railOpen ? 'Hide filters' : 'Show filters'}</span>
-          </Button>
-        )}
         <h1>Quarry</h1>
-        <ButtonBar size="sm" aria-label="View">
-          <ButtonBarItem active={queueIds === null && page === 'library'} onClick={() => goPage('library')}>Library</ButtonBarItem>
-          <ButtonBarItem active={queueIds === null && page === 'rate'} onClick={() => goPage('rate')}>Rate ({toRate})</ButtonBarItem>
-          <ButtonBarItem
-            active={queueIds !== null}
-            disabled={proposedCount === 0}
-            onClick={() => {
-              if (queueIds !== null || !confirmDiscard()) return
-              setSelectedId(null)
-              setPage('library')
-              setQueueIds(assets.filter((a) => a.status === 'proposed').map((a) => a.id))
-            }}
-          >
-            Review queue ({proposedCount})
-          </ButtonBarItem>
-          <ButtonBarItem active={queueIds === null && page === 'vocab'} onClick={() => goPage('vocab')}>Vocabulary</ButtonBarItem>
-          <ButtonBarItem active={queueIds === null && page === 'ingest'} onClick={() => goPage('ingest')}>Ingest</ButtonBarItem>
-          <ButtonBarItem active={queueIds === null && page === 'capture'} onClick={() => goPage('capture')}>Capture</ButtonBarItem>
+        <ButtonBar aria-label="Area">
+          <ButtonBarItem active={area === 'library'} onClick={() => goArea('library')}>Library{libraryInbox ? ` (${libraryInbox})` : ''}</ButtonBarItem>
+          <ButtonBarItem active={area === 'inspiration'} onClick={() => goArea('inspiration')}>Inspiration{inspirationInbox ? ` (${inspirationInbox})` : ''}</ButtonBarItem>
+          <ButtonBarItem active={area === 'vocabulary'} onClick={() => goArea('vocabulary')}>Vocabulary</ButtonBarItem>
         </ButtonBar>
-        <div className="search">
-          <div onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); void runSearch() } }}>
+        {area !== 'vocabulary' && (
+          <div className="search">
             <TextInput
               type="search"
-              aria-label="Search assets"
-              placeholder="Filter; press Enter for index search"
+              aria-label={`Search ${area}`}
+              placeholder="Search descriptions, tags and captions"
               value={q}
-              onValueChanged={(e) => { setQ(e.detail.value); setIndexSearch(null); setSearchError(null) }}
+              onValueChanged={(e) => setQ(e.detail.value)}
             />
           </div>
-        </div>
-        <span className="result-count">{loaded ? `${visible.length} / ${assets.length}` : ''}</span>
+        )}
+        <span className="spacer" />
+        {area === 'library' && <Button size="sm" onClick={() => setAdding(true)}>+ Add images</Button>}
       </header>
       <OpsBar status={status} error={statusError} onRefresh={refresh} />
-      {/* Always mounted so undo history and queued writes survive a trip to another page. */}
-      <main className="main rate-main" hidden={queueIds !== null || page !== 'rate'}>
-        <RateView
-          active={queueIds === null && page === 'rate'}
+
+      {/* Areas stay mounted (hidden) so undo, filters and a running Claude job survive switching. */}
+      <div className="area-host" hidden={area !== 'library'}>
+        <LibraryArea
+          active={area === 'library' && !adding}
           assets={assets}
+          loaded={loaded}
+          loadError={error}
           vocabulary={vocabulary}
+          q={q}
           summary={summary}
-          summaryError={summaryError}
           rateJob={rateJob}
           rateError={rateError}
-          onStartRate={startRate}
+          onStartRate={() => void startRate()}
           onRateJobFinished={rateFinished}
           onDismissRateJob={() => setRateJob(null)}
           onChanged={onChanged}
-          onAssetSaved={onAssetSaved}
-          refreshStatus={refreshStatus}
           reloadAssets={reloadAssets}
-          refreshSummary={refreshSummary}
+          refreshAfterWrite={refreshAfterWrite}
           confirmDiscard={confirmDiscard}
           onDirtyChange={onDirtyChange}
-          onToReviewCount={setToRate}
+          openFilter={openFilter}
         />
-      </main>
-      {queueIds !== null ? (
-        <main className="main">
-          <ReviewQueue
-            initialIds={queueIds}
-            assets={assets}
-            vocabulary={vocabulary}
-            onChanged={onChanged}
-            onExit={exitQueue}
-            confirmDiscard={confirmDiscard}
-            onDirtyChange={onDirtyChange}
-          />
-        </main>
-      ) : page === 'rate' ? null : page === 'vocab' ? (
+      </div>
+      <div className="area-host" hidden={area !== 'inspiration'}>
+        <InspirationArea active={area === 'inspiration'} q={q} onInboxCount={setInspirationInbox} />
+      </div>
+      {area === 'vocabulary' && (
         <main className="main">
           <VocabPanel
             assets={assets}
             vocabulary={vocabulary}
             onChanged={refresh}
-            onOpenInGrid={(axis, value) => { setFilters({ [axis]: [value] }); setQ(''); setPage('library') }}
-          />
-        </main>
-      ) : page === 'capture' ? (
-        <main className="main">
-          <CaptureView />
-        </main>
-      ) : page === 'ingest' ? (
-        <main className="main">
-          <IngestDrop
-            products={vocabulary.products ?? []}
-            onIngested={refresh}
-            rater={summary?.rater ?? null}
-            waiting={summary?.waiting_for_bot ?? 0}
-            rateJob={rateJob}
-            onAutoRate={() => void startRate()}
-            rateError={rateError}
-            onReviewQueue={() => {
-              const ids = assets.filter((a) => a.status === 'proposed').map((a) => a.id)
-              if (ids.length) setQueueIds(ids)
+            onOpenInGrid={(axis, value) => {
+              const group = AXIS_GROUP[axis] ?? axis
+              const approved = assets.some((a) => a.status === 'confirmed' && libraryFacets(a).some(([g, v]) => g === group && v === value))
+              setOpenFilter((f) => ({ key: facetKey(group, value), view: approved ? 'approved' : 'inbox', n: (f?.n ?? 0) + 1 }))
+              setQ('')
+              setArea('library')
             }}
           />
         </main>
-      ) : (
-        <div className="body">
-          {/* Outer split: filters | content. Nested so the rail keeps its width when the detail pane opens. */}
-          <SplitterGroup resizable split="18% 82%">
-            <SplitterPane variant="solid" collapsed={!railOpen} minSize={12} maxSize={35}>
-              <FacetRail assets={assets} filters={filters} q={q} onToggle={toggle} />
-            </SplitterPane>
-            <SplitterPane minSize={50} maxSize={100}>
-              <SplitterGroup resizable split="58% 42%" collapseBelow="560px">
-                <SplitterPane minSize={30}>
-                  <main className="main" aria-label="Gallery">
-                    {(searching || indexSearch || searchError) && (
-                      <div className="search-banner" role="region" aria-label="Index search">
-                        {searching && <p className="empty">Searching index...</p>}
-                        {searchError && (
-                          <Alert type="error">
-                            Index search failed: {searchError}{' '}
-                            {/mismatch|embedder/i.test(searchError) ? 'Re-index with the matching embedder (or restart the workbench with the right embedder option), then try again.' : ''}
-                          </Alert>
-                        )}
-                        {indexSearch && (
-                          <>
-                            <div className="search-banner-row">
-                              <strong>Index search: &ldquo;{indexSearch.q}&rdquo;</strong>
-                              <span>{visible.length} result{visible.length === 1 ? '' : 's'}, best match first</span>
-                              <Button size="sm" variant="outline" onClick={clearSearch}>Clear</Button>
-                            </div>
-                            {indexSearch.stale && <Alert type="warning">The index is stale; results may miss recent edits. Re-index to refresh.</Alert>}
-                          </>
-                        )}
-                        {searchError && <div><Button size="sm" variant="outline" onClick={clearSearch}>Clear</Button></div>}
-                      </div>
-                    )}
-                    {error ? <p className="empty" role="alert">Could not load assets: {error}</p>
-                      : loaded ? <Grid assets={visible} total={assets.length} selectedId={selectedId} onSelect={(id) => { if (id === selectedId || confirmDiscard()) setSelectedId(id) }} /> : <p className="empty">Loading...</p>}
-                  </main>
-                </SplitterPane>
-                <SplitterPane collapsed={!selected} minSize={25} maxSize={70}>
-                  {selected && (
-                    <aside className="detail" aria-label="Asset details">
-                      <div className="detail-bar">
-                        <span className="detail-title">Details</span>
-                        <Button icon size="sm" variant="ghost" onClick={closeDetail}>
-                          <LucideIconX size="xs" />
-                          <span className="sr-only">Close details</span>
-                        </Button>
-                      </div>
-                      <AssetEditor
-                        key={selected.id}
-                        asset={selected}
-                        vocabulary={vocabulary}
-                        onChanged={onChanged}
-                        onDirtyChange={onDirtyChange}
-                        onOpenSimilar={(id) => { if (assets.some((a) => a.id === id) && confirmDiscard()) setSelectedId(id) }}
-                      />
-                    </aside>
-                  )}
-                </SplitterPane>
-              </SplitterGroup>
-            </SplitterPane>
-          </SplitterGroup>
-        </div>
       )}
+
+      <Dialog open={adding} size="lg" onOpenChanged={(e) => { if (!e.detail.open) setAdding(false) }}>
+        <DialogTitle slot="header">Add images to the Library</DialogTitle>
+        <p className="dialog-lead">They land in the Inbox. Claude then describes, tags and rates each one, and you approve or reject.</p>
+        <IngestDrop
+          products={vocabulary.products ?? []}
+          onIngested={(r) => {
+            refresh()
+            if (r.created.length && summary?.rater.available && !rateJob?.running) void startRate()
+          }}
+          rater={summary?.rater ?? null}
+          waiting={summary?.waiting_for_bot ?? 0}
+          rateJob={rateJob}
+          onAutoRate={() => void startRate()}
+          rateError={rateError}
+          onReviewQueue={() => { setAdding(false); setArea('library') }}
+        />
+      </Dialog>
     </div>
   )
 }

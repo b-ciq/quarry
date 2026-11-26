@@ -1,7 +1,8 @@
 import { useState } from 'react'
-import { Alert, Badge, Button } from '@ctrliq/quantic-react'
+import { Alert, Button, Spinner } from '@ctrliq/quantic-react'
 import { startJob, syncNow, type Job, type Status } from '../api'
 import { JobLog } from './JobLog'
+import { liveState } from '../live'
 
 interface Props {
   status: Status | null
@@ -11,97 +12,75 @@ interface Props {
 }
 
 type Notice = { kind: 'error' | 'success'; text: string }
-
+/** One status line and one button: Publish (sync, rebuild search and exports, push), or Get updates. */
 export function OpsBar({ status, error, onRefresh }: Props) {
-  const [job, setJob] = useState<{ id: string; name: string } | null>(null)
+  const [job, setJob] = useState<string | null>(null)
   const [running, setRunning] = useState(false)
   const [syncing, setSyncing] = useState(false)
   const [notice, setNotice] = useState<Notice | null>(null)
-  const [published, setPublished] = useState<string | null>(null)
+  const [showLog, setShowLog] = useState(false)
   const busy = running || syncing
 
-  const sync = async () => {
+  const update = async () => {
     setSyncing(true)
     setNotice(null)
     const r = await syncNow()
     setSyncing(false)
-    if (r.ok) {
-      const d = r.data
-      setNotice({
-        kind: 'success',
-        text: !d.pulled && !d.pushed ? 'In sync with origin.' : `Synced${d.pulled ? ', pulled changes' : ''}${d.pushed ? ', pushed changes' : ''}.`,
-      })
-    } else {
-      setNotice({ kind: 'error', text: r.error })
-    }
+    setNotice(r.ok ? { kind: 'success', text: 'Up to date with teammates.' } : { kind: 'error', text: r.error })
     onRefresh()
   }
 
-  const start = async (kind: 'reindex' | 'publish') => {
+  const publish = async () => {
     setNotice(null)
-    const r = await startJob(kind)
-    if (!r.ok) {
-      setNotice({ kind: 'error', text: r.error })
-      return
-    }
+    setShowLog(false)
+    const r = await startJob('publish')
+    if (!r.ok) { setNotice({ kind: 'error', text: r.error }); return }
     setRunning(true)
-    setJob({ id: r.data.job_id, name: kind === 'reindex' ? 'Re-index' : 'Publish' })
+    setJob(r.data.job_id)
   }
 
   const finished = (j: Job) => {
     setRunning(false)
-    if (j.state === 'done' && typeof j.result?.version === 'string') setPublished(j.result.version)
+    setNotice(j.state === 'done'
+      ? { kind: 'success', text: 'Published. Agents and the deck builder have your latest approvals.' }
+      : { kind: 'error', text: `Publish failed: ${j.error ?? 'unknown error'}` })
+    if (j.state === 'done') setJob(null)
     onRefresh()
   }
 
+  const state = status ? liveState(status) : null
+  const fake = status?.embedder_mode === 'fake'
+
   return (
     <>
-      <div className="ops-bar" role="status" aria-label="Workspace status">
-        {error && <Badge color="error">Status unavailable: {error}</Badge>}
-        {status && (
+      <div className={`ops-bar ops-${state?.tone ?? 'ok'}`} role="status" aria-label="Publishing status">
+        {error && <span>Couldn't check status: {error}</span>}
+        {running ? (
           <>
-            {status.git && (
-              <>
-                <Badge color={status.git.behind ? 'warning' : 'gray'}>
-                  git: {status.git.ahead} ahead / {status.git.behind} behind
-                </Badge>
-                <Badge color={status.git.dirty_managed.length ? 'warning' : 'gray'}>
-                  {status.git.dirty_managed.length} uncommitted managed
-                </Badge>
-                {status.git.dirty_other.length > 0 && (
-                  <Badge color="gray">{status.git.dirty_other.length} other dirty (ignored)</Badge>
-                )}
-              </>
-            )}
-            <Badge color={status.index_stale ? 'warning' : 'success'}>
-              index {status.index_stale ? 'stale' : 'fresh'}
-            </Badge>
-            <Badge color={status.exports_stale ? 'warning' : 'success'}>
-              exports {status.exports_stale ? 'stale' : 'fresh'}
-            </Badge>
-            <Badge color="gray">embedder: {status.embedder_mode ?? 'none'}</Badge>
+            <Spinner size="sm" />
+            <span>Publishing: getting teammates' changes, rebuilding search and exports, sharing yours...</span>
           </>
+        ) : syncing ? (
+          <><Spinner size="sm" /><span>Getting updates...</span></>
+        ) : state && <span>{state.text}</span>}
+        {fake && !running && (
+          <span className="ops-dim" title="Restart Quarry without --fake-embedder, then Publish.">
+            Search is using a stand-in model, so "More like this" and Claude's look-alike learning are rough.
+          </span>
         )}
-        {published && <Badge color="success">last publish: {published}</Badge>}
         <span className="ops-spacer" />
-        <Button size="sm" variant="outline" disabled={busy} onClick={sync}>
-          {syncing ? 'Syncing...' : 'Sync'}
-        </Button>
-        <Button size="sm" variant="outline" disabled={busy} onClick={() => start('reindex')}>
-          Re-index
-        </Button>
-        <Button size="sm" disabled={busy} onClick={() => start('publish')}>
-          Publish
-        </Button>
+        {job && <Button size="sm" variant="ghost" onClick={() => setShowLog((v) => !v)}>{showLog ? 'Hide details' : 'Details'}</Button>}
+        {state?.action === 'publish' && <Button size="sm" disabled={busy} onClick={() => void publish()}>Publish</Button>}
+        {state?.action === 'update' && <Button size="sm" variant="outline" disabled={busy} onClick={() => void update()}>Get updates</Button>}
       </div>
       {notice && (
         <div className="ops-notice">
-          <Alert type={notice.kind === 'error' ? 'error' : 'success'}>{notice.text}</Alert>
+          <Alert type={notice.kind} showCloseButton onClose={() => setNotice(null)}>{notice.text}</Alert>
         </div>
       )}
       {job && (
-        <div className="ops-notice">
-          <JobLog key={job.id} jobId={job.id} name={job.name} onFinished={finished} />
+        <div className="ops-notice" hidden={!showLog}>
+          <JobLog key={job} jobId={job} name="Publish" onFinished={finished} />
         </div>
       )}
     </>

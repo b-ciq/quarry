@@ -1,6 +1,7 @@
 import type { Asset } from './state'
 import type { Agreement, Verdict } from './rating'
 import type { CaptureItem, CaptureList, CaptureToday } from './capture'
+import type { InspirationItem } from './gallery'
 
 export interface GitStatus {
   ahead: number
@@ -211,3 +212,19 @@ export function addCaptureFile(shortcode: string, file: File, slide?: number) {
   if (slide !== undefined) form.append('slide', String(slide))
   return captureCall<CaptureItemResult>('POST', `${shortcodeUrl(shortcode)}/files`, form)
 }
+
+// --- Inspiration galleries ---
+export interface InspirationList {
+  enabled: boolean
+  setup: string | null
+  items: InspirationItem[]
+  warnings: string[]
+}
+export interface InspirationStatusResult {
+  applied: { id: string; from: string }[]
+  failed: Record<string, string>
+  items: InspirationItem[]
+}
+export const fetchInspiration = () => call<InspirationList>('GET', '/api/inspiration')
+export const setInspirationStatus = (status: 'proposed' | 'confirmed' | 'retired', ids: string[]) =>
+  call<InspirationStatusResult>('POST', '/api/inspiration/status', { json: { status, ids } })

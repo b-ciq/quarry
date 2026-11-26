@@ -1,9 +1,11 @@
 import { useEffect, useImperativeHandle, useMemo, useRef, useState, type Ref } from 'react'
 import { Alert, Badge, Button, Checkbox, Select, Textarea, TextInput } from '@ctrliq/quantic-react'
 import {
-  confirmAsset, fetchSimilar, patchAsset, restoreAsset, retireAsset, splitErrors,
+  callErrors, confirmAsset, fetchSimilar, patchAsset, postVerdict, restoreAsset, retireAsset, splitErrors,
   type SimilarHit, type WriteResult,
 } from '../api'
+import { CLAUDE_SAYS, viewOf } from '../gallery'
+import type { Verdict } from '../rating'
 import type { Asset } from '../state'
 import { diffDraft, TAG_AXES, toDraft, type Draft } from '../editing'
 import { TagChips } from './TagChips'
@@ -11,7 +13,19 @@ import { TagChips } from './TagChips'
 export interface EditorHandle {
   /** Save pending edits, then confirm. Resolves true when the asset ended up confirmed. */
   confirm: () => Promise<boolean>
+  /** Inbox: save pending edits, then record Yes (approve) or No (reject) as an undoable verdict. */
+  decide: (verdict: Extract<Verdict, 'yes' | 'no'>) => Promise<boolean>
 }
+
+/** A verdict that landed. `needsDetails` lists what still blocks an approved asset from leaving the Inbox. */
+export interface Decision {
+  asset: Asset
+  commit: string
+  verdict: Verdict
+  needsDetails: string[] | null
+}
+
+const STATUS_LABEL: Record<string, string> = { proposed: 'in inbox', parked: 'maybe', confirmed: 'approved', retired: 'rejected' }
 
 interface Props {
   asset: Asset
@@ -19,6 +33,10 @@ interface Props {
   onChanged: (asset: Asset) => void
   onTransition?: (verb: 'confirm' | 'retire' | 'restore', asset: Asset) => void
   onOpenSimilar?: (id: string) => void
+  /** Inbox verdict recorded (approve or reject). */
+  onDecided?: (d: Decision) => void
+  /** Inbox: move on without deciding. */
+  onSkip?: () => void
   /** Reports whether the draft has unsaved edits (false again on unmount). */
   onDirtyChange?: (dirty: boolean) => void
   ref?: Ref<EditorHandle>
@@ -28,7 +46,7 @@ function FieldErrors({ errors }: { errors?: string[] }) {
   return <>{(errors ?? []).map((e) => <p key={e} className="field-error" role="alert">{e}</p>)}</>
 }
 
-export function AssetEditor({ asset, vocabulary, onChanged, onTransition, onOpenSimilar, onDirtyChange, ref }: Props) {
+export function AssetEditor({ asset, vocabulary, onChanged, onTransition, onOpenSimilar, onDecided, onSkip, onDirtyChange, ref }: Props) {
   const [draft, setDraft] = useState<Draft>(() => toDraft(asset))
   const [errors, setErrors] = useState<string[]>([])
   const [message, setMessage] = useState<string | null>(null)
@@ -99,7 +117,30 @@ export function AssetEditor({ asset, vocabulary, onChanged, onTransition, onOpen
     return true
   })
 
-  useImperativeHandle(ref, () => ({ confirm: doConfirm }))
+  const doDecide = (verdict: Extract<Verdict, 'yes' | 'no'>) => busyRef.current ? Promise.resolve(false) : run(async () => {
+    // Approve keeps your edits; reject doesn't need them.
+    if (verdict === 'yes' && !(await save())) return false
+    const r = await postVerdict(asset.id, verdict)
+    if (!r.ok) {
+      const errs = callErrors(r)
+      setErrors(errs)
+      setFailure(errs.length ? null : r.error)
+      return false
+    }
+    onChanged(r.data.asset)
+    if (r.data.needs_details) {
+      setDraft(toDraft(r.data.asset))
+      setErrors(r.data.needs_details)
+      setMessage('Approved, but it stays in the Inbox until the fields below are filled in.')
+    }
+    onDecided?.({ asset: r.data.asset, commit: r.data.commit, verdict, needsDetails: r.data.needs_details })
+    return true
+  })
+
+  useImperativeHandle(ref, () => ({ confirm: doConfirm, decide: doDecide }))
+
+  const view = viewOf(asset.status)
+  const bot = asset.rating?.bot
 
   const { byField, general } = splitErrors(errors)
   const midjourney = asset.source?.origin === 'midjourney'
@@ -118,11 +159,30 @@ export function AssetEditor({ asset, vocabulary, onChanged, onTransition, onOpen
         <div className="editor-head">
           <h2>{asset.id}</h2>
           <Badge size="sm" color={asset.status === 'confirmed' ? 'success' : asset.status === 'proposed' ? 'warning' : 'gray'}>
-            {asset.status}
+            {STATUS_LABEL[asset.status] ?? asset.status}
           </Badge>
           {asset.anti_example && <Badge size="sm" color="error">anti-example</Badge>}
           <span className="editor-meta">{asset.class} / {asset.aspect} / {asset.license}</span>
         </div>
+
+        {bot && (
+          <div className={`claude-says claude-says-${bot.verdict}`}>
+            <span className="field-label">Claude says</span>
+            <p>
+              <strong>{CLAUDE_SAYS[bot.verdict] ?? bot.verdict}</strong>
+              <span className="claude-strength">{bot.strength === 'strong' ? 'confident' : 'unsure'}</span>
+              {bot.reason}
+            </p>
+          </div>
+        )}
+
+        {view === 'inbox' && (
+          <div className="editor-actions decide-actions">
+            <Button size="sm" disabled={busy} onClick={() => void doDecide('yes')}>Approve <kbd>A</kbd></Button>
+            <Button size="sm" variant="outline" destructive disabled={busy} onClick={() => void doDecide('no')}>Reject <kbd>X</kbd></Button>
+            {onSkip && <Button size="sm" variant="outline" disabled={busy} onClick={onSkip}>Skip <kbd>S</kbd></Button>}
+          </div>
+        )}
 
         {message && <p className="editor-message" role="status">{message}</p>}
         {failure && <Alert type="error">{failure}</Alert>}
@@ -273,13 +333,11 @@ export function AssetEditor({ asset, vocabulary, onChanged, onTransition, onOpen
 
         <div className="editor-actions">
           <Button size="sm" disabled={busy || !dirty} onClick={doSave}>Save</Button>
-          {(asset.status === 'proposed' || asset.status === 'parked') && (
-            <Button size="sm" variant="outline" disabled={busy} onClick={doConfirm}>Confirm</Button>
+          {view === 'rejected' && (
+            <Button size="sm" variant="outline" disabled={busy} onClick={() => doTransition('restore')}>Approve instead</Button>
           )}
-          {asset.status === 'retired' ? (
-            <Button size="sm" variant="outline" disabled={busy} onClick={() => doTransition('restore')}>Restore</Button>
-          ) : (
-            <Button size="sm" variant="outline" disabled={busy} onClick={() => doTransition('retire')}>Retire</Button>
+          {view === 'approved' && (
+            <Button size="sm" variant="outline" destructive disabled={busy} onClick={() => doTransition('retire')}>Reject</Button>
           )}
         </div>
 
