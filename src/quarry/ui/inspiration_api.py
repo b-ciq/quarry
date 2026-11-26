@@ -22,6 +22,7 @@ from quarry.describer_loop import DescriberLoop, waiting_count
 from quarry.inspiration_store import NoInspirationRoot, Store, config_dir, inspiration_root, load_config, store_lock
 from quarry.rater import rater_status
 from quarry.schema import INSPIRATION_ID_RE
+from quarry.vocabulary import load_vocabulary
 from quarry.ui.capture_api import CONFIG_ERRORS
 from quarry.ui.write_api import json_body, utc_now
 
@@ -37,7 +38,7 @@ def _err(status: int, message: str) -> JSONResponse:
     return JSONResponse({"error": message}, status_code=status)
 
 
-def _row(rec: dict) -> dict:
+def _row(rec: dict, vocab: dict) -> dict:
     owner = rec.get("owner") if isinstance(rec.get("owner"), dict) else {}
     media = still_images(rec)
     caption = rec.get("caption") if isinstance(rec.get("caption"), str) else ""
@@ -47,8 +48,8 @@ def _row(rec: dict) -> dict:
         "owner": owner.get("username") or "",
         "caption": caption,
         "description": rec.get("description") or "",
-        "style": list(rec.get("style") or []),
-        "concepts": list(rec.get("concepts") or []),
+        "style": [t for t in rec.get("style") or [] if t in vocab["style"]],
+        "concepts": [t for t in rec.get("concepts") or [] if t in vocab["concepts"]],
         "source_url": rec.get("source_url") or "",
         "saved_at": (rec.get("source") or {}).get("saved_at"),
         "media": [f"/inspiration-media/{rec['id']}/{name}" for name in media],
@@ -205,6 +206,7 @@ def mount(app: FastAPI) -> None:
 
     def rows() -> tuple[list[dict], list[str]]:
         scan = store.scan()
+        vocab = load_vocabulary(app.state.repo_root)
         out, warnings = [], list(scan.warnings)
         for id_ in scan.by_shortcode.values():
             try:
@@ -212,7 +214,7 @@ def mount(app: FastAPI) -> None:
             except (OSError, ValueError) as e:
                 warnings.append(f"unreadable {id_}/save.json: {e}")
                 continue
-            row = _row(rec)
+            row = _row(rec, vocab)
             if row["media"]:
                 out.append(row)
         out.sort(key=lambda r: r["saved_at"] or "", reverse=True)
@@ -249,6 +251,7 @@ def mount(app: FastAPI) -> None:
         if status not in STATUSES or not isinstance(ids, list) or not all(isinstance(i, str) for i in ids):
             return _err(422, "body must be {status: proposed|confirmed|retired, ids: [string]}")
         applied, failed, items = [], {}, []
+        vocab = load_vocabulary(app.state.repo_root)
         with store_lock():
             for id_ in dict.fromkeys(ids):
                 if not INSPIRATION_ID_RE.match(id_):
@@ -267,7 +270,7 @@ def mount(app: FastAPI) -> None:
                     failed[id_] = str(e)
                     continue
                 applied.append({"id": id_, "from": prev})
-                items.append(_row(rec))
+                items.append(_row(rec, vocab))
         return {"applied": applied, "failed": failed, "items": items}
 
     @router.post("/api/inspiration/{id}/describe")

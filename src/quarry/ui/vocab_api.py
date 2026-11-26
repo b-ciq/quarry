@@ -5,6 +5,7 @@ from pathlib import Path
 from fastapi import APIRouter, Depends, FastAPI, Request
 from fastapi.responses import JSONResponse
 
+from quarry.inspiration_store import store_lock
 from quarry.schema import KEBAB_RE, validate_sidecar
 from quarry.ui import gitops
 from quarry.ui.write_api import require_clean_managed
@@ -36,6 +37,49 @@ def _swap(values: list, old: str, new: str | None) -> list:
             continue  # dropped (merge/delete) or deduped
         out.append(v)
     return out
+
+
+INSPIRATION_AXES = ("style", "concepts")
+
+
+def _has_slug(rec: dict, axis: str, slug: str) -> bool:
+    applied = (rec.get("bot") or {}).get("applied")
+    applied_list = applied.get(axis) if isinstance(applied, dict) else None
+    return slug in (rec.get(axis) or []) or (isinstance(applied_list, list) and slug in applied_list)
+
+
+def inspiration_carriers(store, axis: str, slug: str) -> list[str]:
+    """Ids of Inspiration saves tagged with `slug` (in the tag list or Claude's applied reference)."""
+    if store is None or axis not in INSPIRATION_AXES:
+        return []
+    found = []
+    for id_ in store.scan().ids:
+        try:
+            if _has_slug(store.read(id_), axis, slug):
+                found.append(id_)
+        except (OSError, ValueError):
+            continue  # unreadable saves are reported by the gallery, not here
+    return found
+
+
+def rewrite_inspiration(store, axis: str, slug: str, target: str | None) -> list[str]:
+    """Swap `slug` for `target` (None drops it) in each carrier. Returns failures as "id: error"."""
+    failures: list[str] = []
+    if store is None or axis not in INSPIRATION_AXES:
+        return failures
+    with store_lock():
+        for id_ in inspiration_carriers(store, axis, slug):
+            try:
+                rec = store.read(id_)
+                if isinstance(rec.get(axis), list):
+                    rec[axis] = _swap(rec[axis], slug, target)
+                applied = (rec.get("bot") or {}).get("applied")
+                if isinstance(applied, dict) and isinstance(applied.get(axis), list):
+                    applied[axis] = _swap(applied[axis], slug, target)
+                store.write(rec)
+            except (OSError, ValueError) as exc:
+                failures.append(f"{id_}: {exc}")
+    return failures
 
 
 def mount(app: FastAPI) -> None:
@@ -83,15 +127,17 @@ def mount(app: FastAPI) -> None:
                     return _err(409, f"{slug!r} already exists in {axis}")
                 vdata[axis] = members + [slug]
                 carrier_list = []
+                insp_ids = []
             else:
                 if slug not in members:
                     return _err(404, f"unknown {axis} slug {slug!r}")
                 carrier_list = carriers(axis, slug)
+                insp_ids = inspiration_carriers(getattr(app.state, "inspiration_store", None), axis, slug)
                 if action == "delete":
-                    if carrier_list:
-                        return _err(409, f"{slug!r} is used by {len(carrier_list)} asset(s); "
+                    if carrier_list or insp_ids:
+                        return _err(409, f"{slug!r} is used by {len(carrier_list) + len(insp_ids)} asset(s); "
                                          "merge it into another slug instead",
-                                    usage=[c[0] for c in carrier_list])
+                                    usage=[c[0] for c in carrier_list] + insp_ids)
                     vdata[axis] = _swap(members, slug, None)
                 elif action == "rename":
                     if target in members:
@@ -130,7 +176,13 @@ def mount(app: FastAPI) -> None:
                 app.state.library_cache.invalidate()
                 return _err(500, f"vocabulary {action} failed and was rolled back: {exc}")
             app.state.library_cache.invalidate()
-        return JSONResponse({"commit": sha, "rewritten": [c[0] for c in carrier_list]})
+            insp_failed: list[str] = []
+            if insp_ids:  # after the commit: failures are reported, never rolled back
+                insp_failed = rewrite_inspiration(app.state.inspiration_store, axis, slug, target)
+        return JSONResponse({"commit": sha, "rewritten": [c[0] for c in carrier_list],
+                             "inspiration_rewritten": [i for i in insp_ids
+                                                       if not any(f.startswith(f"{i}:") for f in insp_failed)],
+                             "inspiration_failed": insp_failed})
 
     async def _body(request: Request):
         try:
