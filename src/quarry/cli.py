@@ -10,8 +10,11 @@ from quarry.indexer import IndexBuildError, build_index, validate_assets
 from quarry.ingest import ingest_dir
 from quarry.inspiration_store import NoInspirationRoot, Store, capture_downloads_dir, config_dir, inspiration_root
 from quarry.instagram import ExportError, import_instagram
+from quarry.describer import ClaudeDescriber
+from quarry.describer_loop import DescriberLoop
 from quarry.library import LibraryError, scan_library
 from quarry.media_probe import FfmpegMissing
+from quarry.rater import rater_status
 from quarry.publish import check_stale, publish
 from quarry.seed import seed_from_deck_builder
 from quarry.search import EmbedderMismatch, EmbedderUnavailable, nearest_anti_examples, search
@@ -72,6 +75,90 @@ def _config_value(read):
         raise ConfigProblem(f"{config_dir() / 'config.toml'} has a problem: {e}") from e
 
 
+class DescribeUnavailable(ValueError):
+    """Claude can't be used for describing right now."""
+
+
+def _make_describer():
+    """The real describer; tests replace this hook."""
+    st = rater_status()
+    if not st["available"]:
+        raise DescribeUnavailable(f"Claude is unavailable: {st['reason']}")
+    return ClaudeDescriber()
+
+
+class _Recording:
+    """Wraps a describer to note which ids were sent to Claude, in order."""
+
+    def __init__(self, inner):
+        self.inner = inner
+        self.model = inner.model
+        self.sent: list[str] = []
+
+    def describe(self, rec, store, vocab, vocab_doc):
+        self.sent.append(rec["id"])
+        return self.inner.describe(rec, store, vocab, vocab_doc)
+
+
+def cmd_describe_inspiration(args) -> int:
+    from quarry.inspiration_store import store_lock
+    from quarry.ui.inspiration_api import _daily_cap
+    from quarry.ui.write_api import utc_now
+
+    try:
+        store = Store(_config_value(lambda: inspiration_root(args.inspiration_dir)))
+        describer = _Recording(_make_describer())
+    except (NoInspirationRoot, ConfigProblem, DescribeUnavailable) as exc:
+        print(f"error: {exc}", file=sys.stderr)
+        return 2
+    if args.redo:
+        try:
+            with store_lock():
+                rec = store.read(args.redo)
+                rec["describe_requested_at"] = utc_now()
+                store.write(rec)
+        except (OSError, ValueError) as exc:  # FileNotFoundError is an OSError
+            print(f"error: cannot redo {args.redo}: {exc}", file=sys.stderr)
+            return 2
+    started = utc_now()
+    loop = DescriberLoop(store, describer, args.repo, cap=_daily_cap())
+    loop.settle_s = 0
+    described = failed = 0
+    seen = 0
+    try:
+        while True:
+            loop.tick()
+            st = loop.status()
+            if st["state"] == "elsewhere":
+                port = (st["holder"] or {}).get("port")
+                print(f"error: another Quarry window is describing (port {port})", file=sys.stderr)
+                return 2
+            made = describer.sent[seen:]
+            seen = len(describer.sent)
+            for rid in made:
+                try:
+                    bot = store.read(rid).get("bot")
+                except (OSError, ValueError):
+                    bot = None
+                if isinstance(bot, dict) and isinstance(bot.get("at"), str) and bot["at"] >= started:
+                    described += 1
+                    print(f"described {rid}")
+                else:
+                    failed += 1
+                    print(f"failed {rid}: {st['reason'] or 'not saved'}", file=sys.stderr)
+            if st["waiting"] == 0 or (args.limit is not None and seen >= args.limit):
+                break
+            if st["state"] not in ("running", "idle"):
+                print(f"stopped: {st['state']}" + (f" ({st['reason']})" if st["reason"] else ""), file=sys.stderr)
+                break
+            if not made:  # nothing was sent: what's left is backing off or waiting for its retry
+                break
+    finally:
+        loop.close()
+    print(f"described {described}, failed {failed}")
+    return 0
+
+
 def main(argv=None) -> int:
     parser = argparse.ArgumentParser(prog="quarry")
     sub = parser.add_subparsers(dest="command", required=True)
@@ -106,6 +193,12 @@ def main(argv=None) -> int:
                     help="inspiration folder (default: QUARRY_INSPIRATION_DIR or config.toml)")
     ic.add_argument("--downloads", default=None, type=Path,
                     help="capture downloads folder (default: capture_downloads_dir or ~/Downloads/quarry)")
+    dc = sub.add_parser("describe-inspiration", help="have Claude describe and tag the inspiration saves waiting")
+    dc.add_argument("--repo", default=".", type=Path)
+    dc.add_argument("--inspiration-dir", default=None, type=Path,
+                    help="inspiration folder (default: QUARRY_INSPIRATION_DIR or config.toml)")
+    dc.add_argument("--limit", type=int, default=None, help="stop after this many Claude calls")
+    dc.add_argument("--redo", default=None, metavar="ID", help="describe this save again")
     ix = sub.add_parser("index", help="build the search index (FTS5, vectors, thumbnails)")
     ix.add_argument("--repo", default=".", type=Path)
     ix.add_argument("--fake-embedder", action="store_true", help="deterministic fake embeddings (no models)")
@@ -208,6 +301,8 @@ def main(argv=None) -> int:
             print(f"failed {name}: {reason}", file=sys.stderr)
         print(f"filed {len(res.filed)}, failed {len(res.failed)}")
         return 0
+    if args.command == "describe-inspiration":
+        return cmd_describe_inspiration(args)
     if args.command == "index":
         if args.fake_embedder:
             from quarry.embeddings import FakeEmbedder
