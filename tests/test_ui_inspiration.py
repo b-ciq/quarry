@@ -1,4 +1,5 @@
 import json
+import re
 
 import pytest
 from fastapi.testclient import TestClient
@@ -94,3 +95,60 @@ def test_disabled_without_root(repo):
     body = client.get("/api/inspiration").json()
     assert body["enabled"] is False and body["items"] == []
     assert client.post("/api/inspiration/status", json={"status": "confirmed", "ids": ["ig-a"]}).status_code == 409
+
+
+DESCRIBER_KEYS = {"state", "reason", "waiting", "current", "holder", "today", "cap", "retry_at"}
+
+
+def test_list_includes_bot_and_error_fields(client, store):
+    described = seed(store, "AAA", [item(1)])
+    described["bot"] = {"model": "claude-opus-5-5", "at": "2026-11-25T10:00:00Z", "media": "abc", "vocab": "v",
+                        "images": 1, "applied": {"description": "x", "style": [], "concepts": []},
+                        "answer": {"description": "x", "style": [], "concepts": []},
+                        "suggested_slugs": {"style": [{"slug": "form-ribbon", "definition": "bands"}], "concepts": []}}
+    store.write(described)
+    failed = seed(store, "BBB", [item(1)])
+    failed["describe_error"] = {"code": "refusal", "message": "no", "tries": 3, "at": "2026-11-25T10:00:00Z",
+                                "gave_up": True}
+    store.write(failed)
+    seed(store, "CCC", [item(1)])
+    by_id = {r["id"]: r for r in client.get("/api/inspiration").json()["items"]}
+    assert by_id["ig-aaa"]["bot"] == {"model": "claude-opus-5-5", "at": "2026-11-25T10:00:00Z",
+                                      "suggested_slugs": {"style": [{"slug": "form-ribbon", "definition": "bands"}],
+                                                          "concepts": []}}
+    assert by_id["ig-aaa"]["describe_error"] is None
+    assert by_id["ig-bbb"]["describe_error"] == {"message": "no", "tries": 3, "gave_up": True}
+    assert by_id["ig-bbb"]["bot"] is None
+    assert by_id["ig-ccc"]["bot"] is None and by_id["ig-ccc"]["describe_error"] is None
+
+
+def test_describer_status_off_without_loop(client, store):
+    seed(store, "AAA", [item(1)])
+    seed(store, "BBB", [item(1)])
+    seed(store, "CCC")  # no media: not a target
+    d = client.get("/api/inspiration").json()["describer"]
+    assert set(d) == DESCRIBER_KEYS
+    assert d["state"] == "off" and d["reason"]
+    assert d["waiting"] == 2
+    assert d["current"] is None and d["holder"] is None and d["today"] == 0 and d["retry_at"] is None
+    assert d["cap"] == 150
+
+
+def test_describe_endpoint_sets_marker(client, store):
+    seed(store, "AAA", [item(1)])
+    r = client.post("/api/inspiration/ig-aaa/describe")
+    assert r.status_code == 200 and r.json() == {"ok": True}
+    stamp = store.read("ig-aaa")["describe_requested_at"]
+    assert re.fullmatch(r"\d{4}-\d\d-\d\dT\d\d:\d\d:\d\dZ", stamp)
+
+
+def test_describe_endpoint_unknown_id(client, store):
+    assert client.post("/api/inspiration/ig-nope/describe").status_code == 404
+    assert client.post("/api/inspiration/..%2Fx/describe").status_code == 404
+
+
+def test_describe_endpoint_off_without_root(repo):
+    client = TestClient(create_app(repo.root))
+    assert client.post("/api/inspiration/ig-aaa/describe").status_code == 409
+    d = client.get("/api/inspiration").json()["describer"]
+    assert set(d) == DESCRIBER_KEYS and d["state"] == "off" and d["waiting"] == 0
